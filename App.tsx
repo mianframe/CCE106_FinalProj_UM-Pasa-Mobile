@@ -98,6 +98,7 @@ function BrowseScreen({ navigation }: any) {
   const programsForDepartment = filters.department ? programs[filters.department] || [] : Array.from(new Set(Object.values(programs).flat()));
   const selectedCount = ['condition', 'department', 'program', 'course_code'].filter((key) => filters[key]).length;
   const toggle = (key: string, value: any) => setFilter(key, filters[key] === value ? undefined : value);
+  const bannerWidth = width - 68;
   return <Page refreshing={loading} onRefresh={load} footer={{navigation}} topSafe={!!user} floatingAction={!user ? <GuestThemeFab /> : null}>
     <View style={s.marketHero}>
       <LinearGradient colors={['#55201c', '#2b191a', '#1b1a1e']} start={{x:0,y:0}} end={{x:1,y:1}} style={s.marketHeroGradient}>
@@ -106,12 +107,18 @@ function BrowseScreen({ navigation }: any) {
           <View style={{flex:1}}><Text style={s.brandName}>UM-Pasa</Text><Text style={s.brandCaption}>UNIVERSITY MARKETPLACE</Text></View>
           {!user && <Pressable style={s.signInPill} onPress={() => navigation.navigate('Login')}><Text style={s.signInText}>Sign in</Text></Pressable>}
         </View>
-        <ScrollView horizontal pagingEnabled showsHorizontalScrollIndicator={false} onMomentumScrollEnd={(event)=>setCarouselIndex(Math.round(event.nativeEvent.contentOffset.x/(width-72)))} style={s.heroCarousel}>
+        <ScrollView
+          horizontal
+          pagingEnabled
+          showsHorizontalScrollIndicator={false}
+          onMomentumScrollEnd={(event) => setCarouselIndex(Math.round(event.nativeEvent.contentOffset.x / bannerWidth))}
+          style={[s.heroCarousel, { width: bannerWidth }]}
+        >
           {[
             {icon:'bag-handle-outline',kicker:'CAMPUS SHOP',title:'Find what you need for campus.',copy:'Browse books, supplies, gadgets, and academic essentials.'},
             {icon:'repeat-outline',kicker:'SELL OR RENT',title:'Give useful items another semester.',copy:'List what you no longer need and set your own terms.'},
             {icon:'shield-checkmark-outline',kicker:'UM COMMUNITY',title:'Trade with more confidence.',copy:'Approved listings, campus meetups, and clear transaction steps.'},
-          ].map((slide,index)=><View key={slide.kicker} style={[s.carouselSlide,{width:width-72}]}><Ionicons name={slide.icon as any} size={23} color="#ffc270"/><Text style={s.heroKicker}>{slide.kicker}</Text><Text style={s.heroTitle}>{slide.title}</Text><Text style={s.heroDescription}>{slide.copy}</Text><Pressable onPress={()=>navigation.navigate(index===2?'Help':'Browse')}><Text style={s.heroLink}>{index===2?'How it works  ›':'Explore marketplace  ›'}</Text></Pressable></View>)}
+          ].map((slide,index)=><View key={slide.kicker} style={[s.carouselSlide,{width:bannerWidth}]}><Ionicons name={slide.icon as any} size={23} color="#ffc270"/><Text style={s.heroKicker}>{slide.kicker}</Text><Text style={s.heroTitle}>{slide.title}</Text><Text style={s.heroDescription}>{slide.copy}</Text><Pressable onPress={()=>navigation.navigate(index===2?'Help':'Browse')}><Text style={s.heroLink}>{index===2?'How it works  ›':'Explore marketplace  ›'}</Text></Pressable></View>)}
         </ScrollView>
         <View style={s.carouselDots}>{[0,1,2].map((dot)=><View key={dot} style={[s.carouselDot,dot===carouselIndex&&s.carouselDotActive]}/>)}</View>
         <View style={s.heroActions}><Pressable onPress={() => navigation.navigate('About')}><Text style={s.heroLink}>About UM-Pasa  ›</Text></Pressable><View style={s.heroDivider}/><Pressable onPress={() => navigation.navigate('Help')}><Text style={s.heroLink}>How it works  ›</Text></Pressable></View>
@@ -709,7 +716,60 @@ function DashboardScreen({ navigation }: any) {
           )}
         </Pressable>
       </View>
-      {user?.role==='admin'?<Button title={`Review listings${stats.pendingItems?` · ${stats.pendingItems}`:''}`} onPress={()=>navigation.navigate('AdminItems')}/>:<Button title="＋  Add a listing" onPress={()=>navigation.navigate('ListingForm')}/>}<View style={s.stats}>{dashboardTiles.map(([n,v]) => <Card key={String(n)} style={s.stat}><Text style={s.statNum}>{v ?? 0}</Text><Text style={s.muted}>{n}</Text></Card>)}</View><View style={s.rowWrap}>{user?.role==='admin'?<Button title="Admin panel" secondary onPress={()=>navigation.navigate('Admin')}/>:<><Button title="My listings" secondary onPress={() => navigation.navigate('MyListings')} /><Button title="Pending requests" secondary onPress={() => navigation.navigate('Transactions')} /><Button title="My report" secondary onPress={()=>navigation.navigate('Reports')}/></>}<Button title="Notifications" secondary onPress={() => navigation.navigate('Notifications')} /></View>{user?.role==='admin'&&<><MiniBars title="Listings by category" data={data.charts?.categories}/><MiniBars title="Listings by department" data={data.charts?.departments}/><MiniBars title="Monthly transactions" data={data.charts?.monthly}/></>}{user?.role!=='admin'&&data.notifications?.length>0&&<><Heading title="Recent activity"/>{data.notifications.map((n:Notice)=><Pressable key={n.id} accessibilityRole="button" onPress={()=>openNotification(n,navigation,user?.role==='admin')}><Card><View style={s.rowBetween}><Text style={[s.body,{color:n.is_read?C.muted:C.cream,flex:1}]}>{n.message}</Text><Ionicons name="chevron-forward" size={17} color={C.muted}/></View></Card></Pressable>)}</>}<View style={s.sectionTop}><Text style={s.sectionTitle}>Recent listings</Text><Pressable onPress={()=>navigation.navigate('Browse')}><Text style={{color:C.gold,fontWeight:'700'}}>See all ›</Text></Pressable></View><View style={s.listingGrid}>{(data.recent_items || []).map((item: Item) => <Pressable key={item.id} style={[s.gridItem,{width:(width-43)/2}]} onPress={() => navigation.navigate('Listing', { id: item.id })}><ItemCard item={item} compact/></Pressable>)}</View>
+      {user?.role === 'admin' ? (
+        <Button title={`Review listings${stats.pendingItems ? ` · ${stats.pendingItems}` : ''}`} onPress={() => navigation.navigate('AdminItems')} />
+      ) : (
+        <Button title="＋  Add a listing" onPress={() => navigation.navigate('ListingForm')} />
+      )}
+      <View style={s.stats}>
+        {dashboardTiles.map(([n, v]) => (
+          <Card key={String(n)} style={s.stat}>
+            <Text style={s.statNum}>{v ?? 0}</Text>
+            <Text style={s.muted}>{n}</Text>
+          </Card>
+        ))}
+      </View>
+      <View style={s.quickActionsGrid}>
+        {user?.role === 'admin' ? (
+          <>
+            <Pressable accessibilityRole="button" onPress={() => navigation.navigate('Admin')} style={s.quickActionCard}>
+              <View style={s.quickActionIcon}><Ionicons name="shield-checkmark-outline" size={17} color={C.gold} /></View>
+              <Text numberOfLines={1} style={s.quickActionText}>Admin panel</Text>
+            </Pressable>
+            <Pressable accessibilityRole="button" onPress={() => navigation.navigate('AdminItems')} style={s.quickActionCard}>
+              <View style={s.quickActionIcon}><Ionicons name="list-outline" size={17} color="#4ADE80" /></View>
+              <Text numberOfLines={1} style={s.quickActionText}>Review items</Text>
+            </Pressable>
+            <Pressable accessibilityRole="button" onPress={() => navigation.navigate('AdminTransactions')} style={s.quickActionCard}>
+              <View style={s.quickActionIcon}><Ionicons name="swap-horizontal-outline" size={17} color="#38BDF8" /></View>
+              <Text numberOfLines={1} style={s.quickActionText}>Transactions</Text>
+            </Pressable>
+            <Pressable accessibilityRole="button" onPress={() => navigation.navigate('Notifications')} style={s.quickActionCard}>
+              <View style={s.quickActionIcon}><Ionicons name="notifications-outline" size={17} color={C.gold} /></View>
+              <Text numberOfLines={1} style={s.quickActionText}>Notifications</Text>
+            </Pressable>
+          </>
+        ) : (
+          <>
+            <Pressable accessibilityRole="button" onPress={() => navigation.navigate('MyListings')} style={s.quickActionCard}>
+              <View style={s.quickActionIcon}><Ionicons name="pricetag-outline" size={17} color={C.gold} /></View>
+              <Text numberOfLines={1} style={s.quickActionText}>My listings</Text>
+            </Pressable>
+            <Pressable accessibilityRole="button" onPress={() => navigation.navigate('Transactions')} style={s.quickActionCard}>
+              <View style={s.quickActionIcon}><Ionicons name="swap-horizontal-outline" size={17} color="#4ADE80" /></View>
+              <Text numberOfLines={1} style={s.quickActionText}>Requests</Text>
+            </Pressable>
+            <Pressable accessibilityRole="button" onPress={() => navigation.navigate('Reports')} style={s.quickActionCard}>
+              <View style={s.quickActionIcon}><Ionicons name="stats-chart-outline" size={17} color="#38BDF8" /></View>
+              <Text numberOfLines={1} style={s.quickActionText}>My report</Text>
+            </Pressable>
+            <Pressable accessibilityRole="button" onPress={() => navigation.navigate('Notifications')} style={s.quickActionCard}>
+              <View style={s.quickActionIcon}><Ionicons name="notifications-outline" size={17} color={C.gold} /></View>
+              <Text numberOfLines={1} style={s.quickActionText}>Notifications</Text>
+            </Pressable>
+          </>
+        )}
+      </View>{user?.role==='admin'&&<><MiniBars title="Listings by category" data={data.charts?.categories}/><MiniBars title="Listings by department" data={data.charts?.departments}/><MiniBars title="Monthly transactions" data={data.charts?.monthly}/></>}{user?.role!=='admin'&&data.notifications?.length>0&&<><Heading title="Recent activity"/>{data.notifications.map((n:Notice)=><Pressable key={n.id} accessibilityRole="button" onPress={()=>openNotification(n,navigation,user?.role==='admin')}><Card><View style={s.rowBetween}><Text style={[s.body,{color:n.is_read?C.muted:C.cream,flex:1}]}>{n.message}</Text><Ionicons name="chevron-forward" size={17} color={C.muted}/></View></Card></Pressable>)}</>}<View style={s.sectionTop}><Text style={s.sectionTitle}>Recent listings</Text><Pressable onPress={()=>navigation.navigate('Browse')}><Text style={{color:C.gold,fontWeight:'700'}}>See all ›</Text></Pressable></View><View style={s.listingGrid}>{(data.recent_items || []).map((item: Item) => <Pressable key={item.id} style={[s.gridItem,{width:(width-43)/2}]} onPress={() => navigation.navigate('Listing', { id: item.id })}><ItemCard item={item} compact/></Pressable>)}</View>
     </Page>
   );
 }
@@ -947,24 +1007,100 @@ function ProfileScreen({ navigation }: any) {
   const [confirm, setConfirm] = useState('');
   const [busy, setBusy] = useState(false);
   const [deleting, setDeleting] = useState(false);
-  const save = async () => {
-    if (password && password !== confirm) { Alert.alert('Check password', 'The new passwords do not match.'); return; }
-    if (password && password.length < 8) { Alert.alert('Check password', 'Use at least 8 characters.'); return; }
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [showPasswordModal, setShowPasswordModal] = useState(false);
+  const [profileStats, setProfileStats] = useState({ listings: 0, transactions: 0, reviews: 0, rating: '5.0' });
+
+  useEffect(() => {
+    if (profile) {
+      setName(profile.full_name || user?.name || '');
+      setStudentNumber(profile.student_number || '');
+      setDepartment(profile.department || '');
+      setProgram(profile.program || '');
+    }
+  }, [profile, user]);
+
+  const loadProfileStats = useCallback(async () => {
+    if (!user?.id) return;
+    try {
+      const [dashData, userReviews, txList] = await Promise.all([
+        account.dashboard().catch(() => null),
+        profiles.reviews(user.id).catch(() => []),
+        transactions.list().catch(() => []),
+      ]);
+      const reviewsCount = Array.isArray(userReviews) ? userReviews.length : 0;
+      const avg = reviewsCount > 0
+        ? (userReviews.reduce((sum: number, r: any) => sum + (r.rating || 5), 0) / reviewsCount).toFixed(1)
+        : '5.0';
+      setProfileStats({
+        listings: dashData?.stats?.total_items ?? 0,
+        transactions: Array.isArray(txList) ? txList.length : (dashData?.stats?.completed_transactions ?? 0),
+        reviews: reviewsCount,
+        rating: avg,
+      });
+    } catch {
+      // fallback
+    }
+  }, [user?.id]);
+
+  useFocusEffect(useCallback(() => { loadProfileStats(); }, [loadProfileStats]));
+
+  const saveProfile = async () => {
+    if (!name.trim()) {
+      Alert.alert('Name required', 'Please enter your full name.');
+      return;
+    }
     setBusy(true);
     try {
-      await updateProfile({ full_name: name, student_number: studentNumber || null, department: department || null, program: program || null });
-      if (password) await updatePassword(password);
-      setPassword(''); setConfirm('');
+      await updateProfile({
+        full_name: name,
+        student_number: studentNumber || null,
+        department: department || null,
+        program: program || null,
+      });
+      setShowEditModal(false);
       Alert.alert('Profile updated', 'Your account information has been saved.');
-    } catch (e) { Alert.alert('Unable to update profile', e instanceof Error ? e.message : errorMessage(e)); }
-    finally { setBusy(false); }
+    } catch (e) {
+      Alert.alert('Unable to update profile', e instanceof Error ? e.message : errorMessage(e));
+    } finally {
+      setBusy(false);
+    }
   };
+
+  const savePassword = async () => {
+    if (!password) {
+      Alert.alert('Password required', 'Please enter a new password.');
+      return;
+    }
+    if (password !== confirm) {
+      Alert.alert('Check password', 'The new passwords do not match.');
+      return;
+    }
+    if (password.length < 8) {
+      Alert.alert('Check password', 'Password must be at least 8 characters long.');
+      return;
+    }
+    setBusy(true);
+    try {
+      await updatePassword(password);
+      setPassword('');
+      setConfirm('');
+      setShowPasswordModal(false);
+      Alert.alert('Password updated', 'Your password has been changed successfully.');
+    } catch (e) {
+      Alert.alert('Unable to update password', e instanceof Error ? e.message : errorMessage(e));
+    } finally {
+      setBusy(false);
+    }
+  };
+
   const confirmLogout = () => Alert.alert('Sign out?', 'You will need to sign in again to access your account.', [
     { text: 'Cancel', style: 'cancel' },
     { text: 'Sign out', style: 'destructive', onPress: async () => {
       try { await logout(); } catch (e) { Alert.alert('Unable to sign out', e instanceof Error ? e.message : 'Please try again.'); }
     } },
   ]);
+
   const confirmDeleteAccount = () => Alert.alert(
     'Delete account?',
     'This will archive your active listings and deactivate your UM-Pasa student account. This action cannot be undone.',
@@ -987,23 +1123,209 @@ function ProfileScreen({ navigation }: any) {
       },
     ]
   );
-  return <Page topSafe><Heading title="Profile" subtitle="Account information" />
-    <Card><Text style={s.eyebrow}>{profile?.role.toUpperCase() || 'STUDENT ACCOUNT'}</Text><Text style={s.muted}>{user?.email}</Text></Card>
-    <Card><Text style={s.section}>Appearance</Text><Text style={s.muted}>Choose the display theme for UM-Pasa.</Text><View style={s.row}><Choice label="Light" selected={mode==='light'} onPress={()=>setMode('light')}/><Choice label="Dark" selected={mode==='dark'} onPress={()=>setMode('dark')}/></View></Card>
-    <Field label="Full name" value={name} onChangeText={setName} />
-    <Field label="Student number" value={studentNumber} onChangeText={setStudentNumber} autoCapitalize="characters" />
-    <Field label="Department" value={department} onChangeText={setDepartment} />
-    <Field label="Program" value={program} onChangeText={setProgram} />
-    <Text style={s.section}>Change password</Text>
-    <Field label="New password (optional)" value={password} onChangeText={setPassword} secureTextEntry />
-    <Field label="Confirm new password" value={confirm} onChangeText={setConfirm} secureTextEntry />
-    <Button title={busy ? 'Saving…' : 'Save profile'} onPress={save} disabled={busy} />
-    <Button title="My listings" secondary onPress={()=>navigation.navigate('MyListings')}/>
-    <Button title="My activity report" secondary onPress={()=>navigation.navigate('Reports')}/>
-    <Button title="Notifications" secondary onPress={()=>navigation.navigate('Notifications')}/>
-    <Button title="Sign out" secondary onPress={confirmLogout} />
-    {SHOW_DELETE_ACCOUNT && <Button title={deleting ? 'Deleting account…' : 'Delete account'} danger disabled={deleting} onPress={confirmDeleteAccount} />}
-  </Page>;
+
+  return (
+    <Page topSafe onRefresh={loadProfileStats}>
+      <View style={s.profileHeaderRow}>
+        <Text style={s.profileHeaderTitle}>Profile</Text>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Settings"
+          onPress={() => setShowEditModal(true)}
+          style={s.profileHeaderIconBtn}
+        >
+          <Ionicons name="settings-outline" size={20} color={C.white} />
+        </Pressable>
+      </View>
+
+      <View style={s.profileMainCard}>
+        <View style={s.profileUserRow}>
+          <View style={s.profileAvatarWrap}>
+            <LinearGradient
+              colors={['#b70201', '#e62424', '#f6c84c']}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              style={s.profileAvatarRing}
+            >
+              <View style={s.profileAvatarInner}>
+                <Text style={s.profileAvatarInitial}>
+                  {(profile?.full_name || user?.name || 'U').charAt(0).toUpperCase()}
+                </Text>
+              </View>
+            </LinearGradient>
+          </View>
+          <View style={{ flex: 1, paddingLeft: 14 }}>
+            <Text style={s.profileUserName} numberOfLines={1}>
+              {profile?.full_name || user?.name || 'UM Student'}
+            </Text>
+            <Text style={s.profileStudentId} numberOfLines={1}>
+              {profile?.student_number ? `Student No. ${profile.student_number}` : (user?.email || 'Student Account')}
+            </Text>
+            <Text style={s.profileProgramText} numberOfLines={1}>
+              {profile?.program || profile?.department?.replace('Department of ', '') || 'University of Mindanao'}
+            </Text>
+            <Pressable
+              onPress={() => navigation.navigate('ProfileReviews', { id: user?.id })}
+              style={s.profileRatingPill}
+            >
+              <Ionicons name="star" size={13} color="#F6C84C" />
+              <Text style={s.profileRatingVal}>{profileStats.rating}</Text>
+              <Text style={s.profileRatingCount}>({profileStats.reviews} reviews) ›</Text>
+            </Pressable>
+          </View>
+        </View>
+
+        <View style={s.profileCardDivider} />
+
+        <View style={s.profileStatsRow}>
+          <Pressable style={s.profileStatCol} onPress={() => navigation.navigate('MyListings')}>
+            <Text style={s.profileStatVal}>{profileStats.listings}</Text>
+            <Text style={s.profileStatLbl}>Listings</Text>
+          </Pressable>
+          <View style={s.profileStatDivider} />
+          <Pressable style={s.profileStatCol} onPress={() => navigation.navigate('Transactions')}>
+            <Text style={s.profileStatVal}>{profileStats.transactions}</Text>
+            <Text style={s.profileStatLbl}>Transactions</Text>
+          </Pressable>
+          <View style={s.profileStatDivider} />
+          <Pressable style={s.profileStatCol} onPress={() => navigation.navigate('ProfileReviews', { id: user?.id })}>
+            <Text style={s.profileStatVal}>{profileStats.reviews}</Text>
+            <Text style={s.profileStatLbl}>Reviews</Text>
+          </Pressable>
+        </View>
+      </View>
+
+      <View style={s.profileMenuCard}>
+        <Pressable style={s.profileMenuItem} onPress={() => navigation.navigate('MyListings')}>
+          <View style={s.profileMenuIconBox}>
+            <Ionicons name="pricetag-outline" size={18} color={C.gold} />
+          </View>
+          <Text style={s.profileMenuLabel}>My Listings</Text>
+          <Ionicons name="chevron-forward" size={18} color={C.muted} />
+        </Pressable>
+
+        <View style={s.profileMenuDivider} />
+
+        <Pressable style={s.profileMenuItem} onPress={() => navigation.navigate('Reports')}>
+          <View style={s.profileMenuIconBox}>
+            <Ionicons name="stats-chart-outline" size={18} color={C.gold} />
+          </View>
+          <Text style={s.profileMenuLabel}>My Reports</Text>
+          <Ionicons name="chevron-forward" size={18} color={C.muted} />
+        </Pressable>
+
+        <View style={s.profileMenuDivider} />
+
+        <Pressable style={s.profileMenuItem} onPress={() => setShowEditModal(true)}>
+          <View style={s.profileMenuIconBox}>
+            <Ionicons name="settings-outline" size={18} color={C.gold} />
+          </View>
+          <Text style={s.profileMenuLabel}>Settings / Account Details</Text>
+          <Ionicons name="chevron-forward" size={18} color={C.muted} />
+        </Pressable>
+      </View>
+
+      <View style={s.profileMenuCard}>
+        <View style={s.profileAppearanceHeader}>
+          <Text style={s.profileAppearanceTitle}>Appearance</Text>
+          <View style={s.segmentedPillContainer}>
+            <Pressable
+              onPress={() => setMode('light')}
+              style={[s.segmentedPillOption, mode === 'light' && s.segmentedPillActiveLight]}
+            >
+              <Ionicons name="sunny" size={14} color={mode === 'light' ? '#FFFFFF' : C.muted} />
+              <Text style={[s.segmentedPillText, mode === 'light' && { color: '#FFFFFF', fontWeight: '800' }]}>
+                Light
+              </Text>
+            </Pressable>
+            <Pressable
+              onPress={() => setMode('dark')}
+              style={[s.segmentedPillOption, mode === 'dark' && s.segmentedPillActiveDark]}
+            >
+              <Ionicons name="moon" size={14} color={mode === 'dark' ? '#F6C84C' : C.muted} />
+              <Text style={[s.segmentedPillText, mode === 'dark' && { color: '#F6C84C', fontWeight: '800' }]}>
+                Dark
+              </Text>
+            </Pressable>
+          </View>
+        </View>
+      </View>
+
+      <View style={s.profileMenuCard}>
+        <Pressable style={s.profileMenuItem} onPress={() => setShowPasswordModal(true)}>
+          <View style={s.profileMenuIconBox}>
+            <Ionicons name="lock-closed-outline" size={18} color={C.muted} />
+          </View>
+          <Text style={s.profileMenuLabel}>Change Password</Text>
+          <Ionicons name="chevron-forward" size={18} color={C.muted} />
+        </Pressable>
+
+        {SHOW_DELETE_ACCOUNT && (
+          <>
+            <View style={s.profileMenuDivider} />
+            <Pressable style={s.profileMenuItem} onPress={confirmDeleteAccount}>
+              <View style={s.profileMenuIconBox}>
+                <Ionicons name="trash-outline" size={18} color={C.red} />
+              </View>
+              <Text style={[s.profileMenuLabel, { color: C.red }]}>Account Deletion</Text>
+              <Ionicons name="chevron-forward" size={18} color={C.red} />
+            </Pressable>
+          </>
+        )}
+
+        <View style={s.profileMenuDivider} />
+
+        <Pressable style={s.profileMenuItem} onPress={confirmLogout}>
+          <View style={[s.profileMenuIconBox, { backgroundColor: 'rgba(230, 36, 36, 0.12)' }]}>
+            <Ionicons name="log-out-outline" size={18} color={C.red} />
+          </View>
+          <Text style={[s.profileMenuLabel, { color: C.red, fontWeight: '800' }]}>Sign Out</Text>
+        </Pressable>
+      </View>
+
+      <Modal visible={showEditModal} transparent animationType="slide">
+        <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={s.modalOverlay}>
+          <View style={s.modalContent}>
+            <View style={s.modalHeader}>
+              <Text style={s.modalTitle}>Edit Profile</Text>
+              <Pressable onPress={() => setShowEditModal(false)} hitSlop={10}>
+                <Ionicons name="close-circle" size={24} color={C.muted} />
+              </Pressable>
+            </View>
+            <ScrollView showsVerticalScrollIndicator={false}>
+              <Field label="Full name" value={name} onChangeText={setName} />
+              <Field label="Student number" value={studentNumber} onChangeText={setStudentNumber} autoCapitalize="characters" />
+              <Field label="Department" value={department} onChangeText={setDepartment} />
+              <Field label="Program" value={program} onChangeText={setProgram} />
+              <View style={{ marginTop: 12 }}>
+                <Button title={busy ? 'Saving…' : 'Save changes'} onPress={saveProfile} disabled={busy} />
+                <Button title="Cancel" secondary onPress={() => setShowEditModal(false)} />
+              </View>
+            </ScrollView>
+          </View>
+        </KeyboardAvoidingView>
+      </Modal>
+
+      <Modal visible={showPasswordModal} transparent animationType="slide">
+        <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={s.modalOverlay}>
+          <View style={s.modalContent}>
+            <View style={s.modalHeader}>
+              <Text style={s.modalTitle}>Change Password</Text>
+              <Pressable onPress={() => setShowPasswordModal(false)} hitSlop={10}>
+                <Ionicons name="close-circle" size={24} color={C.muted} />
+              </Pressable>
+            </View>
+            <Field label="New password" value={password} onChangeText={setPassword} secureTextEntry placeholder="Min. 8 characters" />
+            <Field label="Confirm new password" value={confirm} onChangeText={setConfirm} secureTextEntry placeholder="Re-enter password" />
+            <View style={{ marginTop: 12 }}>
+              <Button title={busy ? 'Updating…' : 'Update password'} onPress={savePassword} disabled={busy} />
+              <Button title="Cancel" secondary onPress={() => setShowPasswordModal(false)} />
+            </View>
+          </View>
+        </KeyboardAvoidingView>
+      </Modal>
+    </Page>
+  );
 }
 
 function NotificationsScreen({ navigation }: any) {
@@ -1843,6 +2165,49 @@ function createStyles(_tokens?: ThemeTokens) { return StyleSheet.create({
   noticeIconBadge:{width:38,height:38,borderRadius:12,alignItems:'center',justifyContent:'center'},
   noticeTitle:{fontSize:13,fontWeight:'700',lineHeight:18},
   noticeTimestamp:{fontSize:11,color:C.muted,marginTop:4},
-  noticeUnreadDot:{width:8,height:8,borderRadius:4,backgroundColor:C.gold,marginTop:4}
+  noticeUnreadDot:{width:8,height:8,borderRadius:4,backgroundColor:C.gold,marginTop:4},
+  // Dashboard Quick Actions
+  quickActionsGrid:{flexDirection:'row',flexWrap:'wrap',gap:8,marginBottom:16},
+  quickActionCard:{flex:1,minWidth:'47%',flexDirection:'row',alignItems:'center',gap:10,backgroundColor:C.panel,borderColor:C.border,borderWidth:1,borderRadius:14,paddingHorizontal:12,paddingVertical:12},
+  quickActionIcon:{width:34,height:34,borderRadius:10,alignItems:'center',justifyContent:'center',backgroundColor:C.soft},
+  quickActionText:{fontSize:12,fontWeight:'700',color:C.white,flex:1},
+  // Modern Profile Screen (Image 2 Match)
+  profileHeaderRow:{flexDirection:'row',alignItems:'center',justifyContent:'space-between',marginBottom:16},
+  profileHeaderTitle:{fontSize:26,fontWeight:'900',color:C.white,letterSpacing:-.4},
+  profileHeaderIconBtn:{width:40,height:40,borderRadius:20,alignItems:'center',justifyContent:'center',backgroundColor:C.panel,borderWidth:1,borderColor:C.border},
+  profileMainCard:{backgroundColor:C.panel,borderColor:C.border,borderWidth:1,borderRadius:20,padding:16,marginBottom:14,shadowColor:'#000000',shadowOpacity:C.bg===themeTokens.dark.colors.bg?.22:.06,shadowRadius:10,shadowOffset:{width:0,height:4},elevation:3},
+  profileUserRow:{flexDirection:'row',alignItems:'center'},
+  profileAvatarWrap:{width:68,height:68,borderRadius:34},
+  profileAvatarRing:{width:68,height:68,borderRadius:34,padding:2.5,alignItems:'center',justifyContent:'center'},
+  profileAvatarInner:{flex:1,width:'100%',backgroundColor:C.panel2,borderRadius:32,alignItems:'center',justifyContent:'center'},
+  profileAvatarInitial:{fontSize:26,fontWeight:'900',color:C.gold},
+  profileUserName:{fontSize:18,fontWeight:'800',color:C.white,letterSpacing:-.2},
+  profileStudentId:{fontSize:12.5,color:C.muted,marginTop:2,fontWeight:'600'},
+  profileProgramText:{fontSize:11.5,color:C.cream,marginTop:1,fontWeight:'500'},
+  profileRatingPill:{flexDirection:'row',alignItems:'center',gap:4,marginTop:6,alignSelf:'flex-start'},
+  profileRatingVal:{fontSize:12,fontWeight:'800',color:C.gold},
+  profileRatingCount:{fontSize:11.5,color:C.muted},
+  profileCardDivider:{height:1,backgroundColor:C.border,marginVertical:14},
+  profileStatsRow:{flexDirection:'row',alignItems:'center',justifyContent:'space-around'},
+  profileStatCol:{alignItems:'center',flex:1},
+  profileStatVal:{fontSize:18,fontWeight:'900',color:C.white},
+  profileStatLbl:{fontSize:11.5,color:C.muted,marginTop:2,fontWeight:'600'},
+  profileStatDivider:{width:1,height:28,backgroundColor:C.border},
+  profileMenuCard:{backgroundColor:C.panel,borderColor:C.border,borderWidth:1,borderRadius:18,marginBottom:14,overflow:'hidden',shadowColor:'#000000',shadowOpacity:C.bg===themeTokens.dark.colors.bg?.2:.05,shadowRadius:8,shadowOffset:{width:0,height:3},elevation:2},
+  profileMenuItem:{flexDirection:'row',alignItems:'center',paddingHorizontal:16,paddingVertical:13},
+  profileMenuIconBox:{width:36,height:36,borderRadius:11,alignItems:'center',justifyContent:'center',backgroundColor:C.soft,marginRight:12},
+  profileMenuLabel:{flex:1,fontSize:14,fontWeight:'700',color:C.white},
+  profileMenuDivider:{height:1,backgroundColor:C.border,marginLeft:64},
+  profileAppearanceHeader:{flexDirection:'row',alignItems:'center',justifyContent:'space-between',paddingHorizontal:16,paddingVertical:12},
+  profileAppearanceTitle:{fontSize:14,fontWeight:'700',color:C.white},
+  segmentedPillContainer:{flexDirection:'row',alignItems:'center',backgroundColor:C.soft,borderRadius:20,padding:3,borderWidth:1,borderColor:C.border},
+  segmentedPillOption:{flexDirection:'row',alignItems:'center',gap:5,paddingHorizontal:13,paddingVertical:6,borderRadius:17},
+  segmentedPillActiveLight:{backgroundColor:'#E65100',shadowColor:'#E65100',shadowOpacity:.25,shadowRadius:4,elevation:2},
+  segmentedPillActiveDark:{backgroundColor:'#332306',borderWidth:1,borderColor:'#F6C84C'},
+  segmentedPillText:{fontSize:11.5,fontWeight:'700',color:C.muted},
+  modalOverlay:{flex:1,backgroundColor:'rgba(0,0,0,0.65)',justifyContent:'flex-end'},
+  modalContent:{backgroundColor:C.panel,borderTopLeftRadius:24,borderTopRightRadius:24,padding:20,paddingBottom:36,maxHeight:'85%'},
+  modalHeader:{flexDirection:'row',alignItems:'center',justifyContent:'space-between',marginBottom:16},
+  modalTitle:{fontSize:18,fontWeight:'800',color:C.white}
 }); }
 let s = createStyles();
