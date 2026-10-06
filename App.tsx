@@ -142,17 +142,39 @@ function BrowseScreen({ navigation }: any) {
   useFocusEffect(useCallback(() => { loadRef.current(); }, []));
   useEffect(() => { if (filtersInitialized.current) loadRef.current(); else filtersInitialized.current = true; }, [filters]);
   const programsForDepartment = filters.department ? programs[filters.department] || [] : Array.from(new Set(Object.values(programs).flat()));
+  const { mode, setMode } = useTheme();
   const selectedCount = ['condition', 'department', 'program', 'course_code'].filter((key) => filters[key]).length;
   const toggle = (key: string, value: any) => setFilter(key, filters[key] === value ? undefined : value);
   const bannerWidth = width - 68;
   const isDark = C.bg === themeTokens.dark.colors.bg;
-  return <Page refreshing={loading} onRefresh={load} footer={{navigation}} topSafe={!!user} floatingAction={!user ? <GuestThemeFab /> : null}>
+  return <Page refreshing={loading} onRefresh={load} footer={{navigation}} topSafe={!!user}>
     <View style={s.marketHero}>
       <LinearGradient colors={['#55201c', '#2b191a', '#1b1a1e']} start={{x:0,y:0}} end={{x:1,y:1}} style={s.marketHeroGradient}>
         <View style={s.brandRow}>
           <View style={s.brandMark}><Image source={require('./assets/UMPASALOGO.png')} style={s.brandLogo} resizeMode="contain"/></View>
-          <View style={{flex:1}}><Text style={s.brandName}>UM-Pasa</Text><Text style={s.brandCaption}>UNIVERSITY MARKETPLACE · DAVAO CITY</Text></View>
-          {!user && <Pressable style={s.signInPill} onPress={() => navigation.navigate('Login')}><Text style={s.signInText}>Sign in ›</Text></Pressable>}
+          <View style={{flex:1}}><Text style={s.brandName}>UM-Pasa</Text><Text style={s.brandCaption}>UM TAGUM COLLEGE · TAGUM CITY</Text></View>
+          {!user && (
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel="Toggle light or dark theme"
+                onPress={() => setMode(mode === 'dark' ? 'light' : 'dark')}
+                style={{
+                  width: 32,
+                  height: 32,
+                  borderRadius: 16,
+                  backgroundColor: 'rgba(255,255,255,0.14)',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  borderWidth: 1,
+                  borderColor: 'rgba(255,255,255,0.22)',
+                }}
+              >
+                <Ionicons name={mode === 'dark' ? 'sunny' : 'moon'} size={15} color="#FFFFFF" />
+              </Pressable>
+              <Pressable style={s.signInPill} onPress={() => navigation.navigate('Login')}><Text style={s.signInText}>Sign in ›</Text></Pressable>
+            </View>
+          )}
         </View>
         <ScrollView
           horizontal
@@ -162,9 +184,9 @@ function BrowseScreen({ navigation }: any) {
           style={[s.heroCarousel, { width: bannerWidth }]}
         >
           {[
-            {icon:'bag-handle-outline',kicker:'CAMPUS SHOP',title:'Find what you need for campus.',copy:'Browse books, supplies, gadgets, and academic essentials.'},
-            {icon:'repeat-outline',kicker:'SELL OR RENT',title:'Give useful items another semester.',copy:'List what you no longer need and set your own terms.'},
-            {icon:'shield-checkmark-outline',kicker:'UM COMMUNITY',title:'Trade with more confidence.',copy:'Approved listings, campus meetups, and clear transaction steps.'},
+            {icon:'bag-handle-outline',kicker:'UM TAGUM MARKETPLACE',title:'Find what you need for campus.',copy:'Browse textbooks, uniforms, engineering kits, and calculators across Mabini and Visayan.'},
+            {icon:'repeat-outline',kicker:'SELL OR RENT',title:'Give useful items another semester.',copy:'List what you no longer need and set your own terms with verified classmates.'},
+            {icon:'shield-checkmark-outline',kicker:'TAGUM SAFE ZONES',title:'Trade safely at campus landmarks.',copy:'Handoffs at Main Canteen, Gym, Visayan Labs, and Libraries with zero platform fees.'},
           ].map((slide,index)=><View key={slide.kicker} style={[s.carouselSlide,{width:bannerWidth}]}><Ionicons name={slide.icon as any} size={23} color="#ffc270"/><Text style={s.heroKicker}>{slide.kicker}</Text><Text style={s.heroTitle}>{slide.title}</Text><Text style={s.heroDescription}>{slide.copy}</Text><Pressable onPress={()=>navigation.navigate(index===2?'Help':'Browse')}><Text style={s.heroLink}>{index===2?'How it works  ›':'Explore marketplace  ›'}</Text></Pressable></View>)}
         </ScrollView>
         <View style={s.carouselDots}>{[0,1,2].map((dot)=><View key={dot} style={[s.carouselDot,dot===carouselIndex&&s.carouselDotActive]}/>)}</View>
@@ -172,63 +194,6 @@ function BrowseScreen({ navigation }: any) {
       </LinearGradient>
       <View style={s.heroGlow}/>
     </View>
-
-    {!user && (
-      <View style={{
-        marginHorizontal: 16,
-        marginTop: 12,
-        marginBottom: 4,
-        padding: 14,
-        borderRadius: 16,
-        backgroundColor: isDark ? 'rgba(32,32,36,0.92)' : '#FFFFFF',
-        borderWidth: 1,
-        borderColor: isDark ? 'rgba(255,255,255,0.12)' : '#EADFD8',
-        shadowColor: '#000',
-        shadowOpacity: isDark ? 0.25 : 0.08,
-        shadowRadius: 8,
-        shadowOffset: { width: 0, height: 3 },
-        elevation: 2,
-      }}>
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 8 }}>
-          <View style={{ width: 38, height: 38, borderRadius: 19, backgroundColor: isDark ? 'rgba(246,200,76,0.18)' : '#FFF3D6', alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: isDark ? 'rgba(246,200,76,0.3)' : '#FFE082' }}>
-            <Ionicons name="school" size={18} color={C.gold} />
-          </View>
-          <View style={{ flex: 1 }}>
-            <Text style={{ fontSize: 14, fontWeight: '800', color: C.white }}>UM Student Marketplace</Text>
-            <Text style={{ fontSize: 11, color: C.muted }}>Browse-only guest preview mode</Text>
-          </View>
-          <Pressable
-            accessibilityRole="button"
-            onPress={() => navigation.navigate('Login')}
-            style={{
-              backgroundColor: C.red,
-              paddingHorizontal: 13,
-              paddingVertical: 7,
-              borderRadius: 16,
-            }}
-          >
-            <Text style={{ fontSize: 12, fontWeight: '800', color: '#FFFFFF' }}>Sign In ›</Text>
-          </Pressable>
-        </View>
-        <Text style={{ fontSize: 12, color: C.cream, lineHeight: 18, marginBottom: 10 }}>
-          Sign in with your @umindanao.edu.ph student email to message sellers, place orders, and post items.
-        </Text>
-        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingTop: 8, borderTopWidth: 1, borderTopColor: isDark ? 'rgba(255,255,255,0.08)' : '#F0E7E2' }}>
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
-            <Ionicons name="shield-checkmark" size={13} color="#2E7D32" />
-            <Text style={{ fontSize: 11, color: isDark ? '#81C784' : '#2E7D32', fontWeight: '700' }}>Safe Zones</Text>
-          </View>
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
-            <Ionicons name="checkmark-circle" size={13} color={C.gold} />
-            <Text style={{ fontSize: 11, color: C.gold, fontWeight: '700' }}>UM Verified</Text>
-          </View>
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
-            <Ionicons name="flash" size={13} color={C.red} />
-            <Text style={{ fontSize: 11, color: C.red, fontWeight: '700' }}>Zero Fees</Text>
-          </View>
-        </View>
-      </View>
-    )}
 
     <Card style={s.searchPanel}>
       <Text style={s.searchLabel}>WHAT ARE YOU LOOKING FOR?</Text>
@@ -280,42 +245,6 @@ function BrowseScreen({ navigation }: any) {
     </Card>}
     {error ? <Status state={error} retry={load}/> : loading && !items.length ? <View style={s.loadingBlock}><ActivityIndicator color={C.red}/><Text style={s.muted}>Finding campus listings…</Text></View> : !items.length ? <Status state="No approved listings match your search yet." retry={load}/> : <View style={s.listingGrid}>{items.map(item=><Pressable key={item.id} style={[s.gridItem,{width:(width-43)/2}]} onPress={()=>navigation.navigate('Listing',{id:item.id})}><ItemCard item={item} compact/></Pressable>)}</View>}
   </Page>;
-}
-function GuestThemeFab() {
-  const { mode, setMode } = useTheme();
-  const insets = useSafeAreaInsets();
-  const isDark = mode === 'dark';
-  return (
-    <Pressable
-      accessibilityRole="button"
-      accessibilityLabel={`Switch to ${isDark ? 'light' : 'dark'} mode`}
-      onPress={() => setMode(isDark ? 'light' : 'dark')}
-      style={{
-        position: 'absolute',
-        right: 16,
-        bottom: Math.max(insets.bottom + 12, 18),
-        width: 38,
-        height: 38,
-        borderRadius: 19,
-        backgroundColor: isDark ? 'rgba(32,32,36,0.92)' : 'rgba(255,255,255,0.95)',
-        borderWidth: 1,
-        borderColor: isDark ? 'rgba(255,255,255,0.18)' : '#EADFD8',
-        alignItems: 'center',
-        justifyContent: 'center',
-        elevation: 6,
-        shadowColor: '#000',
-        shadowOpacity: 0.18,
-        shadowRadius: 6,
-        shadowOffset: { width: 0, height: 3 },
-      }}
-    >
-      <Ionicons
-        name={isDark ? 'sunny' : 'moon'}
-        size={18}
-        color={isDark ? '#F6C84C' : '#8A6500'}
-      />
-    </Pressable>
-  );
 }
 async function openNotification(n:Notice,navigation:any,isAdmin:boolean) { try { if(!n.is_read) await account.markNotificationRead(n.id); } catch(e) { Alert.alert('Unable to update notification',errorMessage(e));return; } if(n.related_type==='transaction'&&n.related_id)navigation.navigate('Transaction',{id:n.related_id});else if(n.related_type==='conversation'&&n.related_id)navigation.navigate('Conversation',{id:n.related_id});else if(n.related_type==='item'&&n.related_id)navigation.navigate(isAdmin&&n.type==='listing_review'?'AdminItems':'Listing',isAdmin&&n.type==='listing_review'?{itemId:n.related_id}:{id:n.related_id});else Alert.alert('Activity update',n.message); }
 function ItemCard({ item, compact = false }: { item: Item; compact?: boolean }) {
@@ -431,9 +360,31 @@ function ListingScreen({ route, navigation }: any) {
     ? item.accepted_payment_methods
     : ['cash_on_pickup'];
 
+  const isDark = C.bg === themeTokens.dark.colors.bg;
   return (
     <Page>
       <Heading title={item.title} subtitle={`${item.category || ''} · ${item.course_code || item.department}`} />
+      {item.moderation_status === 'rejected' && (
+        <View style={{
+          backgroundColor: isDark ? 'rgba(230,36,36,0.18)' : '#FFEAE8',
+          borderWidth: 1.5,
+          borderColor: C.red,
+          borderRadius: 14,
+          padding: 14,
+          marginBottom: 14,
+        }}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+            <Ionicons name="alert-circle" size={18} color={C.red} />
+            <Text style={{ fontSize: 14, fontWeight: '800', color: C.red }}>Listing Rejected by Campus Admin</Text>
+          </View>
+          <Text style={{ fontSize: 13, color: C.white, lineHeight: 19 }}>
+            Reason: {item.rejection_reason || 'This listing does not meet UM-Pasa campus guidelines or required details.'}
+          </Text>
+          <Text style={{ fontSize: 11, color: C.muted, marginTop: 6 }}>
+            You can edit or delete this listing to comply with UM Tagum College marketplace policies.
+          </Text>
+        </View>
+      )}
       {item.image ? <Image source={{ uri: imageUrl(item.image) }} style={s.heroImage} /> : null}
       <Card>
         <Text style={s.price}>{money(item.price)}{item.listing_type === 'rent' ? ' / day' : ''}</Text>
@@ -1092,13 +1043,56 @@ function RatingForm({ id, onDone }: any) {
 
 function MyListingsScreen({ navigation }: any) {
   const { width } = useWindowDimensions();
+  const isDark = C.bg === themeTokens.dark.colors.bg;
   const [items, setItems] = useState<Item[]>([]); const [err, setErr] = useState('');
   const load = useCallback(async () => { try { const report=await account.report(); setItems(report.items || []); } catch(e) { setErr(errorMessage(e)); } }, []);
   useFocusEffect(useCallback(() => { load(); }, [load]));
   const markSold = (item: Item) => Alert.alert('Mark this listing sold?', `${item.title} will be removed from the available marketplace.`, [
     {text:'Cancel',style:'cancel'}, {text:'Mark sold',onPress:async()=>{try{await marketplace.markSold(item.id);await load();}catch(e){Alert.alert('Unable to mark sold',errorMessage(e));}}},
   ]);
-  return <Page onRefresh={load}><Heading title="My listings" subtitle="Manage review status and availability."/><Button title="+ Add listing" onPress={() => navigation.navigate('ListingForm', {})} />{err ? <Status state={err} retry={load} /> : !items.length ? <Status state="You do not have listings yet." /> : <View style={s.listingGrid}>{items.map(i=><View key={i.id} style={{width:(width-43)/2}}><Pressable onPress={() => navigation.navigate('Listing', { id: i.id })}><ItemCard item={i} compact /></Pressable><Text numberOfLines={2} style={[s.badge,{color:statusColor(i.moderation_status),marginBottom:4}]}>{i.moderation_status === 'pending' ? 'PENDING REVIEW' : i.moderation_status?.toUpperCase()}</Text>{i.rejection_reason ? <Text numberOfLines={3} style={s.muted}>Reason: {i.rejection_reason}</Text> : null}{i.status==='available'&&i.moderation_status==='approved'&&i.listing_type==='sell'&&<Pressable accessibilityRole="button" onPress={()=>markSold(i)} style={s.soldButton}><Text style={s.soldButtonText}>Mark sold</Text></Pressable>}</View>)}</View>}</Page>;
+  return (
+    <Page onRefresh={load}>
+      <Heading title="My listings" subtitle="Manage review status and availability."/>
+      <Button title="+ Add listing" onPress={() => navigation.navigate('ListingForm', {})} />
+      {err ? <Status state={err} retry={load} /> : !items.length ? <Status state="You do not have listings yet." /> : (
+        <View style={s.listingGrid}>
+          {items.map(i => (
+            <View key={i.id} style={{ width: (width - 43) / 2 }}>
+              <Pressable onPress={() => navigation.navigate('Listing', { id: i.id })}>
+                <ItemCard item={i} compact />
+              </Pressable>
+              <Text numberOfLines={2} style={[s.badge, { color: statusColor(i.moderation_status), marginBottom: 4 }]}>
+                {i.moderation_status === 'pending' ? 'PENDING REVIEW' : i.moderation_status?.toUpperCase()}
+              </Text>
+              {i.moderation_status === 'rejected' && (
+                <View style={{
+                  backgroundColor: isDark ? 'rgba(230,36,36,0.15)' : '#FFEBEE',
+                  borderWidth: 1,
+                  borderColor: C.red,
+                  borderRadius: 8,
+                  padding: 6,
+                  marginBottom: 6,
+                }}>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                    <Ionicons name="alert-circle" size={12} color={C.red} />
+                    <Text style={{ fontSize: 10, fontWeight: '800', color: C.red }}>REJECTED BY ADMIN</Text>
+                  </View>
+                  <Text numberOfLines={3} style={{ fontSize: 11, color: C.white, marginTop: 2 }}>
+                    {i.rejection_reason || 'Guidelines not met'}
+                  </Text>
+                </View>
+              )}
+              {i.status === 'available' && i.moderation_status === 'approved' && i.listing_type === 'sell' && (
+                <Pressable accessibilityRole="button" onPress={() => markSold(i)} style={s.soldButton}>
+                  <Text style={s.soldButtonText}>Mark sold</Text>
+                </Pressable>
+              )}
+            </View>
+          ))}
+        </View>
+      )}
+    </Page>
+  );
 }
 
 function ProfileScreen({ navigation }: any) {
@@ -1691,165 +1685,156 @@ function ConversationScreen({ route, navigation }: any) {
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
         keyboardVerticalOffset={Platform.OS === 'ios' ? headerHeight : 0}
       >
-        {/* Sticky top header: chat partner profile + pinned item context bar */}
-        <View style={{ paddingHorizontal: 14, paddingTop: 8, paddingBottom: 6, backgroundColor: C.bg, borderBottomWidth: 1, borderBottomColor: C.border }}>
-          <Pressable
-            accessibilityRole="button"
-            onPress={() => person && navigation.navigate('ProfileReviews', { id: person.id, name: person.name, role: person.role })}
-            style={{
-              flexDirection: 'row',
-              alignItems: 'center',
-              gap: 12,
-              padding: 10,
-              backgroundColor: C.panel,
-              borderRadius: 14,
-              borderWidth: 1,
-              borderColor: C.border,
-            }}
-          >
-            <View style={{ position: 'relative' }}>
-              <View style={{ width: 42, height: 42, borderRadius: 21, backgroundColor: C.panel2, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: C.border }}>
-                <Text style={{ color: C.gold, fontWeight: '800', fontSize: 16 }}>
-                  {(person?.name || 'U').slice(0, 1).toUpperCase()}
-                </Text>
+        {/* Sticky compact header: Chat partner + Item thumbnail chip + Meetup pill */}
+        <View style={{
+          paddingHorizontal: 12,
+          paddingTop: 8,
+          paddingBottom: 8,
+          backgroundColor: C.panel,
+          borderBottomWidth: 1,
+          borderBottomColor: C.border,
+        }}>
+          {/* Main row: Partner on left, Item on right */}
+          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+            {/* Chat Partner info */}
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={`View ${person?.name || 'user'} profile and reviews`}
+              onPress={() => person && navigation.navigate('ProfileReviews', { id: person.id, name: person.name, role: person.role })}
+              style={{ flexDirection: 'row', alignItems: 'center', gap: 10, flex: 1, marginRight: 8 }}
+            >
+              <View style={{ position: 'relative' }}>
+                <View style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: C.panel2, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: C.border }}>
+                  <Text style={{ color: C.gold, fontWeight: '800', fontSize: 16 }}>
+                    {(person?.name || 'U').slice(0, 1).toUpperCase()}
+                  </Text>
+                </View>
+                <View style={{ position: 'absolute', bottom: 0, right: 0, width: 11, height: 11, borderRadius: 5.5, backgroundColor: '#2E7D32', borderWidth: 2, borderColor: isDark ? '#202024' : '#FFFFFF' }} />
               </View>
-              {/* Online indicator */}
-              <View style={{ position: 'absolute', bottom: 0, right: 0, width: 12, height: 12, borderRadius: 6, backgroundColor: '#2E7D32', borderWidth: 2, borderColor: isDark ? '#202024' : '#FFFFFF' }} />
-            </View>
-            <View style={{ flex: 1 }}>
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
-                <Text style={[s.cardTitle, { color: C.white, fontSize: 15 }]}>{person?.name || 'Conversation'}</Text>
-                <Ionicons name="checkmark-circle" size={15} color={C.red} />
+              <View style={{ flex: 1 }}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
+                  <Text numberOfLines={1} style={{ fontSize: 14.5, fontWeight: '800', color: C.white, maxWidth: 140 }}>
+                    {person?.name || 'Conversation'}
+                  </Text>
+                  <Ionicons name="checkmark-circle" size={14} color={C.red} />
+                </View>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 1 }}>
+                  <Text numberOfLines={1} style={{ fontSize: 11.5, color: C.muted }}>
+                    {person?.role === 'admin' ? 'Campus Admin' : 'UMTC Student'}
+                  </Text>
+                  <Text style={{ fontSize: 11, color: C.gold, fontWeight: '700' }}>★ 5.0</Text>
+                  <Text style={{ fontSize: 11, color: C.gold, fontWeight: '700' }}>· Reviews ›</Text>
+                </View>
               </View>
-              <Text numberOfLines={1} style={[s.muted, { fontSize: 12 }]}>
-                {person?.role === 'admin' ? 'Campus Admin' : 'UM Student'} · UM Matina ★ 5.0
-              </Text>
-            </View>
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
-              <Text style={{ fontSize: 11, color: C.gold, fontWeight: '700' }}>Reviews</Text>
-              <Ionicons name="chevron-forward" size={16} color={C.gold} />
-            </View>
-          </Pressable>
+            </Pressable>
 
-          {/* Top item preview strip (Mockup 2) */}
-          {c?.item && (
-            <View style={{
-              marginTop: 8,
-              padding: 10,
-              backgroundColor: C.panel,
-              borderRadius: 12,
-              borderWidth: 1,
-              borderColor: C.border,
-            }}>
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+            {/* Pinned Item Chip (Right side) */}
+            {c?.item && (
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel={`View listing ${c.item.title}`}
+                onPress={() => navigation.navigate('Listing', { id: c.item?.id })}
+                style={{
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  gap: 8,
+                  backgroundColor: C.panel2,
+                  paddingHorizontal: 8,
+                  paddingVertical: 5,
+                  borderRadius: 10,
+                  borderWidth: 1,
+                  borderColor: C.border,
+                  maxWidth: 145,
+                }}
+              >
                 {c.item.image ? (
-                  <Image source={{ uri: imageUrl(c.item.image) }} style={{ width: 44, height: 44, borderRadius: 8, backgroundColor: C.panel2 }} resizeMode="cover" />
+                  <Image source={{ uri: imageUrl(c.item.image) }} style={{ width: 30, height: 30, borderRadius: 6, backgroundColor: C.bg }} resizeMode="cover" />
                 ) : (
-                  <View style={{ width: 44, height: 44, borderRadius: 8, backgroundColor: C.panel2, alignItems: 'center', justifyContent: 'center' }}>
-                    <Ionicons name="cube-outline" size={20} color={C.muted} />
+                  <View style={{ width: 30, height: 30, borderRadius: 6, backgroundColor: C.bg, alignItems: 'center', justifyContent: 'center' }}>
+                    <Ionicons name="cube-outline" size={16} color={C.muted} />
                   </View>
                 )}
-                <View style={{ flex: 1 }}>
-                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                    <Text numberOfLines={1} style={{ fontSize: 14, fontWeight: '800', color: C.white, flex: 1 }}>
-                      {c.item.title}
-                    </Text>
-                    <View style={{ paddingHorizontal: 6, paddingVertical: 2, borderRadius: 8, backgroundColor: isDark ? 'rgba(246,200,76,0.18)' : '#FFF3D6' }}>
-                      <Text style={{ fontSize: 10, fontWeight: '800', color: C.gold, textTransform: 'capitalize' }}>
-                        {c.item.status || 'Active'}
-                      </Text>
-                    </View>
-                  </View>
-                  <Text style={{ fontSize: 14, fontWeight: '900', color: isDark ? '#FF6B6B' : C.red, marginTop: 2 }}>
+                <View style={{ flexShrink: 1 }}>
+                  <Text numberOfLines={1} style={{ fontSize: 11, fontWeight: '700', color: C.white }}>
+                    {c.item.title}
+                  </Text>
+                  <Text numberOfLines={1} style={{ fontSize: 11.5, fontWeight: '900', color: isDark ? '#FF6B6B' : C.red }}>
                     {money(c.item.price)}
                   </Text>
                 </View>
-                <Pressable
-                  accessibilityRole="button"
-                  onPress={() => navigation.navigate('Listing', { id: c.item?.id })}
-                  style={{
-                    paddingHorizontal: 12,
-                    paddingVertical: 6,
-                    borderRadius: 8,
-                    borderWidth: 1,
-                    borderColor: C.border,
-                    backgroundColor: C.panel2,
-                  }}
-                >
-                  <Text style={{ fontSize: 12, fontWeight: '700', color: C.white }}>View</Text>
-                </Pressable>
-              </View>
+                <Ionicons name="chevron-forward" size={13} color={C.muted} />
+              </Pressable>
+            )}
+          </View>
 
-              {/* Meetup summary row underneath item */}
+          {/* Slim meetup summary row underneath */}
+          {(() => {
+            const latest = [...(c?.messages || [])].reverse().find((m: any) => m.type === 'meetup_proposal');
+            const hasMeetup = !!(latest?.meetup_location && latest?.meetup_time);
+            return (
               <View style={{
                 flexDirection: 'row',
                 alignItems: 'center',
                 justifyContent: 'space-between',
                 marginTop: 8,
-                paddingTop: 8,
+                paddingTop: 6,
                 borderTopWidth: 1,
-                borderTopColor: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.05)',
+                borderTopColor: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)',
               }}>
-                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, flex: 1 }}>
-                  <Ionicons name="calendar-outline" size={14} color={C.gold} />
-                  <Text numberOfLines={1} style={{ fontSize: 12, color: C.cream, fontWeight: '600' }}>
-                    {(() => {
-                      const latest = [...(c.messages || [])].reverse().find((m: any) => m.type === 'meetup_proposal');
-                      if (latest?.meetup_location && latest?.meetup_time) {
-                        return `${latest.meetup_location} · ${formatPhilippineDateTime(latest.meetup_time)}`;
-                      }
-                      return 'No meetup scheduled yet';
-                    })()}
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, flex: 1, marginRight: 8 }}>
+                  <Ionicons name="location-outline" size={14} color={hasMeetup ? C.red : C.gold} />
+                  <Text numberOfLines={1} style={{ fontSize: 11.5, color: C.cream, fontWeight: '600', flex: 1 }}>
+                    {hasMeetup
+                      ? `${latest.meetup_location} · ${formatPhilippineDateTime(latest.meetup_time)}`
+                      : 'No meetup scheduled yet'}
                   </Text>
                 </View>
-                <Pressable onPress={() => setShowPropose(prev => !prev)}>
-                  <Text style={{ fontSize: 12, fontWeight: '700', color: isDark ? C.gold : C.red }}>
-                    {showPropose ? 'Close' : 'Update'}
+                <Pressable
+                  accessibilityRole="button"
+                  onPress={() => setShowPropose(prev => !prev)}
+                  hitSlop={6}
+                  style={{
+                    paddingHorizontal: 9,
+                    paddingVertical: 3,
+                    borderRadius: 6,
+                    backgroundColor: showPropose ? (isDark ? 'rgba(255,255,255,0.1)' : '#E0D6CE') : (isDark ? 'rgba(246,200,76,0.15)' : '#FFF3D6'),
+                  }}
+                >
+                  <Text style={{ fontSize: 11, fontWeight: '800', color: isDark ? C.gold : C.red }}>
+                    {showPropose ? 'Close' : (hasMeetup ? 'Reschedule' : 'Propose')}
                   </Text>
                 </Pressable>
               </View>
-            </View>
-          )}
+            );
+          })()}
 
-          {/* Collapsible Meetup proposal toggle when no item is attached */}
-          {!c?.item && (
-            <Pressable
-              accessibilityRole="button"
-              onPress={() => setShowPropose(prev => !prev)}
-              style={{
-                flexDirection: 'row',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                backgroundColor: C.panel2,
-                borderRadius: 12,
-                borderWidth: 1,
-                borderColor: showPropose ? C.gold : C.border,
-                paddingHorizontal: 12,
-                paddingVertical: 9,
-                marginTop: 8,
-              }}
-            >
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                <Ionicons name="calendar-outline" size={16} color={C.gold} />
-                <Text style={{ fontWeight: '700', fontSize: 13, color: C.white }}>
-                  {showPropose ? 'Hide meetup proposal form' : 'Propose a meetup'}
-                </Text>
-              </View>
-              <Ionicons name={showPropose ? 'chevron-up' : 'chevron-down'} size={18} color={C.muted} />
-            </Pressable>
-          )}
-
+          {/* Collapsible Meetup Propose Form */}
           {showPropose && (
-            <View style={{ marginTop: 8, padding: 14, backgroundColor: C.panel, borderRadius: 14, borderWidth: 1, borderColor: C.border }}>
-              <Text style={[s.section, { fontSize: 14, marginBottom: 8 }]}>Schedule exchange meetup</Text>
-              <Field label="Meetup location" value={location} onChangeText={setLocation} placeholder="e.g. Central Library 2nd Flr, Discussion Area B" />
-              <MeetupTimePicker label="Meetup date & time" value={meetupDate} onChange={setMeetupDate} />
-              <Button
-                title={proposing ? "Sending proposal…" : "Send meetup proposal"}
-                disabled={proposing || !location.trim() || !meetupDate}
-                secondary
-                onPress={propose}
+            <View style={{ marginTop: 8, padding: 12, backgroundColor: C.bg, borderRadius: 12, borderWidth: 1, borderColor: C.border }}>
+              <Text style={[s.section, { fontSize: 13, marginBottom: 6 }]}>Schedule UMTC Safe Exchange</Text>
+              <Field
+                label="Meetup campus spot"
+                value={location}
+                onChangeText={setLocation}
+                placeholder="e.g. Visayan Library Study Zone or Main Canteen"
               />
+              <MeetupTimePicker label="Meetup date & time" value={meetupDate} onChange={setMeetupDate} />
+              <View style={{ flexDirection: 'row', gap: 8, marginTop: 4 }}>
+                <View style={{ flex: 1 }}>
+                  <Button
+                    title={proposing ? "Sending proposal…" : "Send Proposal"}
+                    disabled={proposing || !location.trim() || !meetupDate}
+                    secondary
+                    onPress={propose}
+                  />
+                </View>
+                <Pressable
+                  onPress={() => setShowPropose(false)}
+                  style={{ paddingHorizontal: 14, justifyContent: 'center', borderRadius: 10, borderWidth: 1, borderColor: C.border }}
+                >
+                  <Text style={{ color: C.muted, fontWeight: '700', fontSize: 13 }}>Cancel</Text>
+                </Pressable>
+              </View>
             </View>
           )}
         </View>
@@ -1933,7 +1918,11 @@ function ConversationScreen({ route, navigation }: any) {
                       <View style={{ flex: 1 }}>
                         <Text style={{ fontSize: 10, fontWeight: '800', color: C.muted, letterSpacing: 0.8 }}>CAMPUS LANDMARK SPOT</Text>
                         <Text style={{ fontSize: 14, fontWeight: '700', color: C.white, marginTop: 1 }}>{m.meetup_location || 'Designated Campus Safe Spot'}</Text>
-                        <Text style={{ fontSize: 11, color: C.cream, marginTop: 1 }}>UM Matina Campus · In-person pass</Text>
+                        <Text style={{ fontSize: 11, color: C.cream, marginTop: 1 }}>
+                          {m.meetup_location?.toLowerCase().includes('visayan') || m.meetup_location?.toLowerCase().includes('engineering') || m.meetup_location?.toLowerCase().includes('gazebo')
+                            ? 'UM Tagum · Visayan Campus · In-person exchange'
+                            : 'UM Tagum · Main (Mabini) Campus · In-person exchange'}
+                        </Text>
                       </View>
                     </View>
 
@@ -2131,13 +2120,15 @@ function ConversationScreen({ route, navigation }: any) {
             accessibilityRole="button"
             onPress={() => {
               Alert.alert(
-                'Select UM Safe Exchange Spot',
-                'Pick an official campus location monitored by campus marshals:',
+                'UM Tagum College Safe Spots',
+                'Choose a monitored campus exchange location at UMTC:',
                 [
-                  { text: 'Central Library, 2nd Flr, Discussion Area B', onPress: () => { setLocation('Central Library, 2nd Flr, Discussion Area B'); setShowPropose(true); } },
-                  { text: 'CCE Atrium Safe Handoff Zone', onPress: () => { setLocation('CCE Atrium Safe Handoff Zone'); setShowPropose(true); } },
-                  { text: 'Engineering Complex Lobby (Gate 2)', onPress: () => { setLocation('Engineering Complex Lobby (Gate 2)'); setShowPropose(true); } },
-                  { text: 'Student Center & Gym Safe Station', onPress: () => { setLocation('Student Center & Gym Safe Station'); setShowPropose(true); } },
+                  { text: '🏫 [Main] Main Library & Learning Center', onPress: () => { setLocation('Main Campus Library & Learning Center'); setShowPropose(true); } },
+                  { text: '🍽️ [Main] Main Canteen (Mabini)', onPress: () => { setLocation('Main Campus Canteen (Mabini)'); setShowPropose(true); } },
+                  { text: '🏀 [Main] Main Gym & Admin Lobby', onPress: () => { setLocation('Main Gym / Admin & Registrar Lobby'); setShowPropose(true); } },
+                  { text: '💻 [Visayan] Engineering & IT Labs Lobby', onPress: () => { setLocation('Engineering & IT Labs Bldg Lobby (Visayan)'); setShowPropose(true); } },
+                  { text: '📚 [Visayan] Visayan Library Study Zone', onPress: () => { setLocation('Visayan Campus Library Study Zone'); setShowPropose(true); } },
+                  { text: '🌿 [Visayan] Visayan Canteen & Gazebo', onPress: () => { setLocation('Visayan Campus Canteen & Gazebo'); setShowPropose(true); } },
                   { text: 'Cancel', style: 'cancel' },
                 ]
               );
@@ -2311,7 +2302,7 @@ function AdminScreen({ navigation }: any) {
             <Text style={{ fontSize: 11, fontWeight: '800', color: C.red }}>UM-Pasa Admin</Text>
           </View>
           <View style={{ paddingHorizontal: 9, paddingVertical: 3, borderRadius: 12, backgroundColor: C.panel2, borderWidth: 1, borderColor: C.border }}>
-            <Text style={{ fontSize: 11, fontWeight: '700', color: C.cream }}>UM Matina Campus</Text>
+            <Text style={{ fontSize: 11, fontWeight: '700', color: C.cream }}>UM Tagum College</Text>
           </View>
         </View>
         <Heading title="Admin Overview" subtitle="Campus marketplace operations & moderation queue." />
@@ -2509,7 +2500,26 @@ function AdminItemsScreen({route}:any) {
   const isDark = C.bg === themeTokens.dark.colors.bg;
   const load=useCallback(async()=>{setBusy(true);try{setRows(await admin.items());setErr('')}catch(e){setErr(errorMessage(e))}finally{setBusy(false)}},[]);
   useEffect(()=>{load()},[load]);
-  const moderate=async(id:string,a:'approve'|'reject',reason?:string)=>{try{await admin.moderate(id,a,reason);setRejectionTarget(null);setRejectionReason('');await load()}catch(e){Alert.alert('Moderation failed',errorMessage(e))}};
+  const moderate=async(id:string,a:'approve'|'reject',reason?:string)=>{
+    if (a === 'reject' && !reason?.trim()) {
+      Alert.alert('Reason required', 'Please provide a clear rejection reason so the student understands what to correct.');
+      return;
+    }
+    try {
+      await admin.moderate(id, a, reason);
+      setRejectionTarget(null);
+      setRejectionReason('');
+      await load();
+      Alert.alert(
+        a === 'approve' ? 'Listing approved' : 'Listing rejected',
+        a === 'approve'
+          ? 'The listing is now active on the campus marketplace.'
+          : `The seller was notified with reason: "${reason}".`
+      );
+    } catch(e) {
+      Alert.alert('Moderation failed',errorMessage(e));
+    }
+  };
   const pending=rows.filter((item)=>item.moderation_status==='pending');
   return <Page onRefresh={load} refreshing={busy}><Heading title="Listing review" subtitle={`${pending.length} listing${pending.length===1?'':'s'} awaiting a decision.`}/>{err?<Status state={err} retry={load}/>:busy?<ActivityIndicator color={C.red}/>:!pending.length?<Status state="No listings to review."/>:pending.map(i=><Card key={i.id}>
     <Pressable accessibilityRole="button" onPress={()=>setExpandedId(expandedId===i.id?null:i.id)}><View style={s.rowBetween}><View style={{flex:1}}><Text style={s.cardTitle}>{i.title}</Text><Text style={s.muted}>{i.user?.name||'UM student'} · {i.category} · {money(i.price)}</Text></View><View style={{alignItems:'flex-end'}}><Text style={[s.badge,{color:C.gold}]}>PENDING</Text><Ionicons name={expandedId===i.id?'chevron-up':'chevron-down'} size={18} color={C.muted}/></View></View></Pressable>
@@ -2548,9 +2558,60 @@ function AdminItemsScreen({route}:any) {
     </View>
     <View style={[s.row, { marginTop: 4 }]}>
       <Button title="Approve listing" onPress={()=>moderate(i.id,'approve')}/>
-      <Button title="Reject" danger onPress={()=>{setRejectionTarget(rejectionTarget===i.id?null:i.id);setRejectionReason('')}}/>
+      <Button title={rejectionTarget === i.id ? 'Cancel rejection' : 'Reject'} danger onPress={()=>{
+        setRejectionTarget(rejectionTarget===i.id?null:i.id);
+        setRejectionReason('');
+      }}/>
     </View>
-    {rejectionTarget===i.id&&<View style={s.rejectPanel}><Field label="Reason for rejection (required)" value={rejectionReason} onChangeText={setRejectionReason} multiline/><Button title="Send rejection with reason" danger disabled={!rejectionReason.trim()} onPress={()=>moderate(i.id,'reject',rejectionReason.trim())}/></View>}
+    {rejectionTarget===i.id&& (
+      <View style={[s.rejectPanel, { backgroundColor: isDark ? 'rgba(230,36,36,0.1)' : '#FFF5F5', borderWidth: 1, borderColor: C.red, borderRadius: 12, padding: 12, marginTop: 8 }]}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 6 }}>
+          <Ionicons name="alert-circle" size={16} color={C.red} />
+          <Text style={{ fontSize: 13, fontWeight: '800', color: C.red }}>Reason for rejection (required)</Text>
+        </View>
+        <Text style={{ fontSize: 11, color: C.muted, marginBottom: 8 }}>
+          This reason will be sent to the student and displayed on their listing so they can make corrections.
+        </Text>
+        <Text style={{ fontSize: 11, fontWeight: '700', color: C.cream, marginBottom: 6 }}>Quick preset reasons:</Text>
+        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginBottom: 10 }}>
+          {[
+            'Missing clear item photos',
+            'Price exceeds student cap',
+            'Prohibited or non-academic item',
+            'Incomplete course/details',
+            'Duplicate listing',
+          ].map((preset) => (
+            <Pressable
+              key={preset}
+              onPress={() => setRejectionReason(preset)}
+              style={{
+                paddingHorizontal: 8,
+                paddingVertical: 4,
+                borderRadius: 8,
+                backgroundColor: rejectionReason === preset ? C.red : (isDark ? 'rgba(255,255,255,0.08)' : '#EAE0D8'),
+              }}
+            >
+              <Text style={{ fontSize: 11, fontWeight: '700', color: rejectionReason === preset ? '#FFFFFF' : C.white }}>
+                {preset}
+              </Text>
+            </Pressable>
+          ))}
+        </View>
+        <Field
+          label="Custom or edited reason"
+          value={rejectionReason}
+          onChangeText={setRejectionReason}
+          placeholder="e.g. Please provide a photo of the actual item showing condition."
+          multiline
+        />
+        <Button
+          title={!rejectionReason.trim() ? "Enter a reason to reject" : "Send rejection with reason"}
+          danger
+          disabled={!rejectionReason.trim()}
+          onPress={()=>moderate(i.id,'reject',rejectionReason.trim())}
+        />
+      </View>
+    )}
     </>}
   </Card>)}</Page>;
 }
@@ -2607,15 +2668,14 @@ function TabsRoot() {
         tabBarInactiveTintColor: C.muted,
         tabBarLabelStyle: {
           fontWeight: '700',
-          fontSize: isAdmin ? 9.5 : 10.5,
-          letterSpacing: -0.3,
-          marginHorizontal: -2,
+          fontSize: 10.5,
+          letterSpacing: -0.2,
         },
         tabBarAllowFontScaling: false,
         tabBarIcon: ({ color, size, focused }) => (
           <Ionicons
             name={focused ? activeIcons[route.name] : inactiveIcons[route.name]}
-            size={isAdmin ? 21 : size}
+            size={size}
             color={color}
           />
         ),
@@ -2624,9 +2684,9 @@ function TabsRoot() {
       <Tabs.Screen name="Home" component={DashboardScreen} />
       <Tabs.Screen name="Browse" component={BrowseScreen} />
       <Tabs.Screen name="Messages" component={MessagesScreen} />
-      <Tabs.Screen name="Transactions" component={TransactionsScreen} />
-      <Tabs.Screen name="Profile" component={ProfileScreen} />
+      {!isAdmin && <Tabs.Screen name="Transactions" component={TransactionsScreen} />}
       {isAdmin && <Tabs.Screen name="Admin" component={AdminScreen} />}
+      <Tabs.Screen name="Profile" component={ProfileScreen} />
     </Tabs.Navigator>
   );
 }
@@ -2646,6 +2706,7 @@ function AppStack({ authenticated, isAdmin }: { authenticated: boolean; isAdmin:
       <Stack.Screen name="ListingForm" component={ListingFormScreen} options={{title:'Manage listing'}}/>
       <Stack.Screen name="MyListings" component={MyListingsScreen} options={{title:'My listings'}}/>
       <Stack.Screen name="Transaction" component={TransactionScreen} options={{title:'Transaction'}}/>
+      <Stack.Screen name="Transactions" component={isAdmin ? AdminTransactionsScreen : TransactionsScreen} options={{title: isAdmin ? 'All transactions' : 'Transactions'}}/>
       <Stack.Screen name="Notifications" component={NotificationsScreen} options={{title:'Activity updates'}}/>
       <Stack.Screen name="Conversation" component={ConversationScreen} options={{title:'Messages'}}/>
       <Stack.Screen name="ProfileReviews" component={ProfileReviewsScreen} options={{title:'Reviews'}}/>

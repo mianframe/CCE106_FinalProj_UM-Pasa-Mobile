@@ -68,7 +68,7 @@ function AuthLayout({
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ flex: 1 }}>
         <ScrollView contentContainerStyle={s.page} keyboardShouldPersistTaps="handled">
           <Image source={require('../../assets/UMPASALOGO.png')} style={s.logo} resizeMode="contain" />
-          <Text style={s.tagline}>ACADEMIC RESOURCE MARKETPLACE</Text>
+          <Text style={s.tagline}>UM TAGUM COLLEGE · ACADEMIC MARKETPLACE</Text>
           <Text style={s.title}>{title}</Text>
           <Text style={s.subtitle}>{subtitle}</Text>
           {children}
@@ -151,7 +151,7 @@ export function LoginScreen({ navigation }: any) {
   const handleGoogleWorkspace = () => {
     Alert.alert(
       'UM Institutional Google Account',
-      'University of Mindanao student emails are powered by Google Workspace for Education (@umindanao.edu.ph).\n\n• For in-app access, enter your student email credentials below.\n• Need to verify your inbox or reset your password on Gmail?',
+      'University of Mindanao Tagum College student emails are powered by Google Workspace for Education (@umindanao.edu.ph).\n\n• For in-app access, enter your student email credentials below.\n• Need to verify your inbox or reset your password on Gmail?',
       [
         {
           text: 'Auto-fill @umindanao',

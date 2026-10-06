@@ -145,3 +145,40 @@ Items that cannot be statically validated in code and require verification on ph
   - Open the same conversation on two physical devices simultaneously and confirm message bubbles appear within 1 second without manual pull-to-refresh.
 - [ ] **Camera / Media Library Permissions:**
   - Confirm iOS and Android permission dialogs appear gracefully when tapping "Upload payment proof" or "Pick listing photo".
+
+---
+
+## 6. Recent Polish & Campus Alignment Updates (October 2026)
+
+1. **Admin Bottom Navigation Cleanup:**
+   - Removed redundant `Transactions` tab from bottom navigation bar for admin users.
+   - Both user roles now have exactly 5 balanced tabs:
+     * **Student:** `Home`, `Browse`, `Messages`, `Transactions`, `Profile`
+     * **Admin:** `Home`, `Browse`, `Messages`, `Admin`, `Profile`
+   - Tab label font size unified to `10.5` with clean letter spacing; no truncation or squishing.
+   - Admin access to transactions remains fully accessible via `Admin Overview -> All Transactions & Escrow`.
+
+2. **Mandatory Listing Rejection Reason & Seller Feedback:**
+   - In `AdminItemsScreen`: Admins can pick from 5 quick preset rejection reasons (*Missing clear photos*, *Price exceeds student rate*, *Restricted/non-academic item*, *Incomplete course/details*, *Duplicate listing*) or provide custom feedback. Rejection requires non-empty reason.
+   - In `ListingScreen`: Displays a prominent high-contrast alert banner when `item.moderation_status === 'rejected'`, detailing the exact reason given by the admin and guidance to correct or archive.
+   - In `MyListingsScreen`: Displays a red badge card with the admin rejection reason directly on the rejected item card.
+   - Added `supabase/phase28_rejection_reason_notification.sql` to include the reason directly in automated notification strings.
+
+3. **Complete UM Tagum College (UMTC) Alignment:**
+   - Purged all irrelevant references to "UM Matina" and "Davao City".
+   - Aligned all branding, taglines, and dialogs to **UM Tagum College (UMTC) · Tagum City**.
+   - Mapped campus landmarks and safe meetup exchange zones strictly to UMTC's two campuses:
+     * **Main Campus (Mabini / Magugpo South):** Main Library & Learning Center, Main Canteen (Mabini), Main Gym & Admin/Registrar Lobby.
+     * **Visayan Campus (Visayan Village):** Department of Engineering & IT Labs Building Lobby, Visayan Library Study Zone, Visayan Canteen & Gazebo.
+
+4. **Sleek & Compact Chat Header (`ConversationScreen`):**
+   - Merged separate bulky partner and item cards into a single unified ~70px header row.
+   - Left side: Partner avatar (with online status dot), name, and tappable `Reviews ›` link.
+   - Right side: Pinned item thumbnail, title, price, and chevron link to `Listing`.
+   - Meetup status row: Cleanly displays location, formatted date/time, and a dedicated `Reschedule` / `Propose` pill button with proper flex bounds, completely preventing button overlap.
+
+5. **Browse Screen & Guest Flow Refinement:**
+   - Integrated guest light/dark theme toggle directly into the hero `brandRow` next to `Sign in ›`.
+   - Removed the floating `GuestThemeFab` that was obscuring marketplace list items.
+   - Removed the redundant second guest preview card that was stacked underneath the hero.
+
