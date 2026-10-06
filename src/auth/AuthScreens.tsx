@@ -1,8 +1,10 @@
 import React, { useState } from 'react';
 import {
   ActivityIndicator,
+  Alert,
   Image,
   KeyboardAvoidingView,
+  Linking,
   Platform,
   Pressable,
   ScrollView,
@@ -13,6 +15,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
+import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from './AuthContext';
 import { supabaseConfigured } from '../supabase';
 import { useTheme } from '../theme/ThemeContext';
@@ -91,6 +94,7 @@ function SubmitButton({ title, busy, onPress }: { title: string; busy: boolean; 
 export function LoginScreen({ navigation }: any) {
   const { login, resetPassword, profileError } = useAuth();
   const { mode } = useTheme();
+  const C = themeTokens[mode].colors;
   const s = createStyles(mode);
 
   const [email, setEmail] = useState('');
@@ -144,9 +148,62 @@ export function LoginScreen({ navigation }: any) {
     }
   };
 
+  const handleGoogleWorkspace = () => {
+    Alert.alert(
+      'UM Institutional Google Account',
+      'University of Mindanao student emails are powered by Google Workspace for Education (@umindanao.edu.ph).\n\n• For in-app access, enter your student email credentials below.\n• Need to verify your inbox or reset your password on Gmail?',
+      [
+        {
+          text: 'Auto-fill @umindanao',
+          onPress: () => {
+            if (!email.includes('@')) {
+              setEmail(prev => prev.trim() ? `${prev.trim()}@umindanao.edu.ph` : '@umindanao.edu.ph');
+            }
+          },
+        },
+        {
+          text: 'Open Gmail',
+          onPress: () => Linking.openURL('https://mail.google.com').catch(() => {}),
+        },
+        { text: 'Got it', style: 'cancel' },
+      ]
+    );
+  };
+
   return (
     <AuthLayout title="Welcome to UM-Pasa" subtitle="Sign in to continue to your campus marketplace.">
+      {/* Modern Google Workspace SSO Entrypoint */}
+      <Pressable
+        accessibilityRole="button"
+        onPress={handleGoogleWorkspace}
+        style={s.googleButton}
+      >
+        <View style={s.googleIconCircle}>
+          <Ionicons name="logo-google" size={17} color="#EA4335" />
+        </View>
+        <View style={{ flex: 1 }}>
+          <Text style={s.googleButtonTitle}>Sign in with UM Google Account</Text>
+          <Text style={s.googleButtonSub}>Institutional @umindanao.edu.ph Workspace</Text>
+        </View>
+        <Ionicons name="chevron-forward" size={16} color={C.cream} />
+      </Pressable>
+
+      <View style={s.dividerRow}>
+        <View style={s.dividerLine} />
+        <Text style={s.dividerText}>OR SIGN IN WITH EMAIL</Text>
+        <View style={s.dividerLine} />
+      </View>
+
       <AuthField label="UM email" value={email} onChangeText={setEmail} keyboardType="email-address" autoCapitalize="none" />
+      {email.length > 0 && !email.includes('@') && (
+        <Pressable
+          onPress={() => setEmail(`${email.trim()}@umindanao.edu.ph`)}
+          style={s.emailChip}
+        >
+          <Ionicons name="sparkles" size={12} color={C.gold} />
+          <Text style={s.emailChipText}>Tap to add @umindanao.edu.ph</Text>
+        </Pressable>
+      )}
       <AuthField label="Password" value={password} onChangeText={setPassword} secureTextEntry autoCapitalize="none" />
       {!supabaseConfigured && profileError ? <Text style={s.error}>{profileError}</Text> : null}
       {error ? <Text accessibilityRole="alert" style={s.error}>{error}</Text> : null}
@@ -182,6 +239,7 @@ export function LoginScreen({ navigation }: any) {
 export function RegisterScreen({ navigation }: any) {
   const { register, profileError } = useAuth();
   const { mode } = useTheme();
+  const C = themeTokens[mode].colors;
   const s = createStyles(mode);
 
   const [fullName, setFullName] = useState('');
@@ -239,6 +297,15 @@ export function RegisterScreen({ navigation }: any) {
       <AuthField label="Full name" value={fullName} onChangeText={setFullName} />
       <AuthField label="Student number (optional)" value={studentNumber} onChangeText={setStudentNumber} autoCapitalize="characters" />
       <AuthField label="UM email" value={email} onChangeText={setEmail} keyboardType="email-address" autoCapitalize="none" />
+      {email.length > 0 && !email.includes('@') && (
+        <Pressable
+          onPress={() => setEmail(`${email.trim()}@umindanao.edu.ph`)}
+          style={s.emailChip}
+        >
+          <Ionicons name="sparkles" size={12} color={C.gold} />
+          <Text style={s.emailChipText}>Tap to add @umindanao.edu.ph</Text>
+        </Pressable>
+      )}
       <AuthField label="Password (8 characters minimum)" value={password} onChangeText={setPassword} secureTextEntry autoCapitalize="none" />
       <AuthField label="Confirm password" value={confirm} onChangeText={setConfirm} secureTextEntry autoCapitalize="none" />
       {!supabaseConfigured && profileError ? <Text style={s.error}>{profileError}</Text> : null}
@@ -303,6 +370,78 @@ function createStyles(mode: ThemeMode) {
     },
     forgotTitle: { color: C.gold, fontSize: 14, fontWeight: '800', marginBottom: 4 },
     forgotText: { color: C.muted, fontSize: 12, lineHeight: 18, marginBottom: 12 },
+    googleButton: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 12,
+      padding: 12,
+      borderRadius: 14,
+      backgroundColor: C.panel,
+      borderWidth: 1,
+      borderColor: C.border,
+      marginBottom: 16,
+      shadowColor: '#000',
+      shadowOpacity: isDark ? 0.2 : 0.06,
+      shadowRadius: 6,
+      shadowOffset: { width: 0, height: 2 },
+      elevation: 2,
+    },
+    googleIconCircle: {
+      width: 36,
+      height: 36,
+      borderRadius: 18,
+      backgroundColor: isDark ? 'rgba(255,255,255,0.08)' : '#FFFFFF',
+      alignItems: 'center',
+      justifyContent: 'center',
+      borderWidth: 1,
+      borderColor: isDark ? 'rgba(255,255,255,0.1)' : '#EAE0D8',
+    },
+    googleButtonTitle: {
+      color: C.white,
+      fontWeight: '800',
+      fontSize: 13,
+    },
+    googleButtonSub: {
+      color: C.muted,
+      fontSize: 11,
+      marginTop: 2,
+    },
+    dividerRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 10,
+      marginBottom: 16,
+    },
+    dividerLine: {
+      flex: 1,
+      height: 1,
+      backgroundColor: C.border,
+    },
+    dividerText: {
+      color: C.muted,
+      fontSize: 10,
+      fontWeight: '800',
+      letterSpacing: 1,
+    },
+    emailChip: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 6,
+      alignSelf: 'flex-start',
+      backgroundColor: isDark ? 'rgba(246,200,76,0.15)' : '#FFF3D6',
+      borderWidth: 1,
+      borderColor: isDark ? 'rgba(246,200,76,0.3)' : '#FFE082',
+      borderRadius: 12,
+      paddingHorizontal: 10,
+      paddingVertical: 5,
+      marginTop: -4,
+      marginBottom: 12,
+    },
+    emailChipText: {
+      color: isDark ? C.gold : '#8A6500',
+      fontSize: 11,
+      fontWeight: '800',
+    },
     note: { textAlign: 'center', color: C.muted, fontSize: 12, lineHeight: 18, marginTop: 16 },
     error: { color: isDark ? '#ff8c82' : C.red, fontSize: 14, marginBottom: 12 },
     success: { color: C.green, fontSize: 14, lineHeight: 20, marginBottom: 12 },
