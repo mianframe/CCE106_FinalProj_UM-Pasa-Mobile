@@ -14,6 +14,8 @@ import {
   parseWebDateTimeLocal,
   toWebDateTimeLocalString,
 } from '../../utils/datetime';
+import { useTheme } from '../../theme/ThemeContext';
+import { themeTokens, type ThemeMode } from '../../theme/tokens';
 
 // Conditionally import DateTimePicker on native platforms to prevent web bundle errors
 let DateTimePicker: any = null;
@@ -38,6 +40,10 @@ export function MeetupTimePicker({
   onChange,
   disabled = false,
 }: MeetupTimePickerProps) {
+  const { mode } = useTheme();
+  const C = themeTokens[mode].colors;
+  const styles = createStyles(mode);
+
   // iOS modal state
   const [iosModalVisible, setIosModalVisible] = useState(false);
   const [tempIosDate, setTempIosDate] = useState<Date>(new Date());
@@ -60,27 +66,22 @@ export function MeetupTimePicker({
             return;
           }
 
-          // Step 2: Open Time Picker on Android using selected date
+          // Step 2: Open Time Picker on Android with the selected date as base
           DateTimePickerAndroid.open({
             value: selectedDate,
             mode: 'time',
             is24Hour: false,
-            onChange: (timeEvent: any, finalDateTime?: Date) => {
-              if (timeEvent.type === 'dismissed' || !finalDateTime) {
-                // Cancelled during time picking: do not leave a half-set value
+            onChange: (timeEvent: any, selectedTime?: Date) => {
+              if (timeEvent.type === 'dismissed' || !selectedTime) {
+                // Cancelled during time picking: do not commit
                 return;
               }
 
-              // Combine the selected date (Y-M-D) with selected time (H:M)
-              const combined = new Date(
-                selectedDate.getFullYear(),
-                selectedDate.getMonth(),
-                selectedDate.getDate(),
-                finalDateTime.getHours(),
-                finalDateTime.getMinutes(),
-                0,
-                0
-              );
+              const combined = new Date(selectedDate);
+              combined.setHours(selectedTime.getHours());
+              combined.setMinutes(selectedTime.getMinutes());
+              combined.setSeconds(0);
+              combined.setMilliseconds(0);
 
               if (combined.getTime() <= Date.now()) {
                 Alert.alert(
@@ -138,9 +139,9 @@ export function MeetupTimePicker({
             onChange(parsed);
           }}
           style={{
-            backgroundColor: '#1f1f23',
-            color: '#ffffff',
-            border: '1px solid rgba(255,255,255,0.18)',
+            backgroundColor: C.input,
+            color: C.white,
+            border: `1px solid ${C.border}`,
             borderRadius: 11,
             padding: '10px 12px',
             fontSize: 14,
@@ -173,12 +174,12 @@ export function MeetupTimePicker({
         ]}
       >
         <View style={styles.triggerContent}>
-          <Ionicons name="calendar-outline" size={18} color="#f6c84c" style={styles.icon} />
+          <Ionicons name="calendar-outline" size={18} color={C.gold} style={styles.icon} />
           <Text style={[styles.triggerText, !value && styles.placeholderText]}>
             {value ? formatPhilippineDateTime(value) : 'Select meetup date & time'}
           </Text>
         </View>
-        <Ionicons name="chevron-forward" size={16} color="#716469" />
+        <Ionicons name="chevron-forward" size={16} color={C.muted} />
       </Pressable>
 
       {/* iOS Modal Picker */}
@@ -204,8 +205,8 @@ export function MeetupTimePicker({
                 mode="datetime"
                 display="spinner"
                 minimumDate={new Date()}
-                textColor="#ffffff"
-                themeVariant="dark"
+                textColor={C.white}
+                themeVariant={mode}
                 onChange={(_event: any, newDate?: Date) => {
                   if (newDate) setTempIosDate(newDate);
                 }}
@@ -235,104 +236,108 @@ export function MeetupTimePicker({
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    marginBottom: 12,
-  },
-  label: {
-    color: '#f1dcc0',
-    fontWeight: '700',
-    fontSize: 13,
-    marginBottom: 6,
-  },
-  triggerButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    backgroundColor: '#1f1f23',
-    borderColor: 'rgba(255,255,255,0.18)',
-    borderWidth: 1,
-    borderRadius: 11,
-    paddingHorizontal: 12,
-    paddingVertical: 12,
-    minHeight: 46,
-  },
-  triggerContent: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    flex: 1,
-  },
-  icon: {
-    marginRight: 8,
-  },
-  triggerText: {
-    color: '#ffffff',
-    fontSize: 14,
-    fontWeight: '600',
-  },
-  placeholderText: {
-    color: '#817b7a',
-    fontWeight: '400',
-  },
-  helperText: {
-    color: '#f6c84c',
-    fontSize: 12,
-    marginTop: 4,
-  },
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.65)',
-    justifyContent: 'flex-end',
-    padding: 16,
-  },
-  iosModalSheet: {
-    backgroundColor: '#202024',
-    borderRadius: 20,
-    padding: 18,
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.13)',
-  },
-  modalHeader: {
-    marginBottom: 10,
-    alignItems: 'center',
-  },
-  modalTitle: {
-    color: '#ffffff',
-    fontSize: 16,
-    fontWeight: '800',
-  },
-  modalSubtitle: {
-    color: '#b8aaa0',
-    fontSize: 12,
-    marginTop: 2,
-  },
-  modalActions: {
-    marginTop: 14,
-    gap: 8,
-  },
-  confirmButton: {
-    backgroundColor: '#e62424',
-    borderRadius: 12,
-    paddingVertical: 14,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  confirmButtonText: {
-    color: '#ffffff',
-    fontSize: 14,
-    fontWeight: '800',
-  },
-  cancelButton: {
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.2)',
-    paddingVertical: 12,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  cancelButtonText: {
-    color: '#f1dcc0',
-    fontSize: 13,
-    fontWeight: '700',
-  },
-});
+function createStyles(mode: ThemeMode) {
+  const C = themeTokens[mode].colors;
+
+  return StyleSheet.create({
+    container: {
+      marginBottom: 12,
+    },
+    label: {
+      color: C.cream,
+      fontWeight: '700',
+      fontSize: 13,
+      marginBottom: 6,
+    },
+    triggerButton: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      backgroundColor: C.input,
+      borderColor: C.border,
+      borderWidth: 1,
+      borderRadius: 11,
+      paddingHorizontal: 12,
+      paddingVertical: 12,
+      minHeight: 46,
+    },
+    triggerContent: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      flex: 1,
+    },
+    icon: {
+      marginRight: 8,
+    },
+    triggerText: {
+      color: C.white,
+      fontSize: 14,
+      fontWeight: '600',
+    },
+    placeholderText: {
+      color: C.muted,
+      fontWeight: '400',
+    },
+    helperText: {
+      color: C.gold,
+      fontSize: 12,
+      marginTop: 4,
+    },
+    modalOverlay: {
+      flex: 1,
+      backgroundColor: 'rgba(0,0,0,0.65)',
+      justifyContent: 'flex-end',
+      padding: 16,
+    },
+    iosModalSheet: {
+      backgroundColor: C.panel,
+      borderRadius: 20,
+      padding: 18,
+      borderWidth: 1,
+      borderColor: C.border,
+    },
+    modalHeader: {
+      marginBottom: 10,
+      alignItems: 'center',
+    },
+    modalTitle: {
+      color: C.white,
+      fontSize: 16,
+      fontWeight: '800',
+    },
+    modalSubtitle: {
+      color: C.muted,
+      fontSize: 12,
+      marginTop: 2,
+    },
+    modalActions: {
+      marginTop: 14,
+      gap: 8,
+    },
+    confirmButton: {
+      backgroundColor: C.red,
+      borderRadius: 12,
+      paddingVertical: 14,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    confirmButtonText: {
+      color: '#ffffff',
+      fontSize: 14,
+      fontWeight: '800',
+    },
+    cancelButton: {
+      borderRadius: 12,
+      borderWidth: 1,
+      borderColor: C.border,
+      paddingVertical: 12,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    cancelButtonText: {
+      color: C.cream,
+      fontSize: 13,
+      fontWeight: '700',
+    },
+  });
+}

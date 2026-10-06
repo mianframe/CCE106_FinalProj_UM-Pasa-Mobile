@@ -26,12 +26,12 @@ const palettes = {
 const Stack = createNativeStackNavigator<any>(); const Tabs = createBottomTabNavigator<any>();
 
 function Button({ title, onPress, secondary = false, danger = false, disabled = false }: any) {
-  return <Pressable accessibilityRole="button" disabled={disabled} onPress={onPress} style={[s.buttonShell, secondary && s.buttonSecondary, danger && s.buttonDanger, disabled && { opacity: .55 }]}><LinearGradient colors={secondary ? ['rgba(255,255,255,.12)','rgba(255,255,255,.035)'] : danger ? ['#a61111','#650606'] : ['#f23b31','#b70201','#790101']} start={{x:0,y:0}} end={{x:1,y:1}} style={s.button}><Text style={[s.buttonText, secondary && { color: C.gold }]}>{title}</Text></LinearGradient></Pressable>;
+  return <Pressable accessibilityRole="button" disabled={disabled} onPress={onPress} style={[s.buttonShell, secondary && s.buttonSecondary, danger && s.buttonDanger, disabled && { opacity: .55 }]}><LinearGradient colors={secondary ? (C.bg === themeTokens.dark.colors.bg ? ['rgba(255,255,255,.12)','rgba(255,255,255,.035)'] : ['#FFF4EC','#FFEFE5']) : danger ? ['#a61111','#650606'] : ['#f23b31','#b70201','#790101']} start={{x:0,y:0}} end={{x:1,y:1}} style={s.button}><Text style={[s.buttonText, secondary && { color: C.gold }]}>{title}</Text></LinearGradient></Pressable>;
 }
 function Field({ label, value, onChangeText, placeholder, multiline, secureTextEntry, keyboardType, autoCapitalize = 'sentences', onSubmitEditing }: any) {
-  return <View style={s.fieldWrap}><Text style={s.label}>{label}</Text><TextInput value={value} onChangeText={onChangeText} placeholder={placeholder || label} placeholderTextColor="#817b7a" multiline={multiline} secureTextEntry={secureTextEntry} keyboardType={keyboardType} autoCapitalize={autoCapitalize} onSubmitEditing={onSubmitEditing} style={[s.field, multiline && { minHeight: 100, textAlignVertical: 'top' }]} /></View>;
+  return <View style={s.fieldWrap}><Text style={s.label}>{label}</Text><TextInput value={value} onChangeText={onChangeText} placeholder={placeholder || label} placeholderTextColor={C.muted} multiline={multiline} secureTextEntry={secureTextEntry} keyboardType={keyboardType} autoCapitalize={autoCapitalize} onSubmitEditing={onSubmitEditing} style={[s.field, multiline && { minHeight: 100, textAlignVertical: 'top' }]} /></View>;
 }
-function Choice({ label, selected, onPress }: any) { return <Pressable onPress={onPress} style={[s.chip, selected && s.chipSelected]}><Text style={[s.chipText, selected && { color: '#b42318' }]}>{label}</Text></Pressable>; }
+function Choice({ label, selected, onPress }: any) { return <Pressable onPress={onPress} style={[s.chip, selected && s.chipSelected]}><Text style={[s.chipText, selected && { color: C.bg === themeTokens.dark.colors.bg ? '#ffc270' : C.red }]}>{label}</Text></Pressable>; }
 function Card({ children, style }: any) { return <LinearGradient colors={C.bg===themeTokens.dark.colors.bg?['rgba(255,255,255,.085)','rgba(255,255,255,.025)']:['#ffffff','#fbfcfd']} start={{x:0,y:0}} end={{x:1,y:1}} style={[s.card, style]}>{children}</LinearGradient>; }
 function MiniBars({ title, data=[] }: { title: string; data: { label: string; total: number }[] }) { const max=Math.max(1,...data.map(x=>x.total)); return <Card><Text style={s.section}>{title}</Text>{data.length?data.map(row=><View key={row.label} style={{marginVertical:6}}><View style={s.rowBetween}><Text style={s.muted}>{row.label}</Text><Text style={s.muted}>{row.total}</Text></View><View style={s.barTrack}><View style={[s.barFill,{width:`${Math.max(3,row.total/max*100)}%`}]}/></View></View>):<Text style={s.muted}>No activity yet.</Text>}</Card>; }
 function Page({ children, refreshing, onRefresh, footer, topSafe = false, floatingAction }: any) { return <SafeAreaView edges={topSafe ? ['top','left','right','bottom'] : ['left','right','bottom']} style={s.safe}><KeyboardAvoidingView style={{flex:1}} behavior={Platform.OS==='ios'?'padding':undefined}><ScrollView keyboardShouldPersistTaps="handled" refreshControl={onRefresh ? <RefreshControl refreshing={!!refreshing} onRefresh={onRefresh} tintColor={C.red} /> : undefined} contentContainerStyle={s.page}>{children}{footer && <MobileFooter navigation={footer.navigation}/>}</ScrollView>{floatingAction}</KeyboardAvoidingView></SafeAreaView>; }
@@ -39,7 +39,7 @@ function Heading({ title, subtitle }: any) { return <View style={{ marginBottom:
 function MobileFooter({ navigation }: any) { const { user }=useAuth(); return <LinearGradient colors={['rgba(230,36,36,.13)','rgba(246,200,76,.055)','rgba(255,255,255,.025)']} locations={[0,.52,1]} style={s.footer}><View style={s.footerBrand}><View style={s.footerLogoRing}><Image source={require('./assets/UMPASALOGO.png')} style={s.footerLogo} resizeMode="contain"/></View><View style={{flex:1}}><Text style={s.footerTitle}>UM-Pasa</Text><Text style={s.muted}>University Marketplace</Text></View></View><Text style={s.footerCopy}>Browse items, post listings, request transactions, and track marketplace activity in one student workspace.</Text><View style={s.footerRule}/><Text style={s.eyebrow}>QUICK LINKS</Text><View style={s.footerLinks}><Pressable onPress={()=>navigation.navigate('About')} style={s.footerPill}><Text style={s.footerLinkText}>About Us</Text></Pressable><Pressable onPress={()=>navigation.navigate('Help')} style={s.footerPill}><Text style={s.footerLinkText}>Help & contact</Text></Pressable>{user&&<Pressable onPress={()=>navigation.navigate('Messages')} style={s.footerPill}><Text style={s.footerLinkText}>Inbox</Text></Pressable>}<Pressable onPress={()=>Linking.openURL('mailto:support@umindanao.edu.ph')} style={s.footerPill}><Text style={s.footerLinkText}>Email support</Text></Pressable></View><View style={s.footerRule}/><Text style={s.eyebrow}>QUICK INSTRUCTIONS</Text><Text style={s.footerStep}>01  Browse the marketplace or search by category.</Text><Text style={s.footerStep}>02  Open a listing to request it or message the seller.</Text><Text style={s.footerStep}>03  Confirm your meetup and complete the transaction.</Text><View style={s.footerBottom}><Text style={s.footerCopyright}>UM-Pasa © {new Date().getFullYear()} · University of Mindanao</Text><Text style={s.footerBadge}>University-safe trading</Text></View></LinearGradient>; }
 function Status({ state, retry }: { state: string; retry?: () => void }) { return <Card><Text style={s.body}>{state}</Text>{retry ? <Button title="Try again" secondary onPress={retry} /> : null}</Card>; }
 function money(v: any) { return `₱${Number(v || 0).toLocaleString('en-PH', { minimumFractionDigits: 2 })}`; }
-function statusColor(status: string) { return status === 'approved' || status === 'available' || status === 'completed' ? C.green : status === 'rejected' || status === 'sold' ? '#ff6e65' : C.gold; }
+function statusColor(status: string) { return status === 'approved' || status === 'available' || status === 'completed' ? C.green : status === 'rejected' || status === 'sold' ? (C.bg === themeTokens.dark.colors.bg ? '#ff8c82' : C.red) : C.gold; }
 
 function BrowseScreen({ navigation }: any) {
   const { user } = useAuth();
@@ -625,7 +625,7 @@ function ProfileScreen({ navigation }: any) {
       },
     ]
   );
-  return <Page><Heading title="Profile" subtitle="Account information" />
+  return <Page topSafe><Heading title="Profile" subtitle="Account information" />
     <Card><Text style={s.eyebrow}>{profile?.role.toUpperCase() || 'STUDENT ACCOUNT'}</Text><Text style={s.muted}>{user?.email}</Text></Card>
     <Card><Text style={s.section}>Appearance</Text><Text style={s.muted}>Choose the display theme for UM-Pasa.</Text><View style={s.row}><Choice label="Light" selected={mode==='light'} onPress={()=>setMode('light')}/><Choice label="Dark" selected={mode==='dark'} onPress={()=>setMode('dark')}/></View></Card>
     <Field label="Full name" value={name} onChangeText={setName} />
@@ -754,7 +754,7 @@ function ReportsScreen() {
 
 function AboutScreen() { return <Page><Heading title="About UM-Pasa" subtitle="Academic resource marketplace"/><Card><Text style={s.section}>System purpose</Text><Text style={s.body}>UM-Pasa helps UM students list academic items, request sale or rental transactions, coordinate safely through messages, upload payment proof, and track transactions from request to completion.</Text></Card><Card><Text style={s.section}>Project information</Text><Text style={s.body}>PASA Development Team</Text><Text style={s.muted}>Student developers and system publishers of UM-Pasa.</Text><Text style={s.body}>Institution</Text><Text style={s.muted}>Department of Computing Education · Information Technology Program · UM Tagum College - Visayan Campus</Text></Card><Card><Text style={s.section}>Marketplace principles</Text><Text style={s.body}>Student-centered listings · Traceable transactions · Admin moderated resources · Sale and rental support</Text></Card></Page>; }
 function HelpScreen() { return <Page><Heading title="How UM-Pasa works" subtitle="A simple guide for buyers and sellers."/><Card><Text style={s.section}>For sellers</Text><Text style={s.body}>1. Create a sale or rental listing and choose payment methods.</Text><Text style={s.body}>2. Wait for an administrator to review the listing.</Text><Text style={s.body}>3. Respond to buyer requests. Approve with a meetup place and time, or reject the request.</Text><Text style={s.body}>4. After an approved exchange, mark the transaction completed. For a sale with no open request, mark the approved listing sold from My Listings.</Text><Text style={s.body}>5. Leave a review for the buyer after the exchange is complete.</Text></Card><Card><Text style={s.section}>For buyers</Text><Text style={s.body}>1. Browse the two-column marketplace, search, or use filters.</Text><Text style={s.body}>2. Open a listing and request it using a payment option accepted by the seller.</Text><Text style={s.body}>3. Coordinate the campus meetup in Messages and upload payment proof when applicable.</Text><Text style={s.body}>4. Confirm completion and review the seller.</Text></Card><Card><Text style={s.section}>Listings and safety</Text><Text style={s.body}>Listings need administrator approval before they appear in Browse. Coordinate a safe university meetup. Sale listings with an open transaction must resolve it before they can be manually marked sold.</Text></Card></Page>; }
-function AdminScreen({ navigation }: any) { return <Page><Heading title="Admin" subtitle="Moderation and platform records."/><Button title="Review listings" onPress={()=>navigation.navigate('AdminItems')}/><Button title="Users" secondary onPress={()=>navigation.navigate('AdminUsers')}/><Button title="All transactions" secondary onPress={()=>navigation.navigate('AdminTransactions')}/><Button title="Platform report" secondary onPress={()=>navigation.navigate('AdminReport')}/><Text style={s.muted}>Report totals are summarized from the existing admin records.</Text></Page>; }
+function AdminScreen({ navigation }: any) { return <Page topSafe><Heading title="Admin" subtitle="Moderation and platform records."/><Button title="Review listings" onPress={()=>navigation.navigate('AdminItems')}/><Button title="Users" secondary onPress={()=>navigation.navigate('AdminUsers')}/><Button title="All transactions" secondary onPress={()=>navigation.navigate('AdminTransactions')}/><Button title="Platform report" secondary onPress={()=>navigation.navigate('AdminReport')}/><Text style={s.muted}>Report totals are summarized from the existing admin records.</Text></Page>; }
 function ProfileReviewsScreen({route}:any) { const [reviews,setReviews]=useState<any[]>([]);const [error,setError]=useState('');const [loading,setLoading]=useState(true);const load=useCallback(async()=>{setLoading(true);try{setReviews(await profiles.reviews(route.params.id));setError('')}catch(e){setError(errorMessage(e))}finally{setLoading(false)}},[route.params.id]);useEffect(()=>{load()},[load]);const average=reviews.length?reviews.reduce((sum,r)=>sum+Number(r.rating),0)/reviews.length:0;return <Page onRefresh={load} refreshing={loading}><Heading title={route.params.name||'UM-Pasa user'} subtitle={`${route.params.role==='admin'?'Administrator':'Student'} · reviews from completed exchanges`}/><Card><Text style={s.statNum}>{reviews.length?`${average.toFixed(1)} ★`: '—'}</Text><Text style={s.muted}>{reviews.length} review{reviews.length===1?'':'s'}</Text></Card>{error?<Status state={error} retry={load}/>:loading?<ActivityIndicator color={C.gold}/>:reviews.length?reviews.map(r=><Card key={r.review_id}><View style={s.rowBetween}><Text style={s.cardTitle}>{'★'.repeat(Number(r.rating))}{'☆'.repeat(5-Number(r.rating))}</Text><Text style={s.muted}>{formatPhilippineDate(r.created_at)}</Text></View><Text style={s.body}>{r.comment||'No written comment.'}</Text><Text style={s.muted}>From {r.reviewer_name||'UM-Pasa user'}{r.item_title?` · ${r.item_title}`:''}</Text></Card>):<Status state="This user has no reviews yet."/>}</Page>; }
 function AdminItemsScreen({route}:any) {
   const [rows,setRows]=useState<Item[]>([]); const [err,setErr]=useState(''); const [busy,setBusy]=useState(false);
@@ -789,7 +789,57 @@ function AdminReportScreen() {
   return <Page refreshing={busy} onRefresh={load}><Heading title="Platform report" subtitle="Filter and review platform listings and transactions."/>{err?<Status state={err} retry={load}/>:busy?<ActivityIndicator color={C.gold}/>:<><View style={s.stats}>{Object.entries(summary).map(([k,v])=><Card key={k} style={s.stat}><Text style={s.statNum}>{String(v)}</Text><Text style={s.muted}>{k.replaceAll(/[A-Z]/g,m=>` ${m.toLowerCase()}`)}</Text></Card>)}</View><Text style={s.label}>Status</Text><View style={s.rowWrap}><Choice label="All statuses" selected={!status} onPress={()=>setStatus('')}/>{['pending','approved','rejected','completed'].map(v=><Choice key={v} label={v} selected={status===v} onPress={()=>setStatus(status===v?'':v)}/>)}</View><Text style={s.label}>Type</Text><View style={s.row}><Choice label="Sales and rentals" selected={!type} onPress={()=>setType('')}/><Choice label="Sales" selected={type==='sell'} onPress={()=>setType(type==='sell'?'':'sell')}/><Choice label="Rentals" selected={type==='rent'} onPress={()=>setType(type==='rent'?'':'rent')}/></View><Text style={s.label}>Category</Text><View style={s.rowWrap}><Choice label="All categories" selected={!category} onPress={()=>setCategory('')}/>{categories.map(v=><Choice key={v} label={v} selected={category===v} onPress={()=>setCategory(category===v?'':(v||''))}/>)}</View><Text style={s.label}>Sort</Text><View style={s.rowWrap}>{['newest','oldest','title','status'].map(v=><Choice key={v} label={v} selected={sort===v} onPress={()=>setSort(v)}/>)}</View><Heading title="Listings"/>{reportItems.length?reportItems.map(i=><Card key={i.id}><Text style={s.cardTitle}>{i.title}</Text><Text style={s.muted}>{i.user?.name} · {i.category} · {i.listing_type} · {i.status}/{i.moderation_status}{i.created_at ? ` · ${formatPhilippineDate(i.created_at)}` : ''}</Text><Text style={s.price}>{money(i.price)}</Text></Card>):<Status state="No listings match these report filters."/>}<Heading title="Transactions"/>{reportTxs.length?reportTxs.map(t=><Card key={t.id}><Pressable accessibilityRole="button" onPress={()=>setExpandedTxId(expandedTxId===t.id?null:t.id)}><View style={s.rowBetween}><Text style={[s.cardTitle,{flex:1}]}>{t.item?.title||'Transaction'}</Text><Ionicons name={expandedTxId===t.id?'chevron-up':'chevron-down'} size={18} color={C.muted}/></View><Text style={s.muted}>{t.status} · {t.buyer?.name} / {t.seller?.name}{t.created_at ? ` · ${formatPhilippineDate(t.created_at)}` : ''}</Text></Pressable>{expandedTxId===t.id&&<TransactionSummary t={t}/>}</Card>):<Status state="No transactions match these report filters."/>}</>}</Page>;
 }
 
-function TabsRoot() { const { user }=useAuth();const insets=useSafeAreaInsets(); const icons:Record<string,any>={Home:'grid-outline',Browse:'search-outline',Messages:'chatbubble-ellipses-outline',Transactions:'swap-horizontal-outline',Profile:'person-circle-outline',Admin:'shield-checkmark-outline'}; return <Tabs.Navigator screenOptions={({route})=>({headerShown:false,tabBarStyle:[s.tabBar,{height:54+Math.max(insets.bottom,8),paddingBottom:Math.max(insets.bottom,8)}],tabBarActiveTintColor:C.gold,tabBarInactiveTintColor:C.muted,tabBarLabelStyle:{fontWeight:'700',fontSize:10},tabBarIcon:({color,size})=><Ionicons name={icons[route.name]} size={size} color={color}/>})}><Tabs.Screen name="Home" component={DashboardScreen}/><Tabs.Screen name="Browse" component={BrowseScreen}/><Tabs.Screen name="Messages" component={MessagesScreen}/><Tabs.Screen name="Transactions" component={TransactionsScreen}/><Tabs.Screen name="Profile" component={ProfileScreen}/>{user?.role==='admin'&&<Tabs.Screen name="Admin" component={AdminScreen}/>}</Tabs.Navigator>; }
+function TabsRoot() {
+  const { user } = useAuth();
+  const insets = useSafeAreaInsets();
+  const isAdmin = user?.role === 'admin';
+  const icons: Record<string, any> = {
+    Home: 'grid-outline',
+    Browse: 'search-outline',
+    Messages: 'chatbubble-ellipses-outline',
+    Transactions: 'swap-horizontal-outline',
+    Profile: 'person-circle-outline',
+    Admin: 'shield-checkmark-outline',
+  };
+  return (
+    <Tabs.Navigator
+      screenOptions={({ route }) => ({
+        headerShown: false,
+        tabBarStyle: [
+          s.tabBar,
+          {
+            height: 56 + Math.max(insets.bottom, 8),
+            paddingBottom: Math.max(insets.bottom, 6),
+            paddingTop: 4,
+          },
+        ],
+        tabBarItemStyle: {
+          paddingHorizontal: 0,
+          paddingVertical: 0,
+        },
+        tabBarActiveTintColor: C.gold,
+        tabBarInactiveTintColor: C.muted,
+        tabBarLabelStyle: {
+          fontWeight: '700',
+          fontSize: isAdmin ? 9.5 : 10.5,
+          letterSpacing: -0.3,
+          marginHorizontal: -2,
+        },
+        tabBarAllowFontScaling: false,
+        tabBarIcon: ({ color, size }) => (
+          <Ionicons name={icons[route.name]} size={isAdmin ? 21 : size} color={color} />
+        ),
+      })}
+    >
+      <Tabs.Screen name="Home" component={DashboardScreen} />
+      <Tabs.Screen name="Browse" component={BrowseScreen} />
+      <Tabs.Screen name="Messages" component={MessagesScreen} />
+      <Tabs.Screen name="Transactions" component={TransactionsScreen} />
+      <Tabs.Screen name="Profile" component={ProfileScreen} />
+      {isAdmin && <Tabs.Screen name="Admin" component={AdminScreen} />}
+    </Tabs.Navigator>
+  );
+}
 function AppStack({ authenticated, isAdmin }: { authenticated: boolean; isAdmin: boolean }) {
   return <Stack.Navigator screenOptions={{headerStyle:{backgroundColor:C.panel},headerTintColor:C.white,headerTitleStyle:{fontWeight:'800',fontSize:15},headerShadowVisible:false,contentStyle:{backgroundColor:C.bg}}}>
     {authenticated
@@ -868,12 +918,12 @@ function createStyles(_tokens?: ThemeTokens) { return StyleSheet.create({
   field:{color:C.white,backgroundColor:C.input,borderColor:C.border,borderWidth:1,borderRadius:11,paddingHorizontal:12,paddingVertical:10,fontSize:14,minHeight:44},
   buttonShell:{borderRadius:14,overflow:'hidden',marginVertical:6,minHeight:48,shadowColor:'#b70201',shadowOpacity:.23,shadowRadius:10,shadowOffset:{width:0,height:5},elevation:3},
   button:{paddingHorizontal:16,paddingVertical:14,alignItems:'center',justifyContent:'center',minHeight:48},
-  buttonSecondary:{borderWidth:1,borderColor:'rgba(246,200,76,.32)',shadowOpacity:0},
+  buttonSecondary:{borderWidth:1,borderColor:C.bg===themeTokens.dark.colors.bg?'rgba(246,200,76,.32)':'rgba(138,101,0,.45)',shadowOpacity:0},
   buttonDanger:{borderColor:'#a61111'},
   buttonText:{color:'#ffffff',fontSize:13,fontWeight:'800',letterSpacing:.1},
   link:{textAlign:'center',color:C.gold,fontWeight:'800',marginTop:18,padding:8},
   authNote:{textAlign:'center',color:C.muted,fontSize:12,lineHeight:18,marginTop:16},
-  error:{color:'#ff8c82',fontSize:14,marginBottom:12},
+  error:{color:C.bg===themeTokens.dark.colors.bg?'#ff8c82':C.red,fontSize:14,marginBottom:12},
   row:{flexDirection:'row',alignItems:'center',gap:8,marginBottom:8},
   rowBetween:{flexDirection:'row',alignItems:'center',justifyContent:'space-between'},
   rowWrap:{flexDirection:'row',flexWrap:'wrap',gap:6,marginBottom:12},
@@ -901,7 +951,7 @@ function createStyles(_tokens?: ThemeTokens) { return StyleSheet.create({
   signInText:{color:C.gold,fontSize:12,fontWeight:'800'},
   heroCopy:{marginTop:23},
   heroKicker:{fontSize:9,color:'#f6c84c',fontWeight:'900',letterSpacing:2.2,marginBottom:8},
-  heroTitle:{color:C.white,fontSize:27,fontWeight:'900',letterSpacing:-.55,lineHeight:33,maxWidth:330},
+  heroTitle:{color:'#ffffff',fontSize:27,fontWeight:'900',letterSpacing:-.55,lineHeight:33,maxWidth:330},
   heroGold:{color:'#ffc270'},
   heroDescription:{fontSize:12,color:'#f1dcc0',lineHeight:18,marginTop:6,marginBottom:8,maxWidth:310},
   heroActions:{flexDirection:'row',alignItems:'center',gap:12,marginTop:17},
@@ -913,7 +963,7 @@ function createStyles(_tokens?: ThemeTokens) { return StyleSheet.create({
   searchInput:{flex:1,minWidth:0,color:C.white,backgroundColor:C.input,borderWidth:1,borderColor:C.border,borderRadius:11,paddingHorizontal:12,paddingVertical:10,fontSize:14,minHeight:44},
   searchButton:{width:48,height:48,borderRadius:13,overflow:'hidden'},
   searchButtonGradient:{flex:1,alignItems:'center',justifyContent:'center'},
-  searchButtonText:{fontSize:11,color:C.white,fontWeight:'900',letterSpacing:.8},
+  searchButtonText:{fontSize:11,color:'#ffffff',fontWeight:'900',letterSpacing:.8},
   searchHint:{color:C.muted,fontSize:11,marginTop:8},
   sectionTop:{flexDirection:'row',alignItems:'flex-end',justifyContent:'space-between',marginBottom:12},
   sectionKicker:{fontSize:9,color:C.gold,fontWeight:'900',letterSpacing:1.8,marginBottom:3},
@@ -940,9 +990,9 @@ function createStyles(_tokens?: ThemeTokens) { return StyleSheet.create({
   priceCompact:{fontSize:14,marginVertical:4},
   notificationFab:{position:'absolute',right:20,bottom:24,width:52,height:52,borderRadius:26,backgroundColor:'#e62424',alignItems:'center',justifyContent:'center',elevation:8,shadowColor:'#7d1111',shadowOpacity:.25,shadowRadius:8,shadowOffset:{width:0,height:4}},
   notificationCount:{position:'absolute',right:-2,top:-3,minWidth:19,height:19,borderRadius:10,backgroundColor:'#f6ad2f',alignItems:'center',justifyContent:'center',borderWidth:2,borderColor:C.panel,paddingHorizontal:3},
-  notificationCountText:{fontSize:9,fontWeight:'900',color:'#ffffff'},
+  notificationCountText:{fontSize:9,fontWeight:'900',color:'#1d1617'},
   soldButton:{paddingVertical:8,paddingHorizontal:8,alignItems:'center',borderRadius:9,backgroundColor:C.dangerSoft,borderWidth:1,borderColor:C.border},
-  soldButtonText:{fontSize:11,fontWeight:'800',color:'#b42318'},
+  soldButtonText:{fontSize:11,fontWeight:'800',color:C.bg===themeTokens.dark.colors.bg?'#ff8c82':C.red},
   adminListingImage:{width:'100%',height:170,borderRadius:11,marginBottom:8,backgroundColor:C.panel2},
   adminPrice:{fontSize:13,fontWeight:'800',color:C.gold,marginBottom:4},
   adminDetails:{padding:10,borderRadius:10,backgroundColor:C.soft,marginTop:7,marginBottom:8},
