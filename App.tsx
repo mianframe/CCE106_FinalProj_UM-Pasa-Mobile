@@ -243,7 +243,20 @@ function ListingScreen({ route, navigation }: any) {
         <Text style={s.body}>{item.description}</Text>
         <Text style={s.muted}>Condition: {item.condition?.replace('_', ' ')}</Text>
         <Text style={s.muted}>Department: {item.department}{item.program ? ` · ${item.program}` : ''}</Text>
-        <Text style={s.muted}>Seller: {item.user?.name}</Text>
+        {item.user ? (
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={`View reviews for ${item.user.name}`}
+            onPress={() => navigation.navigate('ProfileReviews', { id: item.user_id, name: item.user?.name, role: item.user?.role })}
+            style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 5 }}
+          >
+            <Text style={[s.muted, { color: C.gold, fontWeight: '700', marginTop: 0 }]}>Seller: {item.user?.name}</Text>
+            <Ionicons name="star" size={12} color={C.gold} />
+            <Text style={{ fontSize: 12, color: C.gold, fontWeight: '700' }}>Reviews ›</Text>
+          </Pressable>
+        ) : (
+          <Text style={s.muted}>Seller: UM student</Text>
+        )}
         <Text style={s.muted}>Payment: {acceptedMethods.map(v => v.replaceAll('_', ' ')).join(', ')}</Text>
         {item.created_at ? <Text style={s.muted}>Posted: {formatPhilippineDate(item.created_at)}</Text> : null}
         {item.archived_at ? <Text style={s.muted}>Archived listing · transaction history is retained</Text> : null}
@@ -450,10 +463,15 @@ function ListingFormScreen({ route, navigation }: any) {
         mediaTypes: ['images'],
         allowsEditing: true,
         aspect: [4, 3],
-        quality: 0.8,
+        quality: 0.7,
       });
       if (!result.canceled && result.assets && result.assets.length > 0) {
-        setImageUri(result.assets[0].uri);
+        const asset = result.assets[0];
+        if (asset.fileSize && asset.fileSize > 5 * 1024 * 1024) {
+          Alert.alert('Image too large', 'Please select a photo smaller than 5MB.');
+          return;
+        }
+        setImageUri(asset.uri);
       }
     } catch (err) {
       Alert.alert('Unable to pick image', errorMessage(err));
@@ -629,6 +647,8 @@ function TransactionScreen({ route, navigation }: any) {
     try {
       const data = await transactions.get(route.params.id);
       setT(data);
+      if (data.meetup_location) setMeetup((prev: string) => prev || data.meetup_location || '');
+      if (data.meetup_time) setMeetupDate((prev: Date | null) => prev || (data.meetup_time ? new Date(data.meetup_time) : null));
       if (data.payment_proof) {
         getPaymentProofSignedUrl(data.payment_proof).then(setProofUrl).catch(() => setProofUrl(null));
       } else {
@@ -676,11 +696,16 @@ function TransactionScreen({ route, navigation }: any) {
       const result = await ImagePicker.launchImageLibraryAsync({
         mediaTypes: ['images'],
         allowsEditing: true,
-        quality: 0.8,
+        quality: 0.7,
       });
       if (!result.canceled && result.assets && result.assets.length > 0) {
+        const asset = result.assets[0];
+        if (asset.fileSize && asset.fileSize > 5 * 1024 * 1024) {
+          Alert.alert('File too large', 'Please select a receipt photo smaller than 5MB.');
+          return;
+        }
         setUploadingProof(true);
-        await uploadPaymentProof(t.id, result.assets[0].uri);
+        await uploadPaymentProof(t.id, asset.uri);
         await load();
         Alert.alert('Payment proof uploaded', 'The seller can now view and verify your payment proof.');
       }
@@ -710,7 +735,7 @@ function RatingForm({ id, onDone }: any) {
       setSubmitting(false);
     }
   };
-  return <Card><Text style={s.section}>Rate this exchange</Text><View style={s.row}>{[1,2,3,4,5].map(n => <Choice key={n} label={`${n} ★`} selected={rating === n} onPress={() => setRating(n)} />)}</View><Field label="Comment (optional)" value={comment} onChangeText={setComment} multiline /><Button title={submitting ? 'Submitting rating…' : 'Submit rating'} disabled={submitting} onPress={submit} /></Card>;
+  return <Card><Text style={s.section}>Rate this exchange</Text><View style={[s.rowWrap, { gap: 6, marginBottom: 8 }]}>{[1,2,3,4,5].map(n => <Choice key={n} label={`${n} ★`} selected={rating === n} onPress={() => setRating(n)} />)}</View><Field label="Comment (optional)" value={comment} onChangeText={setComment} multiline /><Button title={submitting ? 'Submitting rating…' : 'Submit rating'} disabled={submitting} onPress={submit} /></Card>;
 }
 
 function MyListingsScreen({ navigation }: any) {
@@ -1289,15 +1314,15 @@ function AppStack({ authenticated, isAdmin }: { authenticated: boolean; isAdmin:
       <Stack.Screen name="ListingForm" component={ListingFormScreen} options={{title:'Manage listing'}}/>
       <Stack.Screen name="MyListings" component={MyListingsScreen} options={{title:'My listings'}}/>
       <Stack.Screen name="Transaction" component={TransactionScreen} options={{title:'Transaction'}}/>
-      <Stack.Screen name="Notifications" component={NotificationsScreen}/>
-      <Stack.Screen name="Conversation" component={ConversationScreen}/>
+      <Stack.Screen name="Notifications" component={NotificationsScreen} options={{title:'Activity updates'}}/>
+      <Stack.Screen name="Conversation" component={ConversationScreen} options={{title:'Messages'}}/>
       <Stack.Screen name="ProfileReviews" component={ProfileReviewsScreen} options={{title:'Reviews'}}/>
-      <Stack.Screen name="Reports" component={ReportsScreen}/>
+      <Stack.Screen name="Reports" component={ReportsScreen} options={{title:'My report'}}/>
       {isAdmin&&<>
         <Stack.Screen name="AdminItems" component={AdminItemsScreen} options={{title:'Listing review'}}/>
-        <Stack.Screen name="AdminUsers" component={AdminUsersScreen}/>
-        <Stack.Screen name="AdminTransactions" component={AdminTransactionsScreen}/>
-        <Stack.Screen name="AdminReport" component={AdminReportScreen}/>
+        <Stack.Screen name="AdminUsers" component={AdminUsersScreen} options={{title:'User directory'}}/>
+        <Stack.Screen name="AdminTransactions" component={AdminTransactionsScreen} options={{title:'All transactions'}}/>
+        <Stack.Screen name="AdminReport" component={AdminReportScreen} options={{title:'Platform report'}}/>
       </>}
     </>}
   </Stack.Navigator>;
