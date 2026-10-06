@@ -1,8 +1,9 @@
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { NavigationContainer, useFocusEffect } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
+import { useHeaderHeight } from '@react-navigation/elements';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, Alert, Appearance, Image, KeyboardAvoidingView, Linking, Modal, Platform, Pressable, RefreshControl, ScrollView, StatusBar, StyleSheet, Text, TextInput, View, useWindowDimensions } from 'react-native';
+import { ActivityIndicator, Alert, Appearance, Image, Keyboard, KeyboardAvoidingView, Linking, Modal, Platform, Pressable, RefreshControl, ScrollView, StatusBar, StyleSheet, Text, TextInput, View, useWindowDimensions } from 'react-native';
 import { SafeAreaProvider, SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
@@ -649,18 +650,37 @@ function NotificationsScreen({navigation}:any) { const {user}=useAuth();const [i
 function MessagesScreen({ navigation }: any) { const {user}=useAuth();const [rows,setRows]=useState<Conversation[]>([]); const [err,setErr]=useState(''); const load=useCallback(async()=>{try{setRows(await messaging.list())}catch(e){setErr(errorMessage(e))}},[]); useFocusEffect(useCallback(()=>{load()},[load])); return <Page topSafe onRefresh={load}><Heading title="Messages" subtitle="Conversations with buyers and sellers." />{err?<Status state={err} retry={load}/>:!rows.length?<Status state="No conversations yet. Message a seller from a listing."/>:rows.map(c=>{const person=c.starter_id===user?.id?c.recipient:c.starter;return <Pressable key={c.id} onPress={()=>navigation.navigate('Conversation',{id:c.id})}><Card><View style={{flexDirection:'row',alignItems:'center',gap:12}}><View style={{width:44,height:44,borderRadius:22,backgroundColor:C.panel2,alignItems:'center',justifyContent:'center'}}><Text style={{fontWeight:'800',color:C.gold}}>{(person?.name||'U').slice(0,1).toUpperCase()}</Text></View><View style={{flex:1}}><Text style={s.cardTitle}>{person?.name||'UM-Pasa user'}</Text><Text numberOfLines={1} style={s.muted}>{c.latest_message?.body || c.item?.title || 'Open conversation'}</Text></View><Ionicons name="chevron-forward" size={18} color={C.muted}/></View>{c.item?.title?<Text style={[s.eyebrow,{marginTop:9}]}>ABOUT · {c.item.title}</Text>:null}</Card></Pressable>})}</Page>; }
 function ConversationScreen({ route, navigation }: any) {
   const { user } = useAuth();
+  const headerHeight = useHeaderHeight();
+  const insets = useSafeAreaInsets();
+  const isDark = C.bg === themeTokens.dark.colors.bg;
   const [c, setC] = useState<Conversation>();
   const [body, setBody] = useState('');
   const [location, setLocation] = useState('');
   const [meetupDate, setMeetupDate] = useState<Date | null>(null);
   const [sending, setSending] = useState(false);
   const [proposing, setProposing] = useState(false);
+  const [showPropose, setShowPropose] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
+  const [keyboardVisible, setKeyboardVisible] = useState(false);
+  const scrollRef = useRef<ScrollView>(null);
+
+  useEffect(() => {
+    const showSub = Keyboard.addListener(Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow', () => setKeyboardVisible(true));
+    const hideSub = Keyboard.addListener(Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide', () => setKeyboardVisible(false));
+    return () => {
+      showSub.remove();
+      hideSub.remove();
+    };
+  }, []);
 
   const load = useCallback(async () => {
     try {
+      setRefreshing(true);
       setC(await messaging.get(route.params.id));
     } catch(e) {
       Alert.alert('Unable to load conversation', errorMessage(e));
+    } finally {
+      setRefreshing(false);
     }
   }, [route.params.id]);
 
@@ -687,13 +707,24 @@ function ConversationScreen({ route, navigation }: any) {
     };
   }, [load, route.params.id]);
 
+  useEffect(() => {
+    if (c?.messages?.length) {
+      const timer = setTimeout(() => {
+        scrollRef.current?.scrollToEnd({ animated: true });
+      }, 100);
+      return () => clearTimeout(timer);
+    }
+  }, [c?.messages?.length]);
+
   const send = async () => {
     if (!body.trim() || sending) return;
+    const textToSend = body.trim();
     setSending(true);
     try {
-      await messaging.send({ conversation_id: route.params.id, body: body.trim() });
+      await messaging.send({ conversation_id: route.params.id, body: textToSend });
       setBody('');
       await load();
+      setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 100);
     } catch(e) {
       Alert.alert('Message not sent', errorMessage(e));
     } finally {
@@ -725,6 +756,7 @@ function ConversationScreen({ route, navigation }: any) {
       });
       setLocation('');
       setMeetupDate(null);
+      setShowPropose(false);
       await load();
       Alert.alert('Proposal sent', 'The other participant was notified.');
     } catch(e) {
@@ -734,8 +766,260 @@ function ConversationScreen({ route, navigation }: any) {
     }
   };
 
-  const person=c?(c.starter_id===user?.id?c.recipient:c.starter):undefined;
-  return <Page onRefresh={load}><Pressable accessibilityRole="button" onPress={()=>person&&navigation.navigate('ProfileReviews',{id:person.id,name:person.name,role:person.role})} style={{flexDirection:'row',alignItems:'center',gap:12,paddingVertical:8,marginBottom:10}}><View style={{width:42,height:42,borderRadius:21,backgroundColor:C.panel2,alignItems:'center',justifyContent:'center'}}><Text style={{color:C.gold,fontWeight:'800'}}>{(person?.name||'U').slice(0,1).toUpperCase()}</Text></View><View style={{flex:1}}><Text style={s.cardTitle}>{person?.name||'Conversation'}</Text><Text style={s.muted}>{c?.item?.title||'Tap to view profile and reviews'}</Text></View><Ionicons name="chevron-forward" size={18} color={C.muted}/></Pressable>{(c?.messages||[]).map(m=>{const mine=m.user_id===user?.id;const meta=m.meta as any;return <View key={m.id} style={{alignSelf:mine?'flex-end':'flex-start',maxWidth:'86%',backgroundColor:mine?(C.bg===themeTokens.dark.colors.bg?'#76211d':'#a92720'):C.panel2,borderRadius:18,borderBottomRightRadius:mine?5:18,borderBottomLeftRadius:mine?18:5,padding:12,marginVertical:4}}><Text style={{fontSize:12,fontWeight:'700',color:mine?'#ffe4bf':C.gold,marginBottom:4}}>{m.type==='meetup_proposal'?'Meetup proposal':m.type==='system'?'UM-Pasa update':m.user?.name||'Participant'}</Text><Text style={{color:mine?'#fff':C.white,fontSize:15,lineHeight:21}}>{m.body||''}</Text>{m.meetup_location?<Text style={{color:mine?'#fff':C.white,marginTop:6}}>📍 {m.meetup_location}</Text>:null}{m.meetup_time?<Text style={{color:mine?'#fff':C.white,marginTop:3}}>🗓 {formatPhilippineDateTime(m.meetup_time)}</Text>:null}<Text style={{color:mine?'#ffe4bf':C.muted,fontSize:10,marginTop:6,alignSelf:'flex-end'}}>{formatPhilippineTime(m.created_at)}</Text>{m.type==='meetup_proposal'&&m.proposal_status==='pending'&&!mine?<View style={[s.row,{marginTop:8}]}><Button title="Accept" onPress={async()=>{try{await messaging.respond(m.id,true);await load()}catch(e){Alert.alert('Unable to accept',errorMessage(e))}}}/><Button title="Decline" danger onPress={async()=>{try{await messaging.respond(m.id,false);await load()}catch(e){Alert.alert('Unable to decline',errorMessage(e))}}}/></View>:null}{m.proposal_status&&m.proposal_status!=='pending'?<Text style={{color:mine?'#ffe4bf':C.muted,marginTop:5}}>Proposal {m.proposal_status}</Text>:null}{m.proposal_status==='accepted'&&meta?.transaction_id?<Pressable onPress={()=>navigation.navigate('Transaction',{id:meta.transaction_id})}><Text style={{color:mine?'#fff':'#b42318',fontWeight:'800',marginTop:7}}>View transaction schedule ›</Text></Pressable>:null}</View>})}<View style={{flexDirection:'row',alignItems:'flex-end',gap:8,marginTop:12}}><TextInput value={body} onChangeText={setBody} placeholder="Message…" placeholderTextColor={C.muted} multiline style={{flex:1,minHeight:44,maxHeight:110,borderWidth:1,borderColor:C.border,borderRadius:22,paddingHorizontal:16,paddingVertical:11,color:C.white,backgroundColor:C.panel}}/><Pressable accessibilityRole="button" onPress={send} disabled={sending||!body.trim()} style={{width:46,height:46,borderRadius:23,alignItems:'center',justifyContent:'center',backgroundColor:C.red,opacity:(sending||!body.trim())?.55:1}}><Ionicons name="send" size={19} color="#fff"/></Pressable></View><Card style={{marginTop:16}}><Text style={s.section}>Propose a meetup</Text><Field label="Meetup location" value={location} onChangeText={setLocation} placeholder="e.g. Student Center"/><MeetupTimePicker label="Meetup date & time" value={meetupDate} onChange={setMeetupDate}/><Button title={proposing ? "Sending proposal…" : "Send meetup proposal"} disabled={proposing || !location.trim() || !meetupDate} secondary onPress={propose}/></Card></Page>;
+  const person = c ? (c.starter_id === user?.id ? c.recipient : c.starter) : undefined;
+
+  return (
+    <SafeAreaView edges={['left', 'right']} style={{ flex: 1, backgroundColor: C.bg }}>
+      <KeyboardAvoidingView
+        style={{ flex: 1 }}
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? headerHeight : 0}
+      >
+        {/* Sticky top header: chat partner profile + collapsible meetup proposal */}
+        <View style={{ paddingHorizontal: 14, paddingTop: 8, paddingBottom: 6, backgroundColor: C.bg, borderBottomWidth: 1, borderBottomColor: C.border }}>
+          <Pressable
+            accessibilityRole="button"
+            onPress={() => person && navigation.navigate('ProfileReviews', { id: person.id, name: person.name, role: person.role })}
+            style={{
+              flexDirection: 'row',
+              alignItems: 'center',
+              gap: 12,
+              padding: 10,
+              backgroundColor: C.panel,
+              borderRadius: 14,
+              borderWidth: 1,
+              borderColor: C.border,
+            }}
+          >
+            <View style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: C.panel2, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: C.border }}>
+              <Text style={{ color: C.gold, fontWeight: '800', fontSize: 16 }}>
+                {(person?.name || 'U').slice(0, 1).toUpperCase()}
+              </Text>
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={[s.cardTitle, { color: C.white, fontSize: 15 }]}>{person?.name || 'Conversation'}</Text>
+              <Text numberOfLines={1} style={[s.muted, { fontSize: 12 }]}>{c?.item?.title || 'Tap to view profile and reviews'}</Text>
+            </View>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+              <Text style={{ fontSize: 11, color: C.gold, fontWeight: '700' }}>Reviews</Text>
+              <Ionicons name="chevron-forward" size={16} color={C.gold} />
+            </View>
+          </Pressable>
+
+          {/* Collapsible Meetup proposal toggle */}
+          <Pressable
+            accessibilityRole="button"
+            onPress={() => setShowPropose(prev => !prev)}
+            style={{
+              flexDirection: 'row',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              backgroundColor: C.panel2,
+              borderRadius: 12,
+              borderWidth: 1,
+              borderColor: showPropose ? C.gold : C.border,
+              paddingHorizontal: 12,
+              paddingVertical: 9,
+              marginTop: 8,
+            }}
+          >
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+              <Ionicons name="calendar-outline" size={16} color={C.gold} />
+              <Text style={{ fontWeight: '700', fontSize: 13, color: C.white }}>
+                {showPropose ? 'Hide meetup proposal form' : 'Propose a meetup'}
+              </Text>
+            </View>
+            <Ionicons name={showPropose ? 'chevron-up' : 'chevron-down'} size={18} color={C.muted} />
+          </Pressable>
+
+          {showPropose && (
+            <View style={{ marginTop: 8, padding: 14, backgroundColor: C.panel, borderRadius: 14, borderWidth: 1, borderColor: C.border }}>
+              <Text style={[s.section, { fontSize: 14, marginBottom: 8 }]}>Schedule exchange meetup</Text>
+              <Field label="Meetup location" value={location} onChangeText={setLocation} placeholder="e.g. Student Center" />
+              <MeetupTimePicker label="Meetup date & time" value={meetupDate} onChange={setMeetupDate} />
+              <Button
+                title={proposing ? "Sending proposal…" : "Send meetup proposal"}
+                disabled={proposing || !location.trim() || !meetupDate}
+                secondary
+                onPress={propose}
+              />
+            </View>
+          )}
+        </View>
+
+        {/* Scrollable messages list */}
+        <ScrollView
+          ref={scrollRef}
+          style={{ flex: 1 }}
+          contentContainerStyle={{ paddingHorizontal: 14, paddingVertical: 12, flexGrow: 1 }}
+          keyboardShouldPersistTaps="handled"
+          onContentSizeChange={() => scrollRef.current?.scrollToEnd({ animated: true })}
+          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={load} tintColor={C.red} />}
+        >
+          {(!c?.messages || c.messages.length === 0) ? (
+            <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', paddingVertical: 40 }}>
+              <Text style={[s.muted, { textAlign: 'center' }]}>No messages yet. Send a message or propose a meetup!</Text>
+            </View>
+          ) : (
+            (c.messages || []).map((m: any) => {
+              const mine = m.user_id === user?.id;
+              const meta = m.meta as any;
+              return (
+                <View
+                  key={m.id}
+                  style={{
+                    alignSelf: mine ? 'flex-end' : 'flex-start',
+                    maxWidth: '85%',
+                    backgroundColor: mine
+                      ? (isDark ? '#8A1F1D' : C.red)
+                      : (isDark ? C.panel2 : '#FFFFFF'),
+                    borderWidth: mine ? 0 : 1,
+                    borderColor: isDark ? 'rgba(255,255,255,0.1)' : '#EADFD8',
+                    borderRadius: 18,
+                    borderBottomRightRadius: mine ? 4 : 18,
+                    borderBottomLeftRadius: mine ? 18 : 4,
+                    padding: 12,
+                    marginVertical: 4,
+                  }}
+                >
+                  <Text
+                    style={{
+                      fontSize: 12,
+                      fontWeight: '700',
+                      color: mine ? '#FFE8D6' : (isDark ? C.gold : C.red),
+                      marginBottom: 4,
+                    }}
+                  >
+                    {m.type === 'meetup_proposal' ? 'Meetup proposal' : m.type === 'system' ? 'UM-Pasa update' : (m.user?.name || 'Participant')}
+                  </Text>
+                  {m.body ? (
+                    <Text style={{ color: mine ? '#FFFFFF' : C.white, fontSize: 15, lineHeight: 21 }}>
+                      {m.body}
+                    </Text>
+                  ) : null}
+                  {m.meetup_location ? (
+                    <Text style={{ color: mine ? '#FFFFFF' : C.white, marginTop: 6, fontWeight: '600' }}>
+                      📍 {m.meetup_location}
+                    </Text>
+                  ) : null}
+                  {m.meetup_time ? (
+                    <Text style={{ color: mine ? '#FFFFFF' : C.white, marginTop: 3, fontWeight: '600' }}>
+                      🗓 {formatPhilippineDateTime(m.meetup_time)}
+                    </Text>
+                  ) : null}
+                  <Text
+                    style={{
+                      color: mine ? '#FFE8D6' : C.muted,
+                      fontSize: 10,
+                      marginTop: 6,
+                      alignSelf: 'flex-end',
+                    }}
+                  >
+                    {formatPhilippineTime(m.created_at)}
+                  </Text>
+                  {m.type === 'meetup_proposal' && m.proposal_status === 'pending' && !mine ? (
+                    <View style={[s.row, { marginTop: 10 }]}>
+                      <Button
+                        title="Accept"
+                        onPress={async () => {
+                          try {
+                            await messaging.respond(m.id, true);
+                            await load();
+                          } catch(e) {
+                            Alert.alert('Unable to accept', errorMessage(e));
+                          }
+                        }}
+                      />
+                      <Button
+                        title="Decline"
+                        danger
+                        onPress={async () => {
+                          try {
+                            await messaging.respond(m.id, false);
+                            await load();
+                          } catch(e) {
+                            Alert.alert('Unable to decline', errorMessage(e));
+                          }
+                        }}
+                      />
+                    </View>
+                  ) : null}
+                  {m.proposal_status && m.proposal_status !== 'pending' ? (
+                    <Text style={{ color: mine ? '#FFE8D6' : C.muted, marginTop: 5, fontWeight: '600', fontSize: 12 }}>
+                      Proposal {m.proposal_status}
+                    </Text>
+                  ) : null}
+                  {m.proposal_status === 'accepted' && meta?.transaction_id ? (
+                    <Pressable onPress={() => navigation.navigate('Transaction', { id: meta.transaction_id })}>
+                      <Text style={{ color: mine ? '#FFE8D6' : (isDark ? C.gold : C.red), fontWeight: '800', marginTop: 7, textDecorationLine: 'underline' }}>
+                        View transaction schedule ›
+                      </Text>
+                    </Pressable>
+                  ) : null}
+                </View>
+              );
+            })
+          )}
+        </ScrollView>
+
+        {/* Pinned composer */}
+        <View
+          style={{
+            paddingHorizontal: 14,
+            paddingTop: 8,
+            paddingBottom: keyboardVisible ? 8 : Math.max(insets.bottom, 10),
+            backgroundColor: C.panel,
+            borderTopWidth: 1,
+            borderTopColor: C.border,
+          }}
+        >
+          <View style={{ flexDirection: 'row', alignItems: 'flex-end', gap: 8 }}>
+            <TextInput
+              value={body}
+              onChangeText={setBody}
+              placeholder="Message…"
+              placeholderTextColor={C.muted}
+              multiline
+              style={{
+                flex: 1,
+                minHeight: 42,
+                maxHeight: 110,
+                borderWidth: 1,
+                borderColor: C.border,
+                borderRadius: 21,
+                paddingHorizontal: 16,
+                paddingTop: 10,
+                paddingBottom: 10,
+                color: C.white,
+                backgroundColor: C.bg,
+                fontSize: 15,
+              }}
+            />
+            <Pressable
+              accessibilityRole="button"
+              onPress={send}
+              disabled={sending || !body.trim()}
+              style={{
+                width: 44,
+                height: 44,
+                borderRadius: 22,
+                alignItems: 'center',
+                justifyContent: 'center',
+                backgroundColor: C.red,
+                opacity: (sending || !body.trim()) ? 0.5 : 1,
+              }}
+            >
+              {sending ? (
+                <ActivityIndicator size="small" color="#fff" />
+              ) : (
+                <Ionicons name="send" size={18} color="#fff" />
+              )}
+            </Pressable>
+          </View>
+        </View>
+      </KeyboardAvoidingView>
+    </SafeAreaView>
+  );
 }
 
 function ReportsScreen() {
