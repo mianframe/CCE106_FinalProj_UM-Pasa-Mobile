@@ -25,6 +25,7 @@ const palettes = {
   dark: themeTokens.dark.colors,
 };
 const Stack = createNativeStackNavigator<any>(); const Tabs = createBottomTabNavigator<any>();
+const SHOW_DELETE_ACCOUNT = false;
 
 function Button({ title, onPress, secondary = false, danger = false, disabled = false }: any) {
   return <Pressable accessibilityRole="button" disabled={disabled} onPress={onPress} style={[s.buttonShell, secondary && s.buttonSecondary, danger && s.buttonDanger, disabled && { opacity: .55 }]}><LinearGradient colors={secondary ? (C.bg === themeTokens.dark.colors.bg ? ['rgba(255,255,255,.12)','rgba(255,255,255,.035)'] : ['#FFF4EC','#FFEFE5']) : danger ? ['#a61111','#650606'] : ['#f23b31','#b70201','#790101']} start={{x:0,y:0}} end={{x:1,y:1}} style={s.button}><Text style={[s.buttonText, secondary && { color: C.gold }]}>{title}</Text></LinearGradient></Pressable>;
@@ -67,7 +68,7 @@ function BrowseScreen({ navigation }: any) {
   const programsForDepartment = filters.department ? programs[filters.department] || [] : Array.from(new Set(Object.values(programs).flat()));
   const selectedCount = ['condition', 'department', 'program', 'course_code'].filter((key) => filters[key]).length;
   const toggle = (key: string, value: any) => setFilter(key, filters[key] === value ? undefined : value);
-  return <Page refreshing={loading} onRefresh={load} footer={{navigation}} topSafe={!!user} floatingAction={<NotificationFab navigation={navigation}/> }>
+  return <Page refreshing={loading} onRefresh={load} footer={{navigation}} topSafe={!!user} floatingAction={!user ? <GuestThemeFab /> : null}>
     <View style={s.marketHero}>
       <LinearGradient colors={['#55201c', '#2b191a', '#1b1a1e']} start={{x:0,y:0}} end={{x:1,y:1}} style={s.marketHeroGradient}>
         <View style={s.brandRow}>
@@ -103,7 +104,7 @@ function BrowseScreen({ navigation }: any) {
     <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.chipStrip}>
       {['All', ...categories].map((value) => <Choice key={value} label={value} selected={value === 'All' ? !filters.category : filters.category === value} onPress={() => setFilter('category', value === 'All' || filters.category === value ? undefined : value)}/>)}
     </ScrollView>
-    <View style={s.sortRow}><Text style={s.filterLabel}>SORT BY</Text><ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.sortChoices}>{[['Newest','newest'],['Oldest','oldest'],['Price ↑','price_low'],['Price ↓','price_high']].map(([label,value])=><Choice key={value} label={label} selected={filters.sort===value} onPress={()=>setFilter('sort',value)}/>)}</ScrollView></View>
+    <View style={s.sortRow}><Text style={s.filterLabel}>SORT BY</Text><ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.sortChoices}>{[['Newest','newest'],['Oldest','oldest'],['Price ↑','price_low'],['Price ↓','price_high']].map(([label,value])=><Choice key={label} label={label} selected={filters.sort===value} onPress={()=>setFilter('sort',value)}/>)}</ScrollView></View>
 
     <Pressable style={s.filterToggle} onPress={() => setShowFilters(!showFilters)}><View><Text style={s.filterToggleTitle}>More filters {selectedCount ? '· ' + selectedCount + ' selected' : ''}</Text><Text style={s.filterToggleHint}>Condition, program and course</Text></View><Text style={s.filterChevron}>{showFilters ? '−' : '+'}</Text></Pressable>
     {showFilters && <Card style={s.advancedFilters}>
@@ -115,15 +116,41 @@ function BrowseScreen({ navigation }: any) {
     {error ? <Status state={error} retry={load}/> : loading && !items.length ? <View style={s.loadingBlock}><ActivityIndicator color={C.red}/><Text style={s.muted}>Finding campus listings…</Text></View> : !items.length ? <Status state="No approved listings match your search yet." retry={load}/> : <View style={s.listingGrid}>{items.map(item=><Pressable key={item.id} style={[s.gridItem,{width:(width-43)/2}]} onPress={()=>navigation.navigate('Listing',{id:item.id})}><ItemCard item={item} compact/></Pressable>)}</View>}
   </Page>;
 }
-function NotificationFab({ navigation }: any) {
-  const { user } = useAuth();
-  const [unread, setUnread] = useState(0);
-  const load = useCallback(async () => {
-    if (!user) { setUnread(0); return; }
-    try { setUnread((await account.notifications()).filter((notice) => !notice.is_read).length); } catch { setUnread(0); }
-  }, [user]);
-  useFocusEffect(useCallback(() => { load(); }, [load]));
-  return <Pressable accessibilityRole="button" accessibilityLabel={`Notifications${unread ? `, ${unread} unread` : ''}`} onPress={() => navigation.navigate(user ? 'Notifications' : 'Login')} style={s.notificationFab}><Ionicons name="notifications-outline" size={22} color="#ffffff"/>{unread > 0 && <View style={s.notificationCount}><Text style={s.notificationCountText}>{unread > 9 ? '9+' : unread}</Text></View>}</Pressable>;
+function GuestThemeFab() {
+  const { mode, setMode } = useTheme();
+  const insets = useSafeAreaInsets();
+  const isDark = mode === 'dark';
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={`Switch to ${isDark ? 'light' : 'dark'} mode`}
+      onPress={() => setMode(isDark ? 'light' : 'dark')}
+      style={{
+        position: 'absolute',
+        right: 16,
+        bottom: Math.max(insets.bottom + 12, 18),
+        width: 38,
+        height: 38,
+        borderRadius: 19,
+        backgroundColor: isDark ? 'rgba(32,32,36,0.92)' : 'rgba(255,255,255,0.95)',
+        borderWidth: 1,
+        borderColor: isDark ? 'rgba(255,255,255,0.18)' : '#EADFD8',
+        alignItems: 'center',
+        justifyContent: 'center',
+        elevation: 6,
+        shadowColor: '#000',
+        shadowOpacity: 0.18,
+        shadowRadius: 6,
+        shadowOffset: { width: 0, height: 3 },
+      }}
+    >
+      <Ionicons
+        name={isDark ? 'sunny' : 'moon'}
+        size={18}
+        color={isDark ? '#F6C84C' : '#8A6500'}
+      />
+    </Pressable>
+  );
 }
 async function openNotification(n:Notice,navigation:any,isAdmin:boolean) { try { if(!n.is_read) await account.markNotificationRead(n.id); } catch(e) { Alert.alert('Unable to update notification',errorMessage(e));return; } if(n.related_type==='transaction'&&n.related_id)navigation.navigate('Transaction',{id:n.related_id});else if(n.related_type==='conversation'&&n.related_id)navigation.navigate('Conversation',{id:n.related_id});else if(n.related_type==='item'&&n.related_id)navigation.navigate(isAdmin&&n.type==='listing_review'?'AdminItems':'Listing',isAdmin&&n.type==='listing_review'?{itemId:n.related_id}:{id:n.related_id});else Alert.alert('Activity update',n.message); }
 function ItemCard({ item, compact = false }: { item: Item; compact?: boolean }) {
@@ -455,11 +482,133 @@ function ListingFormScreen({ route, navigation }: any) {
 
 function DashboardScreen({ navigation }: any) {
   const {width}=useWindowDimensions();
-  const { user } = useAuth(); const [data, setData] = useState<any>(); const [err, setErr] = useState(''); const load = useCallback(async () => { try { if(user?.role==='admin'){const [users,items,txs]=await Promise.all([admin.users(),admin.items(),admin.transactions()]);const tally=(rows:any[],get:(row:any)=>string|undefined)=>Object.entries(rows.reduce((a:any,r:any)=>{const k=get(r);if(k)a[k]=(a[k]||0)+1;return a},{})).map(([label,total])=>({label,total:Number(total)})).sort((a,b)=>b.total-a.total).slice(0,6);const months=Array.from({length:6},(_,i)=>{const d=new Date();d.setMonth(d.getMonth()-(5-i));return d.toISOString().slice(0,7)});const monthly=months.map(k=>({label:new Date(`${k}-01T12:00:00`).toLocaleString('en',{month:'short'}),total:txs.filter(t=>String(t.created_at||'').slice(0,7)===k).length}));setData({stats:{users:users.length,students:users.filter(u=>u.role==='student').length,transactions:txs.length,completed:txs.filter(t=>t.status==='completed').length,items:items.length,pendingItems:items.filter(i=>i.moderation_status==='pending').length,approvedItems:items.filter(i=>i.moderation_status==='approved').length,rejectedItems:items.filter(i=>i.moderation_status==='rejected').length,activeListings:items.filter(i=>i.status==='available'&&i.moderation_status==='approved').length,rentals:items.filter(i=>i.listing_type==='rent').length,sales:items.filter(i=>i.listing_type==='sell').length},recent_items:items.slice(0,6),charts:{categories:tally(items,i=>i.category),departments:tally(items,i=>i.department),monthly}});}else{const [dashboard,notifications]=await Promise.all([account.dashboard(),account.notifications()]);setData({...dashboard,notifications:notifications.slice(0,5)});} setErr(''); } catch (e) { setErr(errorMessage(e)); } }, [user]); useFocusEffect(useCallback(() => { load(); }, [load]));
-  if (err) return <Page><Status state={err} retry={load} /></Page>; if (!data) return <Page><ActivityIndicator color={C.gold} /></Page>;
+  const { user } = useAuth();
+  const [data, setData] = useState<any>();
+  const [err, setErr] = useState('');
+  const [unreadCount, setUnreadCount] = useState(0);
+
+  const load = useCallback(async () => {
+    try {
+      if (user?.role === 'admin') {
+        const [users, items, txs, notifications] = await Promise.all([
+          admin.users(),
+          admin.items(),
+          admin.transactions(),
+          account.notifications(),
+        ]);
+        setUnreadCount((notifications || []).filter((n: any) => !n.is_read).length);
+        const tally = (rows: any[], get: (row: any) => string | undefined) =>
+          Object.entries(
+            rows.reduce((a: any, r: any) => {
+              const k = get(r);
+              if (k) a[k] = (a[k] || 0) + 1;
+              return a;
+            }, {})
+          )
+            .map(([label, total]) => ({ label, total: Number(total) }))
+            .sort((a, b) => b.total - a.total)
+            .slice(0, 6);
+        const months = Array.from({ length: 6 }, (_, i) => {
+          const d = new Date();
+          d.setMonth(d.getMonth() - (5 - i));
+          return d.toISOString().slice(0, 7);
+        });
+        const monthly = months.map(k => ({
+          label: new Date(`${k}-01T12:00:00`).toLocaleString('en', { month: 'short' }),
+          total: txs.filter(t => String(t.created_at || '').slice(0, 7) === k).length,
+        }));
+        setData({
+          stats: {
+            users: users.length,
+            students: users.filter(u => u.role === 'student').length,
+            transactions: txs.length,
+            completed: txs.filter(t => t.status === 'completed').length,
+            items: items.length,
+            pendingItems: items.filter(i => i.moderation_status === 'pending').length,
+            approvedItems: items.filter(i => i.moderation_status === 'approved').length,
+            rejectedItems: items.filter(i => i.moderation_status === 'rejected').length,
+            activeListings: items.filter(i => i.status === 'available' && i.moderation_status === 'approved').length,
+            rentals: items.filter(i => i.listing_type === 'rent').length,
+            sales: items.filter(i => i.listing_type === 'sell').length,
+          },
+          recent_items: items.slice(0, 6),
+          charts: {
+            categories: tally(items, i => i.category),
+            departments: tally(items, i => i.department),
+            monthly,
+          },
+          notifications: (notifications || []).slice(0, 5),
+        });
+      } else {
+        const [dashboard, notifications] = await Promise.all([
+          account.dashboard(),
+          account.notifications(),
+        ]);
+        setUnreadCount((notifications || []).filter((n: any) => !n.is_read).length);
+        setData({ ...dashboard, notifications: (notifications || []).slice(0, 5) });
+      }
+      setErr('');
+    } catch (e) {
+      setErr(errorMessage(e));
+    }
+  }, [user]);
+
+  useFocusEffect(useCallback(() => { load(); }, [load]));
+  if (err) return <Page><Status state={err} retry={load} /></Page>;
+  if (!data) return <Page><ActivityIndicator color={C.gold} /></Page>;
   const stats = data.stats || {};
   const dashboardTiles = user?.role==='admin' ? [['Users',stats.users],['Students',stats.students],['Items',stats.items],['Pending review',stats.pendingItems],['Transactions',stats.transactions],['Completed',stats.completed]] : [['Listings',stats.total_items],['Pending',stats.pending_listings],['Requests',stats.pending_requests],['Completed',stats.completed_transactions]];
-  return <Page topSafe onRefresh={load}><Heading title={`Hello, ${user?.name?.split(' ')[0] || 'there'}`} subtitle={user?.role === 'admin' ? 'UM-Pasa administration' : 'Your campus marketplace at a glance.'} />{user?.role==='admin'?<Button title={`Review listings${stats.pendingItems?` · ${stats.pendingItems}`:''}`} onPress={()=>navigation.navigate('AdminItems')}/>:<Button title="＋  Add a listing" onPress={()=>navigation.navigate('ListingForm')}/>}<View style={s.stats}>{dashboardTiles.map(([n,v]) => <Card key={String(n)} style={s.stat}><Text style={s.statNum}>{v ?? 0}</Text><Text style={s.muted}>{n}</Text></Card>)}</View><View style={s.rowWrap}>{user?.role==='admin'?<Button title="Admin panel" secondary onPress={()=>navigation.navigate('Admin')}/>:<><Button title="My listings" secondary onPress={() => navigation.navigate('MyListings')} /><Button title="Pending requests" secondary onPress={() => navigation.navigate('Transactions')} /><Button title="My report" secondary onPress={()=>navigation.navigate('Reports')}/></>}<Button title="Notifications" secondary onPress={() => navigation.navigate('Notifications')} /></View>{user?.role==='admin'&&<><MiniBars title="Listings by category" data={data.charts?.categories}/><MiniBars title="Listings by department" data={data.charts?.departments}/><MiniBars title="Monthly transactions" data={data.charts?.monthly}/></>}{user?.role!=='admin'&&data.notifications?.length>0&&<><Heading title="Recent activity"/>{data.notifications.map((n:Notice)=><Pressable key={n.id} accessibilityRole="button" onPress={()=>openNotification(n,navigation,user?.role==='admin')}><Card><View style={s.rowBetween}><Text style={[s.body,{color:n.is_read?C.muted:C.cream,flex:1}]}>{n.message}</Text><Ionicons name="chevron-forward" size={17} color={C.muted}/></View></Card></Pressable>)}</>}<View style={s.sectionTop}><Text style={s.sectionTitle}>Recent listings</Text><Pressable onPress={()=>navigation.navigate('Browse')}><Text style={{color:C.gold,fontWeight:'700'}}>See all ›</Text></Pressable></View><View style={s.listingGrid}>{(data.recent_items || []).map((item: Item) => <Pressable key={item.id} style={[s.gridItem,{width:(width-43)/2}]} onPress={() => navigation.navigate('Listing', { id: item.id })}><ItemCard item={item} compact/></Pressable>)}</View></Page>;
+  return (
+    <Page topSafe onRefresh={load}>
+      <View style={{ flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 18 }}>
+        <View style={{ flex: 1, paddingRight: 12 }}>
+          <Text style={s.heading}>{`Hello, ${user?.name?.split(' ')[0] || 'there'}`}</Text>
+          <Text style={s.subheading}>{user?.role === 'admin' ? 'UM-Pasa administration' : 'Your campus marketplace at a glance.'}</Text>
+        </View>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={`Notifications${unreadCount ? `, ${unreadCount} unread` : ''}`}
+          onPress={() => navigation.navigate('Notifications')}
+          style={{
+            width: 44,
+            height: 44,
+            borderRadius: 22,
+            backgroundColor: C.panel,
+            borderWidth: 1,
+            borderColor: C.border,
+            alignItems: 'center',
+            justifyContent: 'center',
+            position: 'relative',
+          }}
+        >
+          <Ionicons name="notifications-outline" size={22} color={C.white} />
+          {unreadCount > 0 && (
+            <View
+              style={{
+                position: 'absolute',
+                top: -2,
+                right: -2,
+                minWidth: 18,
+                height: 18,
+                borderRadius: 9,
+                backgroundColor: C.red,
+                alignItems: 'center',
+                justifyContent: 'center',
+                paddingHorizontal: 4,
+                borderWidth: 1.5,
+                borderColor: C.bg,
+              }}
+            >
+              <Text style={{ color: '#ffffff', fontSize: 10, fontWeight: '800' }}>
+                {unreadCount > 9 ? '9+' : unreadCount}
+              </Text>
+            </View>
+          )}
+        </Pressable>
+      </View>
+      {user?.role==='admin'?<Button title={`Review listings${stats.pendingItems?` · ${stats.pendingItems}`:''}`} onPress={()=>navigation.navigate('AdminItems')}/>:<Button title="＋  Add a listing" onPress={()=>navigation.navigate('ListingForm')}/>}<View style={s.stats}>{dashboardTiles.map(([n,v]) => <Card key={String(n)} style={s.stat}><Text style={s.statNum}>{v ?? 0}</Text><Text style={s.muted}>{n}</Text></Card>)}</View><View style={s.rowWrap}>{user?.role==='admin'?<Button title="Admin panel" secondary onPress={()=>navigation.navigate('Admin')}/>:<><Button title="My listings" secondary onPress={() => navigation.navigate('MyListings')} /><Button title="Pending requests" secondary onPress={() => navigation.navigate('Transactions')} /><Button title="My report" secondary onPress={()=>navigation.navigate('Reports')}/></>}<Button title="Notifications" secondary onPress={() => navigation.navigate('Notifications')} /></View>{user?.role==='admin'&&<><MiniBars title="Listings by category" data={data.charts?.categories}/><MiniBars title="Listings by department" data={data.charts?.departments}/><MiniBars title="Monthly transactions" data={data.charts?.monthly}/></>}{user?.role!=='admin'&&data.notifications?.length>0&&<><Heading title="Recent activity"/>{data.notifications.map((n:Notice)=><Pressable key={n.id} accessibilityRole="button" onPress={()=>openNotification(n,navigation,user?.role==='admin')}><Card><View style={s.rowBetween}><Text style={[s.body,{color:n.is_read?C.muted:C.cream,flex:1}]}>{n.message}</Text><Ionicons name="chevron-forward" size={17} color={C.muted}/></View></Card></Pressable>)}</>}<View style={s.sectionTop}><Text style={s.sectionTitle}>Recent listings</Text><Pressable onPress={()=>navigation.navigate('Browse')}><Text style={{color:C.gold,fontWeight:'700'}}>See all ›</Text></Pressable></View><View style={s.listingGrid}>{(data.recent_items || []).map((item: Item) => <Pressable key={item.id} style={[s.gridItem,{width:(width-43)/2}]} onPress={() => navigation.navigate('Listing', { id: item.id })}><ItemCard item={item} compact/></Pressable>)}</View>
+    </Page>
+  );
 }
 
 function TransactionsScreen({ navigation }: any) {
@@ -641,7 +790,7 @@ function ProfileScreen({ navigation }: any) {
     <Button title="My activity report" secondary onPress={()=>navigation.navigate('Reports')}/>
     <Button title="Notifications" secondary onPress={()=>navigation.navigate('Notifications')}/>
     <Button title="Sign out" secondary onPress={confirmLogout} />
-    <Button title={deleting ? 'Deleting account…' : 'Delete account'} danger disabled={deleting} onPress={confirmDeleteAccount} />
+    {SHOW_DELETE_ACCOUNT && <Button title={deleting ? 'Deleting account…' : 'Delete account'} danger disabled={deleting} onPress={confirmDeleteAccount} />}
   </Page>;
 }
 
