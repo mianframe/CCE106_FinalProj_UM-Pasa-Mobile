@@ -42,6 +42,36 @@ function MobileFooter({ navigation }: any) { const { user }=useAuth(); return <L
 function Status({ state, retry }: { state: string; retry?: () => void }) { return <Card><Text style={s.body}>{state}</Text>{retry ? <Button title="Try again" secondary onPress={retry} /> : null}</Card>; }
 function money(v: any) { return `₱${Number(v || 0).toLocaleString('en-PH', { minimumFractionDigits: 2 })}`; }
 function statusColor(status: string) { return status === 'approved' || status === 'available' || status === 'completed' ? C.green : status === 'rejected' || status === 'sold' ? (C.bg === themeTokens.dark.colors.bg ? '#ff8c82' : C.red) : C.gold; }
+function StatusPill({ status }: { status: string }) {
+  const sLower = (status || '').toLowerCase();
+  const isDark = C.bg === themeTokens.dark.colors.bg;
+  let bg = isDark ? 'rgba(246, 200, 76, 0.14)' : 'rgba(138, 101, 0, 0.12)';
+  let text = isDark ? '#F6C84C' : '#8A6500';
+  let dot = isDark ? '#F6C84C' : '#8A6500';
+  let label = (status || 'pending').toUpperCase();
+
+  if (sLower === 'approved' || sLower === 'available') {
+    bg = isDark ? 'rgba(74, 222, 128, 0.15)' : 'rgba(22, 101, 52, 0.12)';
+    text = isDark ? '#4ADE80' : '#166534';
+    dot = isDark ? '#4ADE80' : '#166534';
+  } else if (sLower === 'completed') {
+    bg = isDark ? 'rgba(56, 189, 248, 0.15)' : 'rgba(3, 105, 161, 0.12)';
+    text = isDark ? '#38BDF8' : '#0369A1';
+    dot = isDark ? '#38BDF8' : '#0369A1';
+  } else if (sLower === 'rejected' || sLower === 'sold') {
+    bg = isDark ? 'rgba(239, 68, 68, 0.15)' : 'rgba(183, 2, 1, 0.12)';
+    text = isDark ? '#F87171' : '#B70201';
+    dot = isDark ? '#F87171' : '#B70201';
+  }
+
+  return (
+    <View style={[s.statusPill, { backgroundColor: bg }]}>
+      <View style={[s.statusDot, { backgroundColor: dot }]} />
+      <Text style={[s.statusPillText, { color: text }]}>{label}</Text>
+    </View>
+  );
+}
+
 
 function BrowseScreen({ navigation }: any) {
   const { user } = useAuth();
@@ -91,7 +121,30 @@ function BrowseScreen({ navigation }: any) {
 
     <Card style={s.searchPanel}>
       <Text style={s.searchLabel}>WHAT ARE YOU LOOKING FOR?</Text>
-      <View style={s.searchRow}><TextInput value={q} onChangeText={setQ} onSubmitEditing={load} returnKeyType="search" placeholder="Search items or course code" placeholderTextColor="#9b9290" style={s.searchInput}/><Pressable accessibilityRole="button" onPress={load} style={s.searchButton}><LinearGradient colors={['#ef4035','#b70201','#810101']} style={s.searchButtonGradient}><Text style={s.searchButtonText}>GO</Text></LinearGradient></Pressable></View>
+      <View style={s.searchRow}>
+        <View style={s.searchInputWrap}>
+          <Ionicons name="search-outline" size={18} color={C.muted} style={{ marginLeft: 12 }} />
+          <TextInput
+            value={q}
+            onChangeText={setQ}
+            onSubmitEditing={load}
+            returnKeyType="search"
+            placeholder="Search items or course code"
+            placeholderTextColor={C.muted}
+            style={s.searchInput}
+          />
+          {q ? (
+            <Pressable onPress={() => setQ('')} hitSlop={8} style={{ paddingRight: 12 }}>
+              <Ionicons name="close-circle" size={17} color={C.muted} />
+            </Pressable>
+          ) : null}
+        </View>
+        <Pressable accessibilityRole="button" onPress={load} style={s.searchButton}>
+          <LinearGradient colors={['#ef4035', '#b70201', '#810101']} style={s.searchButtonGradient}>
+            <Text style={s.searchButtonText}>GO</Text>
+          </LinearGradient>
+        </Pressable>
+      </View>
       <Text style={s.searchHint}>Try “Calculators”, “Books” or a course code.</Text>
     </Card>
 
@@ -154,14 +207,46 @@ function GuestThemeFab() {
 }
 async function openNotification(n:Notice,navigation:any,isAdmin:boolean) { try { if(!n.is_read) await account.markNotificationRead(n.id); } catch(e) { Alert.alert('Unable to update notification',errorMessage(e));return; } if(n.related_type==='transaction'&&n.related_id)navigation.navigate('Transaction',{id:n.related_id});else if(n.related_type==='conversation'&&n.related_id)navigation.navigate('Conversation',{id:n.related_id});else if(n.related_type==='item'&&n.related_id)navigation.navigate(isAdmin&&n.type==='listing_review'?'AdminItems':'Listing',isAdmin&&n.type==='listing_review'?{itemId:n.related_id}:{id:n.related_id});else Alert.alert('Activity update',n.message); }
 function ItemCard({ item, compact = false }: { item: Item; compact?: boolean }) {
-  return <Card style={s.itemCard}>
-    <View style={s.rowBetween}><Text numberOfLines={1} style={s.eyebrow}>{item.category || 'CAMPUS RESOURCE'}</Text><Text style={[s.badge, { color: statusColor(item.status) }]}>{item.listing_type === 'rent' ? 'RENT' : 'SALE'}</Text></View>
-    {item.image ? <Image source={{uri:imageUrl(item.image)}} style={[s.listingImage,compact&&s.listingImageCompact]} resizeMode="cover"/> : <View style={[s.listingImagePlaceholder,compact&&s.listingImagePlaceholderCompact]}><Ionicons name={item.listing_type === 'rent' ? 'calendar-outline' : 'pricetag-outline'} size={compact?20:24} color={C.gold} /><Text numberOfLines={1} style={s.placeholderCategory}>{item.category || 'Academic Resource'}</Text></View>}
-    <Text numberOfLines={2} style={[s.cardTitle,compact&&s.cardTitleCompact]}>{item.title}</Text>
-    <Text numberOfLines={1} style={[s.muted,compact&&s.mutedCompact]}>{item.condition?.replace('_', ' ')} · {item.course_code || item.department}</Text>
-    <View style={s.itemCardBottom}><Text numberOfLines={1} style={[s.price,compact&&s.priceCompact]}>{money(item.price)}{item.listing_type==='rent'?' / day':''}</Text>{!compact&&<Text style={s.sellerName}>{item.user?.name || 'UM student'}  ›</Text>}</View>
-  </Card>;
+  const isRent = item.listing_type === 'rent';
+  return (
+    <View style={s.modernCard}>
+      {/* Edge-to-edge image container with floating badge */}
+      <View style={s.itemImageWrap}>
+        {item.image ? (
+          <Image source={{ uri: imageUrl(item.image) }} style={compact ? s.itemImgCompact : s.itemImg} resizeMode="cover" />
+        ) : (
+          <View style={[compact ? s.itemImgCompact : s.itemImg, s.itemPlaceholder]}>
+            <Ionicons name={isRent ? 'calendar-outline' : 'pricetag-outline'} size={compact ? 22 : 28} color={C.gold} />
+            <Text numberOfLines={1} style={s.placeholderTag}>{item.category || 'Academic Resource'}</Text>
+          </View>
+        )}
+        <View style={s.floatingTypeBadge}>
+          <Text style={s.floatingTypeText}>{isRent ? 'RENT' : 'SALE'}</Text>
+        </View>
+      </View>
+
+      {/* Card Content Body */}
+      <View style={s.itemBody}>
+        <Text numberOfLines={1} style={s.itemCategoryKicker}>{item.category || 'CAMPUS RESOURCE'}</Text>
+        <Text numberOfLines={2} style={compact ? s.itemTitleCompact : s.itemTitle}>{item.title}</Text>
+        <Text numberOfLines={1} style={s.itemMeta}>
+          {item.condition?.replace('_', ' ')} · {item.course_code || item.department?.replace('Department of ', '')}
+        </Text>
+        <View style={s.itemPriceRow}>
+          <Text numberOfLines={1} style={compact ? s.itemPriceCompact : s.itemPrice}>
+            {money(item.price)}{isRent ? ' / day' : ''}
+          </Text>
+          {!compact && (
+            <Text numberOfLines={1} style={s.itemSeller}>
+              {item.user?.name?.split(' ')[0] || 'Student'} ›
+            </Text>
+          )}
+        </View>
+      </View>
+    </View>
+  );
 }
+
 
 function ListingScreen({ route, navigation }: any) {
   const { user } = useAuth();
@@ -257,7 +342,7 @@ function ListingScreen({ route, navigation }: any) {
         ) : (
           <Text style={s.muted}>Seller: UM student</Text>
         )}
-        <Text style={s.muted}>Payment: {acceptedMethods.map(v => v.replaceAll('_', ' ')).join(', ')}</Text>
+        <Text style={s.muted}>Payment: {acceptedMethods.map((v: string) => v.replaceAll('_', ' ')).join(', ')}</Text>
         {item.created_at ? <Text style={s.muted}>Posted: {formatPhilippineDate(item.created_at)}</Text> : null}
         {item.archived_at ? <Text style={s.muted}>Archived listing · transaction history is retained</Text> : null}
       </Card>
@@ -533,26 +618,26 @@ function DashboardScreen({ navigation }: any) {
         });
         const monthly = months.map(k => ({
           label: new Date(`${k}-01T12:00:00`).toLocaleString('en', { month: 'short' }),
-          total: txs.filter(t => String(t.created_at || '').slice(0, 7) === k).length,
+          total: txs.filter((t: any) => String(t.created_at || '').slice(0, 7) === k).length,
         }));
         setData({
           stats: {
             users: users.length,
-            students: users.filter(u => u.role === 'student').length,
+            students: users.filter((u: any) => u.role === 'student').length,
             transactions: txs.length,
-            completed: txs.filter(t => t.status === 'completed').length,
+            completed: txs.filter((t: any) => t.status === 'completed').length,
             items: items.length,
-            pendingItems: items.filter(i => i.moderation_status === 'pending').length,
-            approvedItems: items.filter(i => i.moderation_status === 'approved').length,
-            rejectedItems: items.filter(i => i.moderation_status === 'rejected').length,
-            activeListings: items.filter(i => i.status === 'available' && i.moderation_status === 'approved').length,
-            rentals: items.filter(i => i.listing_type === 'rent').length,
-            sales: items.filter(i => i.listing_type === 'sell').length,
+            pendingItems: items.filter((i: any) => i.moderation_status === 'pending').length,
+            approvedItems: items.filter((i: any) => i.moderation_status === 'approved').length,
+            rejectedItems: items.filter((i: any) => i.moderation_status === 'rejected').length,
+            activeListings: items.filter((i: any) => i.status === 'available' && i.moderation_status === 'approved').length,
+            rentals: items.filter((i: any) => i.listing_type === 'rent').length,
+            sales: items.filter((i: any) => i.listing_type === 'sell').length,
           },
           recent_items: items.slice(0, 6),
           charts: {
-            categories: tally(items, i => i.category),
-            departments: tally(items, i => i.department),
+            categories: tally(items, (i: any) => i.category),
+            departments: tally(items, (i: any) => i.department),
             monthly,
           },
           notifications: (notifications || []).slice(0, 5),
@@ -630,8 +715,110 @@ function DashboardScreen({ navigation }: any) {
 }
 
 function TransactionsScreen({ navigation }: any) {
-  const [list, setList] = useState<Transaction[]>([]); const [err, setErr] = useState(''); const [busy, setBusy] = useState(false); const load = useCallback(async () => { setBusy(true); try { setList(await transactions.list()); setErr(''); } catch (e) { setErr(errorMessage(e)); } finally { setBusy(false); } }, []); useFocusEffect(useCallback(() => { load(); }, [load]));
-  return <Page topSafe refreshing={busy} onRefresh={load}><Heading title="Transactions" subtitle="Requests, sales, rentals, and completed exchanges." />{err ? <Status state={err} retry={load} /> : !list.length && !busy ? <Status state="No transactions yet." /> : list.map(t => <Pressable key={t.id} onPress={() => navigation.navigate('Transaction', { id: t.id })}><Card><View style={s.rowBetween}><Text style={s.cardTitle}>{t.item?.title || 'Campus transaction'}</Text><Text style={[s.badge,{color:statusColor(t.status)}]}>{t.status?.toUpperCase()}</Text></View><Text style={s.muted}>{t.buyer?.name} ↔ {t.seller?.name}</Text><Text style={s.muted}>{t.payment_method?.replaceAll('_',' ') || 'Payment not selected'}{t.created_at ? ` · ${formatPhilippineDate(t.created_at)}` : ''}</Text></Card></Pressable>)}</Page>;
+  const { user } = useAuth();
+  const [list, setList] = useState<Transaction[]>([]);
+  const [filter, setFilter] = useState<'all' | 'pending' | 'approved' | 'completed'>('all');
+  const [err, setErr] = useState('');
+  const [busy, setBusy] = useState(false);
+
+  const load = useCallback(async () => {
+    setBusy(true);
+    try {
+      setList(await transactions.list());
+      setErr('');
+    } catch (e) {
+      setErr(errorMessage(e));
+    } finally {
+      setBusy(false);
+    }
+  }, []);
+
+  useFocusEffect(useCallback(() => { load(); }, [load]));
+
+  const filtered = list.filter(t => filter === 'all' ? true : t.status === filter);
+
+  return (
+    <Page topSafe refreshing={busy} onRefresh={load}>
+      <Heading title="Transactions" subtitle="Requests, sales, rentals, and completed exchanges." />
+
+      {/* Filter Tabs */}
+      <View style={[s.rowWrap, { marginBottom: 14 }]}>
+        {[
+          ['all', 'All'],
+          ['pending', 'Pending'],
+          ['approved', 'Approved'],
+          ['completed', 'Completed'],
+        ].map(([key, label]) => (
+          <Choice
+            key={key}
+            label={label}
+            selected={filter === key}
+            onPress={() => setFilter(key as any)}
+          />
+        ))}
+      </View>
+
+      {err ? (
+        <Status state={err} retry={load} />
+      ) : !filtered.length && !busy ? (
+        <Status state={filter === 'all' ? 'No transactions yet.' : `No ${filter} transactions found.`} />
+      ) : (
+        filtered.map(t => {
+          const isSeller = user?.id === t.seller_id;
+          const otherPerson = isSeller ? t.buyer?.name : t.seller?.name;
+          const roleLabel = isSeller ? 'Buyer' : 'Seller';
+
+          return (
+            <Pressable
+              key={t.id}
+              accessibilityRole="button"
+              onPress={() => navigation.navigate('Transaction', { id: t.id })}
+              style={s.txCard}
+            >
+              <View style={s.rowBetween}>
+                <View style={{ flex: 1, paddingRight: 8 }}>
+                  <Text numberOfLines={1} style={s.txTitle}>{t.item?.title || 'Campus transaction'}</Text>
+                  <Text style={s.txPrice}>{money(t.item?.price)}</Text>
+                </View>
+                <StatusPill status={t.status} />
+              </View>
+
+              <View style={s.txDivider} />
+
+              <View style={s.rowBetween}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                  <Ionicons name="person-circle-outline" size={16} color={C.gold} />
+                  <Text style={s.txParticipant}>
+                    <Text style={{ color: C.muted }}>{roleLabel}: </Text>
+                    {otherPerson || 'UM student'}
+                  </Text>
+                </View>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
+                  <Ionicons
+                    name={t.payment_method === 'cash_on_pickup' ? 'cash-outline' : 'phone-portrait-outline'}
+                    size={13}
+                    color={C.muted}
+                  />
+                  <Text style={s.txMethod}>
+                    {t.payment_method === 'cash_on_pickup' ? 'Cash' : t.payment_method?.replaceAll('_', ' ').toUpperCase()}
+                  </Text>
+                </View>
+              </View>
+
+              {t.meetup_time ? (
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5, marginTop: 8 }}>
+                  <Ionicons name="calendar-outline" size={13} color={C.gold} />
+                  <Text numberOfLines={1} style={s.txMeetupSchedule}>
+                    Meetup: {formatPhilippineDateTime(t.meetup_time)}
+                  </Text>
+                </View>
+              ) : null}
+            </Pressable>
+          );
+        })
+      )}
+    </Page>
+  );
 }
 function TransactionScreen({ route, navigation }: any) {
   const { user } = useAuth();
@@ -716,7 +903,7 @@ function TransactionScreen({ route, navigation }: any) {
     }
   };
 
-  return <Page><Heading title={t.item?.title || 'Transaction'} subtitle={`Transaction #${t.id}`} /><Card><Text style={[s.badge,{color:statusColor(t.status)}]}>{t.status?.toUpperCase()}</Text><Text style={s.price}>{money(t.item?.price)}</Text><Text style={s.body}>Buyer: {t.buyer?.name}</Text><Text style={s.body}>Seller: {t.seller?.name}</Text><Text style={s.body}>Payment: {t.payment_method?.replaceAll('_',' ')}{t.other_payment_method?` · ${t.other_payment_method}`:''}</Text>{t.rental_duration_days?<Text style={s.body}>Rental duration: {t.rental_duration_days} day(s) · Due {formatPhilippineDate(t.rental_due_date, 'to be confirmed')}</Text>:null}{t.meetup_location ? <Text style={s.body}>Meetup: {t.meetup_location} · {formatPhilippineDateTime(t.meetup_time)}</Text> : null}<Text style={s.muted}>Payment proof: {t.payment_proof?`Uploaded ${formatPhilippineDateTime(t.payment_proof_uploaded_at, '')}`:'Not uploaded'}</Text>{proofUrl && <View style={{ marginTop: 10 }}><Text style={s.label}>Payment Proof Receipt:</Text><Image source={{ uri: proofUrl }} style={{ width: '100%', height: 220, borderRadius: 10, marginTop: 6 }} resizeMode="contain" /></View>}</Card>{isBuyer && ['pending','approved'].includes(t.status) && <View style={{ marginVertical: 6 }}><Button title={uploadingProof ? 'Uploading proof…' : t.payment_proof ? '📷 Replace payment proof' : '📷 Upload payment proof'} secondary disabled={uploadingProof} onPress={pickProof} /></View>}{isSeller && t.status === 'pending' && <><Field label="Meetup location" value={meetup} onChangeText={setMeetup} placeholder="e.g. Student Union Building / Library"/><MeetupTimePicker label="Meetup date & time" value={meetupDate} onChange={setMeetupDate}/><Button title={approving ? 'Approving request…' : 'Approve request'} disabled={approving || !meetup.trim() || !meetupDate} onPress={approve} /><Button title="Reject request" danger onPress={() => run('Reject request', () => transactions.reject(t.id))} /></>}{isSeller && t.status === 'approved' && <Button title="Mark as completed" onPress={() => run('Complete exchange', () => transactions.complete(t.id))} />}{t.status === 'completed' && !t.ratings?.some(r => r.reviewer_id === user?.id) && <><Text style={s.muted}>Both the buyer and seller can leave a review after completion.</Text><RatingForm id={t.id} onDone={load} /></>}{t.item && <Button title="Message participant" secondary onPress={async()=>{try{const recipient_id=user?.id===t.buyer_id?t.seller_id:t.buyer_id;const m=await messaging.send({recipient_id,item_id:t.item_id,body:`Hi, I want to coordinate about ${t.item?.title}.`});navigation.navigate('Conversation',{id:m.conversation_id});}catch(e){Alert.alert('Unable to message participant',errorMessage(e))}}}/>}</Page>;
+  return <Page><Heading title={t.item?.title || 'Transaction'} subtitle={`Transaction #${t.id}`} /><Card><Text style={[s.badge,{color:statusColor(t.status)}]}>{t.status?.toUpperCase()}</Text><Text style={s.price}>{money(t.item?.price)}</Text><Text style={s.body}>Buyer: {t.buyer?.name}</Text><Text style={s.body}>Seller: {t.seller?.name}</Text><Text style={s.body}>Payment: {t.payment_method?.replaceAll('_',' ')}{t.other_payment_method?` · ${t.other_payment_method}`:''}</Text>{t.rental_duration_days?<Text style={s.body}>Rental duration: {t.rental_duration_days} day(s) · Due {formatPhilippineDate(t.rental_due_date, 'to be confirmed')}</Text>:null}{t.meetup_location ? <Text style={s.body}>Meetup: {t.meetup_location} · {formatPhilippineDateTime(t.meetup_time)}</Text> : null}<Text style={s.muted}>Payment proof: {t.payment_proof?`Uploaded ${formatPhilippineDateTime(t.payment_proof_uploaded_at, '')}`:'Not uploaded'}</Text>{proofUrl && <View style={{ marginTop: 10 }}><Text style={s.label}>Payment Proof Receipt:</Text><Image source={{ uri: proofUrl }} style={{ width: '100%', height: 220, borderRadius: 10, marginTop: 6 }} resizeMode="contain" /></View>}</Card>{isBuyer && ['pending','approved'].includes(t.status) && <View style={{ marginVertical: 6 }}><Button title={uploadingProof ? 'Uploading proof…' : t.payment_proof ? '📷 Replace payment proof' : '📷 Upload payment proof'} secondary disabled={uploadingProof} onPress={pickProof} /></View>}{isSeller && t.status === 'pending' && <><Field label="Meetup location" value={meetup} onChangeText={setMeetup} placeholder="e.g. Student Union Building / Library"/><MeetupTimePicker label="Meetup date & time" value={meetupDate} onChange={setMeetupDate}/><Button title={approving ? 'Approving request…' : 'Approve request'} disabled={approving || !meetup.trim() || !meetupDate} onPress={approve} /><Button title="Reject request" danger onPress={() => run('Reject request', () => transactions.reject(t.id))} /></>}{isSeller && t.status === 'approved' && <Button title="Mark as completed" onPress={() => run('Complete exchange', () => transactions.complete(t.id))} />}{t.status === 'completed' && !t.ratings?.some((r: any) => r.reviewer_id === user?.id) && <><Text style={s.muted}>Both the buyer and seller can leave a review after completion.</Text><RatingForm id={t.id} onDone={load} /></>}{t.item && <Button title="Message participant" secondary onPress={async()=>{try{const recipient_id=user?.id===t.buyer_id?t.seller_id:t.buyer_id;const m=await messaging.send({recipient_id,item_id:t.item_id,body:`Hi, I want to coordinate about ${t.item?.title}.`});navigation.navigate('Conversation',{id:m.conversation_id});}catch(e){Alert.alert('Unable to message participant',errorMessage(e))}}}/>}</Page>;
 }
 function RatingForm({ id, onDone }: any) {
   const [rating, setRating] = useState(5);
@@ -819,7 +1006,135 @@ function ProfileScreen({ navigation }: any) {
   </Page>;
 }
 
-function NotificationsScreen({navigation}:any) { const {user}=useAuth();const [items,setItems] = useState<Notice[]>([]); const [filter,setFilter]=useState('all'); const [err,setErr]=useState(''); const load=useCallback(async()=>{try{setItems(await account.notifications());setErr('')}catch(e){setErr(errorMessage(e))}},[]); useFocusEffect(useCallback(()=>{load()},[load])); const read=async()=>{try{await account.markNotificationsRead(); await load()}catch(e){Alert.alert('Unable to update',errorMessage(e))}}; const open=async(n:Notice)=>{try{if(!n.is_read){await account.markNotificationRead(n.id);setItems(old=>old.map(x=>x.id===n.id?{...x,is_read:true}:x))}}catch(e){Alert.alert('Unable to update notification',errorMessage(e));return;}if(n.related_type==='transaction'&&n.related_id)navigation.navigate('Transaction',{id:n.related_id});else if(n.related_type==='conversation'&&n.related_id)navigation.navigate('Conversation',{id:n.related_id});else if(n.related_type==='item'&&n.related_id)navigation.navigate(user?.role==='admin'&&n.type==='listing_review'?'AdminItems':'Listing',user?.role==='admin'&&n.type==='listing_review'?{itemId:n.related_id}:{id:n.related_id});else Alert.alert('Activity update',n.message)};const types:Record<string,string[]>={requests:['request','message','meetup'],approved:['approval','completion'],pending:['request','rental_due_soon','rental_due','payment_proof','listing_review'],rejected:['rejection','rental_overdue'],ratings:['rating']}; const visible=items.filter(n=>filter==='all'?true:filter==='unread'?!n.is_read:(types[filter]||[]).includes(n.type)); return <Page onRefresh={load}><Heading title="Activity updates" subtitle="Requests, approvals, messages, and ratings."/><Button title="Mark all as read" secondary onPress={read} /><View style={s.rowWrap}>{['all','unread','requests','approved','pending','rejected','ratings'].map(f=><Choice key={f} label={f} selected={filter===f} onPress={()=>setFilter(f)}/>)}</View>{err?<Status state={err} retry={load}/>:!visible.length?<Status state="No notifications in this view."/>:visible.map(n=><Pressable key={n.id} accessibilityRole="button" onPress={()=>open(n)}><Card><View style={s.rowBetween}><Text style={[s.cardTitle,{color:n.is_read?C.muted:C.white,flex:1}]}>{n.message}</Text><Ionicons name="chevron-forward" size={18} color={C.muted}/></View><Text style={s.muted}>{formatPhilippineDateTime(n.created_at)}</Text></Card></Pressable>)}</Page>; }
+function NotificationsScreen({ navigation }: any) {
+  const { user } = useAuth();
+  const [items, setItems] = useState<Notice[]>([]);
+  const [filter, setFilter] = useState('all');
+  const [err, setErr] = useState('');
+
+  const load = useCallback(async () => {
+    try {
+      setItems(await account.notifications());
+      setErr('');
+    } catch (e) {
+      setErr(errorMessage(e));
+    }
+  }, []);
+
+  useFocusEffect(useCallback(() => { load(); }, [load]));
+
+  const read = async () => {
+    try {
+      await account.markNotificationsRead();
+      await load();
+    } catch (e) {
+      Alert.alert('Unable to update', errorMessage(e));
+    }
+  };
+
+  const open = async (n: Notice) => {
+    try {
+      if (!n.is_read) {
+        await account.markNotificationRead(n.id);
+        setItems(old => old.map(x => (x.id === n.id ? { ...x, is_read: true } : x)));
+      }
+    } catch (e) {
+      Alert.alert('Unable to update notification', errorMessage(e));
+      return;
+    }
+    if (n.related_type === 'transaction' && n.related_id) {
+      navigation.navigate('Transaction', { id: n.related_id });
+    } else if (n.related_type === 'conversation' && n.related_id) {
+      navigation.navigate('Conversation', { id: n.related_id });
+    } else if (n.related_type === 'item' && n.related_id) {
+      navigation.navigate(
+        user?.role === 'admin' && n.type === 'listing_review' ? 'AdminItems' : 'Listing',
+        user?.role === 'admin' && n.type === 'listing_review' ? { itemId: n.related_id } : { id: n.related_id }
+      );
+    } else {
+      Alert.alert('Activity update', n.message);
+    }
+  };
+
+  const types: Record<string, string[]> = {
+    requests: ['request', 'message', 'meetup'],
+    approved: ['approval', 'completion'],
+    pending: ['request', 'rental_due_soon', 'rental_due', 'payment_proof', 'listing_review'],
+    rejected: ['rejection', 'rental_overdue'],
+    ratings: ['rating'],
+  };
+
+  const getNoticeIcon = (type: string) => {
+    switch (type) {
+      case 'request':
+        return { name: 'swap-horizontal', color: C.gold };
+      case 'meetup':
+        return { name: 'calendar', color: '#4ADE80' };
+      case 'message':
+        return { name: 'chatbubble-ellipses', color: '#38BDF8' };
+      case 'approval':
+        return { name: 'checkmark-circle', color: '#4ADE80' };
+      case 'completion':
+        return { name: 'ribbon', color: '#4ADE80' };
+      case 'rejection':
+      case 'rental_overdue':
+        return { name: 'alert-circle', color: '#F87171' };
+      case 'rating':
+        return { name: 'star', color: C.gold };
+      case 'listing_review':
+        return { name: 'shield-checkmark', color: C.gold };
+      case 'payment_proof':
+        return { name: 'receipt', color: C.gold };
+      default:
+        return { name: 'notifications', color: C.muted };
+    }
+  };
+
+  const visible = items.filter(n =>
+    filter === 'all' ? true : filter === 'unread' ? !n.is_read : (types[filter] || []).includes(n.type)
+  );
+
+  return (
+    <Page onRefresh={load}>
+      <Heading title="Activity updates" subtitle="Requests, approvals, messages, and ratings." />
+      <Button title="Mark all as read" secondary onPress={read} />
+      <View style={s.rowWrap}>
+        {['all', 'unread', 'requests', 'approved', 'pending', 'rejected', 'ratings'].map(f => (
+          <Choice key={f} label={f} selected={filter === f} onPress={() => setFilter(f)} />
+        ))}
+      </View>
+      {err ? (
+        <Status state={err} retry={load} />
+      ) : !visible.length ? (
+        <Status state="No notifications in this view." />
+      ) : (
+        visible.map(n => {
+          const iconInfo = getNoticeIcon(n.type);
+          return (
+            <Pressable key={n.id} accessibilityRole="button" onPress={() => open(n)}>
+              <Card style={[s.noticeCard, !n.is_read && s.noticeCardUnread]}>
+                <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 12 }}>
+                  <View style={[s.noticeIconBadge, { backgroundColor: C.soft }]}>
+                    <Ionicons name={iconInfo.name as any} size={20} color={iconInfo.color} />
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <View style={s.rowBetween}>
+                      <Text style={[s.noticeTitle, { color: n.is_read ? C.muted : C.white, flex: 1, paddingRight: 6 }]}>
+                        {n.message}
+                      </Text>
+                      {!n.is_read && <View style={s.noticeUnreadDot} />}
+                    </View>
+                    <Text style={s.noticeTimestamp}>{formatPhilippineDateTime(n.created_at)}</Text>
+                  </View>
+                </View>
+              </Card>
+            </Pressable>
+          );
+        })
+      )}
+    </Page>
+  );
+}
 
 function MessagesScreen({ navigation }: any) { const {user}=useAuth();const [rows,setRows]=useState<Conversation[]>([]); const [err,setErr]=useState(''); const load=useCallback(async()=>{try{setRows(await messaging.list())}catch(e){setErr(errorMessage(e))}},[]); useFocusEffect(useCallback(()=>{load()},[load])); return <Page topSafe onRefresh={load}><Heading title="Messages" subtitle="Conversations with buyers and sellers." />{err?<Status state={err} retry={load}/>:!rows.length?<Status state="No conversations yet. Message a seller from a listing."/>:rows.map(c=>{const person=c.starter_id===user?.id?c.recipient:c.starter;return <Pressable key={c.id} onPress={()=>navigation.navigate('Conversation',{id:c.id})}><Card><View style={{flexDirection:'row',alignItems:'center',gap:12}}><View style={{width:44,height:44,borderRadius:22,backgroundColor:C.panel2,alignItems:'center',justifyContent:'center'}}><Text style={{fontWeight:'800',color:C.gold}}>{(person?.name||'U').slice(0,1).toUpperCase()}</Text></View><View style={{flex:1}}><Text style={s.cardTitle}>{person?.name||'UM-Pasa user'}</Text><Text numberOfLines={1} style={s.muted}>{c.latest_message?.body || c.item?.title || 'Open conversation'}</Text></View><Ionicons name="chevron-forward" size={18} color={C.muted}/></View>{c.item?.title?<Text style={[s.eyebrow,{marginTop:9}]}>ABOUT · {c.item.title}</Text>:null}</Card></Pressable>})}</Page>; }
 function ConversationScreen({ route, navigation }: any) {
@@ -1251,7 +1566,15 @@ function TabsRoot() {
   const { user } = useAuth();
   const insets = useSafeAreaInsets();
   const isAdmin = user?.role === 'admin';
-  const icons: Record<string, any> = {
+  const activeIcons: Record<string, any> = {
+    Home: 'grid',
+    Browse: 'search',
+    Messages: 'chatbubble-ellipses',
+    Transactions: 'swap-horizontal',
+    Profile: 'person-circle',
+    Admin: 'shield-checkmark',
+  };
+  const inactiveIcons: Record<string, any> = {
     Home: 'grid-outline',
     Browse: 'search-outline',
     Messages: 'chatbubble-ellipses-outline',
@@ -1284,8 +1607,12 @@ function TabsRoot() {
           marginHorizontal: -2,
         },
         tabBarAllowFontScaling: false,
-        tabBarIcon: ({ color, size }) => (
-          <Ionicons name={icons[route.name]} size={isAdmin ? 21 : size} color={color} />
+        tabBarIcon: ({ color, size, focused }) => (
+          <Ionicons
+            name={focused ? activeIcons[route.name] : inactiveIcons[route.name]}
+            size={isAdmin ? 21 : size}
+            color={color}
+          />
         ),
       })}
     >
@@ -1477,6 +1804,45 @@ function createStyles(_tokens?: ThemeTokens) { return StyleSheet.create({
   footerStep:{color:C.cream,fontSize:11,lineHeight:19,marginTop:4},
   footerBottom:{flexDirection:'row',alignItems:'center',justifyContent:'space-between',flexWrap:'wrap',gap:7,marginTop:12},
   footerCopyright:{color:C.muted,fontSize:9},
-  footerBadge:{color:C.gold,fontSize:9,fontWeight:'700',borderRadius:9,borderWidth:1,borderColor:'rgba(246,200,76,.25)',paddingHorizontal:8,paddingVertical:5}
+  footerBadge:{color:C.gold,fontSize:9,fontWeight:'700',borderRadius:9,borderWidth:1,borderColor:'rgba(246,200,76,.25)',paddingHorizontal:8,paddingVertical:5},
+  // Status Pill Badge
+  statusPill:{flexDirection:'row',alignItems:'center',gap:6,paddingHorizontal:10,paddingVertical:5,borderRadius:20,alignSelf:'flex-start'},
+  statusDot:{width:6,height:6,borderRadius:3},
+  statusPillText:{fontSize:10,fontWeight:'800',letterSpacing:.6},
+  // Modern Marketplace Cards
+  modernCard:{backgroundColor:C.panel,borderColor:C.border,borderWidth:1,borderRadius:16,overflow:'hidden',shadowColor:'#000000',shadowOpacity:C.bg===themeTokens.dark.colors.bg?.25:.08,shadowRadius:10,shadowOffset:{width:0,height:4},elevation:3},
+  itemImageWrap:{position:'relative',width:'100%',backgroundColor:C.panel2},
+  itemImg:{width:'100%',height:155},
+  itemImgCompact:{width:'100%',height:115},
+  itemPlaceholder:{alignItems:'center',justifyContent:'center',backgroundColor:C.soft,padding:10},
+  placeholderTag:{fontSize:10,color:C.muted,fontWeight:'700',marginTop:4},
+  floatingTypeBadge:{position:'absolute',top:8,left:8,backgroundColor:'rgba(0,0,0,.68)',paddingHorizontal:8,paddingVertical:3,borderRadius:8,borderWidth:1,borderColor:'rgba(255,255,255,.15)'},
+  floatingTypeText:{color:'#F6C84C',fontSize:9,fontWeight:'900',letterSpacing:.8},
+  itemBody:{padding:10},
+  itemCategoryKicker:{fontSize:8.5,fontWeight:'900',letterSpacing:1,color:C.gold,textTransform:'uppercase',marginBottom:2},
+  itemTitle:{fontSize:14,fontWeight:'800',color:C.white,lineHeight:18,minHeight:36},
+  itemTitleCompact:{fontSize:12.5,fontWeight:'800',color:C.white,lineHeight:16,minHeight:32},
+  itemMeta:{fontSize:10.5,color:C.muted,marginTop:3,marginBottom:6},
+  itemPriceRow:{flexDirection:'row',justifyContent:'space-between',alignItems:'center',marginTop:4,paddingTop:6,borderTopWidth:1,borderTopColor:C.border},
+  itemPrice:{fontSize:15,fontWeight:'900',color:C.gold},
+  itemPriceCompact:{fontSize:13,fontWeight:'900',color:C.gold},
+  itemSeller:{fontSize:10,color:C.muted,fontWeight:'700'},
+  // Modern Transactions Cards
+  txCard:{backgroundColor:C.panel,borderColor:C.border,borderWidth:1,borderRadius:16,padding:14,marginBottom:12,shadowColor:'#000000',shadowOpacity:C.bg===themeTokens.dark.colors.bg?.22:.07,shadowRadius:8,shadowOffset:{width:0,height:3},elevation:2},
+  txTitle:{fontSize:15,fontWeight:'800',color:C.white,marginBottom:2},
+  txPrice:{fontSize:14,fontWeight:'900',color:C.gold},
+  txDivider:{height:1,backgroundColor:C.border,marginVertical:10},
+  txParticipant:{fontSize:12,color:C.white,fontWeight:'600'},
+  txMethod:{fontSize:11,color:C.muted,fontWeight:'700'},
+  txMeetupSchedule:{fontSize:11,color:C.gold,fontWeight:'700'},
+  // Search Bar
+  searchInputWrap:{flex:1,flexDirection:'row',alignItems:'center',backgroundColor:C.input,borderWidth:1,borderColor:C.border,borderRadius:12},
+  // Notifications Screen
+  noticeCard:{marginBottom:10,padding:12},
+  noticeCardUnread:{borderColor:C.gold,backgroundColor:C.bg===themeTokens.dark.colors.bg?'rgba(246,200,76,.06)':'#FFFDF7'},
+  noticeIconBadge:{width:38,height:38,borderRadius:12,alignItems:'center',justifyContent:'center'},
+  noticeTitle:{fontSize:13,fontWeight:'700',lineHeight:18},
+  noticeTimestamp:{fontSize:11,color:C.muted,marginTop:4},
+  noticeUnreadDot:{width:8,height:8,borderRadius:4,backgroundColor:C.gold,marginTop:4}
 }); }
 let s = createStyles();
