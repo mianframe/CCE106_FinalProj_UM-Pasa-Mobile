@@ -182,3 +182,10 @@ Items that cannot be statically validated in code and require verification on ph
    - Removed the floating `GuestThemeFab` that was obscuring marketplace list items.
    - Removed the redundant second guest preview card that was stacked underneath the hero.
 
+6. **Chat Screen Layout & Meetup Tracking Polish (`ConversationScreen` & `TransactionScreen`):**
+   - **Fixed 50% Screen Void:** Locked quick action chips to a fixed `height: 46` container with `style={{ flexGrow: 0, height: 46 }}`. This stops horizontal `ScrollView` from inheriting flex expansion in `KeyboardAvoidingView`, giving the message list full vertical screen space (~550px) and fixing composer clipping.
+   - **Clean Header State:** Sticky top header only shows the meetup pill when an accepted meetup exists (`proposal_status === 'accepted'`), returning `null` when pending or no meetup is scheduled. Completely eliminates header duplication with the pending proposal card.
+   - **Modern Centered System Notices:** Transformed system messages (`Meetup proposal accepted/declined`) from red user-style bubbles into elegant, centered info pills (`ℹ Meetup proposal accepted.`).
+   - **Proposal Card Status:** Pending status badge now clearly reads `"Waiting for <name> to accept"` for the sender, and `"Awaiting your response"` for the recipient.
+   - **Transaction Screen Pending Proposal Tracking:** Added `pendingProposal` query and card to `TransactionScreen`, showing `"Waiting for <name> to accept"` during active proposal review before acceptance.
+

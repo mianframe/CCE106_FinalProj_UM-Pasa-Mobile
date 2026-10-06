@@ -938,6 +938,7 @@ function TransactionsScreen({ navigation }: any) {
 }
 function TransactionScreen({ route, navigation }: any) {
   const { user } = useAuth();
+  const isDark = C.bg === themeTokens.dark.colors.bg;
   const [t, setT] = useState<Transaction>();
   const [err, setErr] = useState('');
   const [meetup, setMeetup] = useState('');
@@ -945,6 +946,7 @@ function TransactionScreen({ route, navigation }: any) {
   const [uploadingProof, setUploadingProof] = useState(false);
   const [proofUrl, setProofUrl] = useState<string | null>(null);
   const [approving, setApproving] = useState(false);
+  const [pendingProposal, setPendingProposal] = useState<any>(null);
 
   const load = useCallback(async () => {
     try {
@@ -956,6 +958,28 @@ function TransactionScreen({ route, navigation }: any) {
         getPaymentProofSignedUrl(data.payment_proof).then(setProofUrl).catch(() => setProofUrl(null));
       } else {
         setProofUrl(null);
+      }
+      if (data.item_id) {
+        const { data: convData } = await supabase
+          .from('conversations')
+          .select('id')
+          .eq('item_id', data.item_id)
+          .or(`and(starter_id.eq.${data.buyer_id},recipient_id.eq.${data.seller_id}),and(starter_id.eq.${data.seller_id},recipient_id.eq.${data.buyer_id})`)
+          .maybeSingle();
+        if (convData?.id) {
+          const { data: propData } = await supabase
+            .from('messages')
+            .select('*')
+            .eq('conversation_id', convData.id)
+            .eq('type', 'meetup_proposal')
+            .eq('proposal_status', 'pending')
+            .order('created_at', { ascending: false })
+            .limit(1)
+            .maybeSingle();
+          setPendingProposal(propData || null);
+        } else {
+          setPendingProposal(null);
+        }
       }
     } catch(e) {
       setErr(errorMessage(e));
@@ -1019,7 +1043,7 @@ function TransactionScreen({ route, navigation }: any) {
     }
   };
 
-  return <Page><Heading title={t.item?.title || 'Transaction'} subtitle={`Transaction #${t.id}`} /><Card><Text style={[s.badge,{color:statusColor(t.status)}]}>{t.status?.toUpperCase()}</Text><Text style={s.price}>{money(t.item?.price)}</Text><Text style={s.body}>Buyer: {t.buyer?.name}</Text><Text style={s.body}>Seller: {t.seller?.name}</Text><Text style={s.body}>Payment: {t.payment_method?.replaceAll('_',' ')}{t.other_payment_method?` · ${t.other_payment_method}`:''}</Text>{t.rental_duration_days?<Text style={s.body}>Rental duration: {t.rental_duration_days} day(s) · Due {formatPhilippineDate(t.rental_due_date, 'to be confirmed')}</Text>:null}{t.meetup_location ? <Text style={s.body}>Meetup: {t.meetup_location} · {formatPhilippineDateTime(t.meetup_time)}</Text> : null}<Text style={s.muted}>Payment proof: {t.payment_proof?`Uploaded ${formatPhilippineDateTime(t.payment_proof_uploaded_at, '')}`:'Not uploaded'}</Text>{proofUrl && <View style={{ marginTop: 10 }}><Text style={s.label}>Payment Proof Receipt:</Text><Image source={{ uri: proofUrl }} style={{ width: '100%', height: 220, borderRadius: 10, marginTop: 6 }} resizeMode="contain" /></View>}</Card>{isBuyer && ['pending','approved'].includes(t.status) && <View style={{ marginVertical: 6 }}><Button title={uploadingProof ? 'Uploading proof…' : t.payment_proof ? '📷 Replace payment proof' : '📷 Upload payment proof'} secondary disabled={uploadingProof} onPress={pickProof} /></View>}{isSeller && t.status === 'pending' && <><Field label="Meetup location" value={meetup} onChangeText={setMeetup} placeholder="e.g. Student Union Building / Library"/><MeetupTimePicker label="Meetup date & time" value={meetupDate} onChange={setMeetupDate}/><Button title={approving ? 'Approving request…' : 'Approve request'} disabled={approving || !meetup.trim() || !meetupDate} onPress={approve} /><Button title="Reject request" danger onPress={() => run('Reject request', () => transactions.reject(t.id))} /></>}{isSeller && t.status === 'approved' && <Button title="Mark as completed" onPress={() => run('Complete exchange', () => transactions.complete(t.id))} />}{t.status === 'completed' && !t.ratings?.some((r: any) => r.reviewer_id === user?.id) && <><Text style={s.muted}>Both the buyer and seller can leave a review after completion.</Text><RatingForm id={t.id} onDone={load} /></>}{t.item && <Button title="Message participant" secondary onPress={async()=>{try{const recipient_id=user?.id===t.buyer_id?t.seller_id:t.buyer_id;const m=await messaging.send({recipient_id,item_id:t.item_id,body:`Hi, I want to coordinate about ${t.item?.title}.`});navigation.navigate('Conversation',{id:m.conversation_id});}catch(e){Alert.alert('Unable to message participant',errorMessage(e))}}}/>}</Page>;
+  return <Page><Heading title={t.item?.title || 'Transaction'} subtitle={`Transaction #${t.id}`} /><Card><Text style={[s.badge,{color:statusColor(t.status)}]}>{t.status?.toUpperCase()}</Text><Text style={s.price}>{money(t.item?.price)}</Text><Text style={s.body}>Buyer: {t.buyer?.name}</Text><Text style={s.body}>Seller: {t.seller?.name}</Text><Text style={s.body}>Payment: {t.payment_method?.replaceAll('_',' ')}{t.other_payment_method?` · ${t.other_payment_method}`:''}</Text>{t.rental_duration_days?<Text style={s.body}>Rental duration: {t.rental_duration_days} day(s) · Due {formatPhilippineDate(t.rental_due_date, 'to be confirmed')}</Text>:null}{t.meetup_location ? <Text style={s.body}>Meetup: {t.meetup_location} · {formatPhilippineDateTime(t.meetup_time)}</Text> : null}{pendingProposal ? <View style={{ marginTop: 8, padding: 10, borderRadius: 8, backgroundColor: isDark ? 'rgba(246,200,76,0.12)' : '#FFF9E6', borderWidth: 1, borderColor: isDark ? 'rgba(246,200,76,0.25)' : '#FFE082' }}><View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 2 }}><Ionicons name="time-outline" size={15} color={C.gold} /><Text style={{ fontSize: 12, fontWeight: '800', color: isDark ? C.gold : '#B78103' }}>Pending Meetup Proposal</Text></View><Text style={{ fontSize: 13, color: C.white, fontWeight: '600' }}>{pendingProposal.meetup_location} · {formatPhilippineDateTime(pendingProposal.meetup_time)}</Text><Text style={{ fontSize: 12, color: C.cream, marginTop: 2 }}>{pendingProposal.sender_id === user?.id ? `Waiting for ${user?.id === t.buyer_id ? t.seller?.name : t.buyer?.name} to accept` : `Proposed by ${pendingProposal.sender_id === t.buyer_id ? t.buyer?.name : t.seller?.name} (review in chat to accept)`}</Text></View> : null}<Text style={s.muted}>Payment proof: {t.payment_proof?`Uploaded ${formatPhilippineDateTime(t.payment_proof_uploaded_at, '')}`:'Not uploaded'}</Text>{proofUrl && <View style={{ marginTop: 10 }}><Text style={s.label}>Payment Proof Receipt:</Text><Image source={{ uri: proofUrl }} style={{ width: '100%', height: 220, borderRadius: 10, marginTop: 6 }} resizeMode="contain" /></View>}</Card>{isBuyer && ['pending','approved'].includes(t.status) && <View style={{ marginVertical: 6 }}><Button title={uploadingProof ? 'Uploading proof…' : t.payment_proof ? '📷 Replace payment proof' : '📷 Upload payment proof'} secondary disabled={uploadingProof} onPress={pickProof} /></View>}{isSeller && t.status === 'pending' && <><Field label="Meetup location" value={meetup} onChangeText={setMeetup} placeholder="e.g. Student Union Building / Library"/><MeetupTimePicker label="Meetup date & time" value={meetupDate} onChange={setMeetupDate}/><Button title={approving ? 'Approving request…' : 'Approve request'} disabled={approving || !meetup.trim() || !meetupDate} onPress={approve} /><Button title="Reject request" danger onPress={() => run('Reject request', () => transactions.reject(t.id))} /></>}{isSeller && t.status === 'approved' && <Button title="Mark as completed" onPress={() => run('Complete exchange', () => transactions.complete(t.id))} />}{t.status === 'completed' && !t.ratings?.some((r: any) => r.reviewer_id === user?.id) && <><Text style={s.muted}>Both the buyer and seller can leave a review after completion.</Text><RatingForm id={t.id} onDone={load} /></>}{t.item && <Button title="Message participant" secondary onPress={async()=>{try{const recipient_id=user?.id===t.buyer_id?t.seller_id:t.buyer_id;const m=await messaging.send({recipient_id,item_id:t.item_id,body:`Hi, I want to coordinate about ${t.item?.title}.`});navigation.navigate('Conversation',{id:m.conversation_id});}catch(e){Alert.alert('Unable to message participant',errorMessage(e))}}}/>}</Page>;
 }
 function RatingForm({ id, onDone }: any) {
   const [rating, setRating] = useState(5);
@@ -1767,10 +1791,12 @@ function ConversationScreen({ route, navigation }: any) {
             )}
           </View>
 
-          {/* Slim meetup summary row underneath */}
+          {/* Slim meetup summary row underneath - only shown for accepted/confirmed meetups */}
           {(() => {
-            const latest = [...(c?.messages || [])].reverse().find((m: any) => m.type === 'meetup_proposal');
-            const hasMeetup = !!(latest?.meetup_location && latest?.meetup_time);
+            const accepted = [...(c?.messages || [])].reverse().find(
+              (m: any) => m.type === 'meetup_proposal' && (m.proposal_status === 'accepted' || (m.meta as any)?.status === 'accepted')
+            );
+            if (!accepted?.meetup_location || !accepted?.meetup_time) return null;
             return (
               <View style={{
                 flexDirection: 'row',
@@ -1782,11 +1808,9 @@ function ConversationScreen({ route, navigation }: any) {
                 borderTopColor: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)',
               }}>
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, flex: 1, marginRight: 8 }}>
-                  <Ionicons name="location-outline" size={14} color={hasMeetup ? C.red : C.gold} />
+                  <Ionicons name="location" size={14} color={C.red} />
                   <Text numberOfLines={1} style={{ fontSize: 11.5, color: C.cream, fontWeight: '600', flex: 1 }}>
-                    {hasMeetup
-                      ? `${latest.meetup_location} · ${formatPhilippineDateTime(latest.meetup_time)}`
-                      : 'No meetup scheduled yet'}
+                    {accepted.meetup_location} · {formatPhilippineDateTime(accepted.meetup_time)}
                   </Text>
                 </View>
                 <Pressable
@@ -1801,7 +1825,7 @@ function ConversationScreen({ route, navigation }: any) {
                   }}
                 >
                   <Text style={{ fontSize: 11, fontWeight: '800', color: isDark ? C.gold : C.red }}>
-                    {showPropose ? 'Close' : (hasMeetup ? 'Reschedule' : 'Propose')}
+                    {showPropose ? 'Close' : 'Reschedule'}
                   </Text>
                 </Pressable>
               </View>
@@ -1904,7 +1928,7 @@ function ConversationScreen({ route, navigation }: any) {
                           textTransform: 'capitalize',
                         }}>
                           {m.proposal_status === 'pending'
-                            ? (!mine ? 'Awaiting your response' : 'Awaiting response')
+                            ? (!mine ? 'Awaiting your response' : `Waiting for ${person?.name || 'partner'} to accept`)
                             : m.proposal_status}
                         </Text>
                       </View>
@@ -2034,6 +2058,34 @@ function ConversationScreen({ route, navigation }: any) {
                 );
               }
 
+              // Centered System Notice (meetup accepted/declined, updates)
+              if (m.type === 'system') {
+                return (
+                  <View
+                    key={m.id}
+                    style={{
+                      alignSelf: 'center',
+                      marginVertical: 8,
+                      paddingHorizontal: 14,
+                      paddingVertical: 6,
+                      borderRadius: 14,
+                      backgroundColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)',
+                      borderWidth: 1,
+                      borderColor: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.04)',
+                      maxWidth: '85%',
+                      flexDirection: 'row',
+                      alignItems: 'center',
+                      gap: 6,
+                    }}
+                  >
+                    <Ionicons name="information-circle-outline" size={14} color={isDark ? C.gold : C.red} />
+                    <Text style={{ fontSize: 12, color: C.cream, textAlign: 'center', fontWeight: '600' }}>
+                      {m.body}
+                    </Text>
+                  </View>
+                );
+              }
+
               // Standard Chat Bubble
               return (
                 <View
@@ -2066,7 +2118,7 @@ function ConversationScreen({ route, navigation }: any) {
                       marginBottom: 4,
                     }}
                   >
-                    {m.type === 'system' ? 'UM-Pasa update' : (m.user?.name || 'Participant')}
+                    {m.user?.name || 'Participant'}
                   </Text>
                   {m.body ? (
                     <Text style={{ color: mine ? '#FFFFFF' : C.white, fontSize: 15, lineHeight: 21 }}>
@@ -2090,93 +2142,101 @@ function ConversationScreen({ route, navigation }: any) {
           )}
         </ScrollView>
 
-        {/* Quick action chips (Mockup 2) */}
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={{ paddingHorizontal: 14, paddingVertical: 8, gap: 8, flexDirection: 'row', alignItems: 'center' }}
-          style={{ backgroundColor: C.panel, borderTopWidth: 1, borderTopColor: C.border }}
-        >
-          <Pressable
-            accessibilityRole="button"
-            onPress={() => setShowPropose(prev => !prev)}
-            style={{
-              flexDirection: 'row',
-              alignItems: 'center',
-              gap: 5,
-              paddingHorizontal: 12,
-              paddingVertical: 7,
-              borderRadius: 16,
-              backgroundColor: C.panel2,
-              borderWidth: 1,
-              borderColor: C.border,
-            }}
+        {/* Quick action chips (Fixed height, prevents 50% screen flex expansion) */}
+        <View style={{
+          height: 46,
+          backgroundColor: C.panel,
+          borderTopWidth: 1,
+          borderTopColor: C.border,
+          justifyContent: 'center',
+        }}>
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={{ paddingHorizontal: 12, gap: 8, flexDirection: 'row', alignItems: 'center' }}
+            style={{ flexGrow: 0, height: 46 }}
           >
-            <Ionicons name="calendar-outline" size={13} color={C.gold} />
-            <Text style={{ fontSize: 12, fontWeight: '700', color: C.white }}>+ Propose new time</Text>
-          </Pressable>
-
-          <Pressable
-            accessibilityRole="button"
-            onPress={() => {
-              Alert.alert(
-                'UM Tagum College Safe Spots',
-                'Choose a monitored campus exchange location at UMTC:',
-                [
-                  { text: '🏫 [Main] Main Library & Learning Center', onPress: () => { setLocation('Main Campus Library & Learning Center'); setShowPropose(true); } },
-                  { text: '🍽️ [Main] Main Canteen (Mabini)', onPress: () => { setLocation('Main Campus Canteen (Mabini)'); setShowPropose(true); } },
-                  { text: '🏀 [Main] Main Gym & Admin Lobby', onPress: () => { setLocation('Main Gym / Admin & Registrar Lobby'); setShowPropose(true); } },
-                  { text: '💻 [Visayan] Engineering & IT Labs Lobby', onPress: () => { setLocation('Engineering & IT Labs Bldg Lobby (Visayan)'); setShowPropose(true); } },
-                  { text: '📚 [Visayan] Visayan Library Study Zone', onPress: () => { setLocation('Visayan Campus Library Study Zone'); setShowPropose(true); } },
-                  { text: '🌿 [Visayan] Visayan Canteen & Gazebo', onPress: () => { setLocation('Visayan Campus Canteen & Gazebo'); setShowPropose(true); } },
-                  { text: 'Cancel', style: 'cancel' },
-                ]
-              );
-            }}
-            style={{
-              flexDirection: 'row',
-              alignItems: 'center',
-              gap: 5,
-              paddingHorizontal: 12,
-              paddingVertical: 7,
-              borderRadius: 16,
-              backgroundColor: C.panel2,
-              borderWidth: 1,
-              borderColor: C.border,
-            }}
-          >
-            <Ionicons name="location-outline" size={13} color={C.red} />
-            <Text style={{ fontSize: 12, fontWeight: '700', color: C.white }}>Share campus spot</Text>
-          </Pressable>
-
-          {c?.item && (
             <Pressable
               accessibilityRole="button"
-              onPress={() => setBody(`Hi! Is the ${c.item?.title} still available for campus meetup?`)}
+              onPress={() => setShowPropose(prev => !prev)}
               style={{
                 flexDirection: 'row',
                 alignItems: 'center',
                 gap: 5,
-                paddingHorizontal: 12,
-                paddingVertical: 7,
-                borderRadius: 16,
+                paddingHorizontal: 11,
+                paddingVertical: 6,
+                borderRadius: 14,
                 backgroundColor: C.panel2,
                 borderWidth: 1,
                 borderColor: C.border,
               }}
             >
-              <Ionicons name="chatbubble-outline" size={13} color={C.cream} />
-              <Text style={{ fontSize: 12, fontWeight: '700', color: C.cream }}>Ask availability</Text>
+              <Ionicons name="calendar-outline" size={13} color={C.gold} />
+              <Text style={{ fontSize: 12, fontWeight: '700', color: C.white }}>+ Propose new time</Text>
             </Pressable>
-          )}
-        </ScrollView>
+
+            <Pressable
+              accessibilityRole="button"
+              onPress={() => {
+                Alert.alert(
+                  'UM Tagum College Safe Spots',
+                  'Choose a monitored campus exchange location at UMTC:',
+                  [
+                    { text: '🏫 [Main] Main Library & Learning Center', onPress: () => { setLocation('Main Campus Library & Learning Center'); setShowPropose(true); } },
+                    { text: '🍽️ [Main] Main Canteen (Mabini)', onPress: () => { setLocation('Main Campus Canteen (Mabini)'); setShowPropose(true); } },
+                    { text: '🏀 [Main] Main Gym & Admin Lobby', onPress: () => { setLocation('Main Gym / Admin & Registrar Lobby'); setShowPropose(true); } },
+                    { text: '💻 [Visayan] Engineering & IT Labs Lobby', onPress: () => { setLocation('Engineering & IT Labs Bldg Lobby (Visayan)'); setShowPropose(true); } },
+                    { text: '📚 [Visayan] Visayan Library Study Zone', onPress: () => { setLocation('Visayan Campus Library Study Zone'); setShowPropose(true); } },
+                    { text: '🌿 [Visayan] Visayan Canteen & Gazebo', onPress: () => { setLocation('Visayan Campus Canteen & Gazebo'); setShowPropose(true); } },
+                    { text: 'Cancel', style: 'cancel' },
+                  ]
+                );
+              }}
+              style={{
+                flexDirection: 'row',
+                alignItems: 'center',
+                gap: 5,
+                paddingHorizontal: 11,
+                paddingVertical: 6,
+                borderRadius: 14,
+                backgroundColor: C.panel2,
+                borderWidth: 1,
+                borderColor: C.border,
+              }}
+            >
+              <Ionicons name="location-outline" size={13} color={C.red} />
+              <Text style={{ fontSize: 12, fontWeight: '700', color: C.white }}>Share campus spot</Text>
+            </Pressable>
+
+            {c?.item && (
+              <Pressable
+                accessibilityRole="button"
+                onPress={() => setBody(`Hi! Is the ${c.item?.title} still available for campus meetup?`)}
+                style={{
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  gap: 5,
+                  paddingHorizontal: 11,
+                  paddingVertical: 6,
+                  borderRadius: 14,
+                  backgroundColor: C.panel2,
+                  borderWidth: 1,
+                  borderColor: C.border,
+                }}
+              >
+                <Ionicons name="chatbubble-outline" size={13} color={C.cream} />
+                <Text style={{ fontSize: 12, fontWeight: '700', color: C.cream }}>Ask availability</Text>
+              </Pressable>
+            )}
+          </ScrollView>
+        </View>
 
         {/* Pinned modern composer */}
         <View
           style={{
             paddingHorizontal: 14,
             paddingTop: 8,
-            paddingBottom: keyboardVisible ? 8 : Math.max(insets.bottom, 10),
+            paddingBottom: keyboardVisible ? 8 : Math.max(insets.bottom, 12),
             backgroundColor: C.panel,
             borderTopWidth: 1,
             borderTopColor: C.border,
