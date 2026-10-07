@@ -38,30 +38,23 @@ jobs:
       - name: 🛠️ Prebuild native Android project
         run: npx expo prebuild --platform android --clean
 
-      - name: 🔑 Configure Release Keystore
-        working-directory: android
-        run: |
-          keytool -genkeypair -v -storetype PKCS12 -keystore app/release.keystore -alias umpasa -keyalg RSA -keysize 2048 -validity 10000 -storepass umpasa123 -keypass umpasa123 -dname "CN=UMPasa, OU=Tagum, O=UM, L=Tagum, ST=Davao, C=PH"
-          # Ensure release build uses our release keystore
-          sed -i 's/signingConfig signingConfigs.debug/signingConfig signingConfigs.release/g' app/build.gradle || true
-
       - name: 🔨 Compile Standalone Release APK
         working-directory: android
         run: |
           chmod +x gradlew
-          ./gradlew assembleRelease --no-daemon -Pandroid.injected.signing.store.file=release.keystore -Pandroid.injected.signing.store.password=umpasa123 -Pandroid.injected.signing.store.type=PKCS12 -Pandroid.injected.signing.key.alias=umpasa -Pandroid.injected.signing.key.password=umpasa123
+          ./gradlew assembleRelease --no-daemon
           
           mkdir -p output_apk
+          RAW_APK=$(find app/build/outputs/apk/release -name "*.apk" | head -n 1)
+          echo "Found compiled release APK at: $RAW_APK"
+          cp "$RAW_APK" output_apk/UM-Pasa.apk
+          
+          # Generate custom release keystore and resign with apksigner for clean device installation
+          keytool -genkeypair -v -storetype PKCS12 -keystore release.keystore -alias umpasa -keyalg RSA -keysize 2048 -validity 10000 -storepass umpasa123 -keypass umpasa123 -dname "CN=UMPasa, OU=Tagum, O=UM, L=Tagum, ST=Davao, C=PH"
+          
           BUILD_TOOLS=$(ls -d $ANDROID_HOME/build-tools/* | tail -n 1)
-          echo "Using Android Build Tools at: $BUILD_TOOLS"
-          
-          RELEASE_APK=$(find app/build/outputs/apk -name "*release*.apk" | head -n 1)
-          echo "Found release APK at: $RELEASE_APK"
-          
-          # Align and sign to guarantee universal installability
-          $BUILD_TOOLS/zipalign -v -p 4 "$RELEASE_APK" output_apk/UM-Pasa-aligned.apk || cp "$RELEASE_APK" output_apk/UM-Pasa-aligned.apk
-          $BUILD_TOOLS/apksigner sign --ks app/release.keystore --ks-pass pass:umpasa123 --ks-key-alias umpasa --key-pass pass:umpasa123 --out output_apk/UM-Pasa.apk output_apk/UM-Pasa-aligned.apk
-          $BUILD_TOOLS/apksigner verify output_apk/UM-Pasa.apk
+          $BUILD_TOOLS/apksigner sign --ks release.keystore --ks-pass pass:umpasa123 --ks-key-alias umpasa --key-pass pass:umpasa123 --out output_apk/UM-Pasa-Release.apk output_apk/UM-Pasa.apk
+          cp output_apk/UM-Pasa-Release.apk output_apk/UM-Pasa.apk
 
       - name: 🚀 Upload Installable APK
         uses: actions/upload-artifact@v4
