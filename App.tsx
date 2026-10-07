@@ -92,7 +92,7 @@ function Page({ children, refreshing, onRefresh, footer, topSafe = false, floati
           refreshControl={onRefresh ? <RefreshControl refreshing={!!refreshing} onRefresh={onRefresh} tintColor={C.red} /> : undefined}
           contentContainerStyle={[
             s.page,
-            bottomSafe ? { paddingBottom: Math.max(insets.bottom, 24) + 20 } : undefined,
+            bottomSafe ? { paddingBottom: Math.max(insets.bottom, 24) + 60 } : undefined,
           ]}
         >
           {children}
@@ -1718,7 +1718,7 @@ function ProfileScreen({ navigation }: any) {
         </Pressable>
       </View>
 
-      <Modal visible={showEditModal} transparent animationType="slide">
+      <Modal visible={showEditModal} transparent animationType="slide" onRequestClose={() => setShowEditModal(false)}>
         <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={s.modalOverlay}>
           <View style={s.modalContent}>
             <View style={s.modalHeader}>
@@ -1755,7 +1755,7 @@ function ProfileScreen({ navigation }: any) {
         </KeyboardAvoidingView>
       </Modal>
 
-      <Modal visible={showPasswordModal} transparent animationType="slide">
+      <Modal visible={showPasswordModal} transparent animationType="slide" onRequestClose={() => { setShowPasswordModal(false); setCurrentPassword(''); setPassword(''); setConfirm(''); }}>
         <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={s.modalOverlay}>
           <View style={s.modalContent}>
             <View style={s.modalHeader}>
@@ -2913,7 +2913,7 @@ function ConversationScreen({ route, navigation }: any) {
     <SafeAreaView edges={['left', 'right', 'bottom']} style={{ flex: 1, backgroundColor: C.bg }}>
       <KeyboardAvoidingView
         style={{ flex: 1 }}
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
         keyboardVerticalOffset={Platform.OS === 'ios' ? headerHeight : 0}
       >
         {/* Sticky compact header: Chat partner + Item thumbnail chip + Meetup pill */}
@@ -4304,7 +4304,7 @@ function TabsRoot() {
   const isAdmin = user?.role === 'admin';
   const isDark = C.bg === themeTokens.dark.colors.bg;
   const isAndroid = Platform.OS === 'android';
-  const bottomPadding = isAndroid ? Math.max(insets.bottom, 10) : (insets.bottom > 0 ? insets.bottom : 8);
+  const bottomPadding = isAndroid ? Math.max(insets.bottom, 12) : (insets.bottom > 0 ? insets.bottom : 8);
   const tabHeight = (isAndroid ? 66 : 56) + bottomPadding;
   const activeIcons: Record<string, any> = {
     Home: 'home',
@@ -4445,7 +4445,7 @@ export default function App() {
 
 function createStyles(_tokens?: ThemeTokens) { return StyleSheet.create({
   safe:{flex:1,backgroundColor:C.bg},
-  page:{padding:14,paddingTop:10,paddingBottom:28},
+  page:{padding:14,paddingTop:10,paddingBottom:88},
   authSafe:{flex:1,backgroundColor:C.bg},
   authPage:{flexGrow:1,justifyContent:'center',padding:24,paddingBottom:44},
   logo:{width:170,height:110,alignSelf:'center',marginBottom:4},
