@@ -2509,7 +2509,7 @@ function MessagesScreen({ navigation }: any) {
               lineHeight: 16,
               marginTop: 2,
             }}>
-              Coordinate transactions only within designated University of Mindanao Safe Zones (e.g. CCE Atrium, Library). Keep all chat & QR handoffs inside UM-Pasa.
+              Coordinate transactions only within designated University of Mindanao Safe Zones (e.g. CCE Atrium, Library). Keep all chats and meetups inside UM-Pasa.
             </Text>
           </View>
           <Pressable onPress={() => setShowSafeBanner(false)} hitSlop={8}>
@@ -2666,9 +2666,9 @@ function MessagesScreen({ navigation }: any) {
                           alignItems: 'center',
                           gap: 4,
                         }}>
-                          <Ionicons name="qr-code-outline" size={12} color="#16A34A" />
+                          <Ionicons name="checkmark-done" size={12} color="#16A34A" />
                           <Text style={{ fontSize: 11, fontWeight: '700', color: '#16A34A' }}>
-                            Meetup Confirmed · Ready for QR pass
+                            Meetup Confirmed · Safe Zone Agreed
                           </Text>
                         </View>
                       ) : (
@@ -2715,39 +2715,6 @@ function MessagesScreen({ navigation }: any) {
           );
         })
       )}
-
-      {/* Campus Handoff Guaranteed Card matching Reference 2 */}
-      <View style={{
-        backgroundColor: isDark ? C.panel : '#FFFFFF',
-        borderWidth: 1,
-        borderColor: isDark ? C.border : '#E5E7EB',
-        borderRadius: 16,
-        padding: 14,
-        marginVertical: 12,
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: 12,
-      }}>
-        <View style={{
-          width: 40,
-          height: 40,
-          borderRadius: 12,
-          backgroundColor: isDark ? '#332306' : '#FEF3C7',
-          alignItems: 'center',
-          justifyContent: 'center',
-        }}>
-          <Ionicons name="shield-checkmark" size={20} color="#D97706" />
-        </View>
-        <View style={{ flex: 1 }}>
-          <Text style={{ fontSize: 13.5, fontWeight: '800', color: C.white }}>
-            Campus Handoff Guaranteed
-          </Text>
-          <Text style={{ fontSize: 11.5, color: C.muted, marginTop: 2, lineHeight: 16 }}>
-            All chats generate encrypted OTP and QR passes once meetups are confirmed. No off-campus risks.
-          </Text>
-        </View>
-        <Ionicons name="chevron-forward" size={18} color={C.muted} />
-      </View>
     </Page>
   );
 }
@@ -3731,8 +3698,6 @@ function ProfileReviewsScreen({ route, navigation }: any) {
   const [reviews, setReviews] = useState<any[]>([]);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(true);
-  const [filter, setFilter] = useState<'all' | 'seller' | 'buyer'>('all');
-  const [helpfulMap, setHelpfulMap] = useState<Record<string, number>>({});
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -3763,25 +3728,11 @@ function ProfileReviewsScreen({ route, navigation }: any) {
   const count2 = reviews.filter(r => Number(r.rating) === 2).length;
   const count1 = reviews.filter(r => Number(r.rating) === 1).length;
 
-  const pct5 = count ? Math.round((count5 / count) * 100) : 85;
-  const pct4 = count ? Math.round((count4 / count) * 100) : 12;
-  const pct3 = count ? Math.round((count3 / count) * 100) : 3;
+  const pct5 = count ? Math.round((count5 / count) * 100) : 100;
+  const pct4 = count ? Math.round((count4 / count) * 100) : 0;
+  const pct3 = count ? Math.round((count3 / count) * 100) : 0;
   const pct2 = count ? Math.round((count2 / count) * 100) : 0;
   const pct1 = count ? Math.round((count1 / count) * 100) : 0;
-
-  const filteredReviews = reviews.filter(r => {
-    if (filter === 'all') return true;
-    if (filter === 'seller') return r.reviewer_role === 'buyer' || r.type === 'seller';
-    if (filter === 'buyer') return r.reviewer_role === 'seller' || r.type === 'buyer';
-    return true;
-  });
-
-  const toggleHelpful = (id: string) => {
-    setHelpfulMap(prev => ({
-      ...prev,
-      [id]: (prev[id] || 0) + 1,
-    }));
-  };
 
   return (
     <Page onRefresh={load} refreshing={loading}>
@@ -3878,11 +3829,11 @@ function ProfileReviewsScreen({ route, navigation }: any) {
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
             <Ionicons name="trophy" size={15} color="#D97706" />
             <Text style={{ fontSize: 12, fontWeight: '800', color: isDark ? '#FDE68A' : '#92400E' }}>
-              Verified Campus Trader (Level 3)
+              Verified Campus Trader
             </Text>
           </View>
           <Text style={{ fontSize: 10.5, fontWeight: '700', color: isDark ? '#FDE68A' : '#B45309' }}>
-            🛡️ QR Handoff Enabled
+            🛡️ Verified Student
           </Text>
         </View>
 
@@ -3893,8 +3844,8 @@ function ProfileReviewsScreen({ route, navigation }: any) {
             <Text style={{ fontSize: 10, fontWeight: '700', color: C.muted, marginTop: 2 }}>On-Time</Text>
           </View>
           <View style={{ flex: 1, backgroundColor: isDark ? C.panel2 : '#FAF7F5', borderRadius: 12, paddingVertical: 10, alignItems: 'center', borderWidth: 1, borderColor: isDark ? 'rgba(255,255,255,0.06)' : '#EFE8E3' }}>
-            <Text style={{ fontSize: 15, fontWeight: '900', color: C.white }}>{Math.max(count, 14)}</Text>
-            <Text style={{ fontSize: 10, fontWeight: '700', color: C.muted, marginTop: 2 }}>Handoffs</Text>
+            <Text style={{ fontSize: 15, fontWeight: '900', color: C.white }}>{count}</Text>
+            <Text style={{ fontSize: 10, fontWeight: '700', color: C.muted, marginTop: 2 }}>Reviews</Text>
           </View>
           <View style={{ flex: 1, backgroundColor: isDark ? C.panel2 : '#FAF7F5', borderRadius: 12, paddingVertical: 10, alignItems: 'center', borderWidth: 1, borderColor: isDark ? 'rgba(255,255,255,0.06)' : '#EFE8E3' }}>
             <Text style={{ fontSize: 15, fontWeight: '900', color: C.white }}>0</Text>
@@ -3943,12 +3894,12 @@ function ProfileReviewsScreen({ route, navigation }: any) {
             ))}
           </View>
           <Text style={{ fontSize: 12, color: C.muted, fontWeight: '600', marginTop: 2 }}>
-            {count || 18} verified reviews · 100% peer recommendation
+            {count ? `${count} verified review${count === 1 ? '' : 's'}` : 'No verified reviews yet'}
           </Text>
         </View>
 
         {/* Breakdown Progress Bars */}
-        <View style={{ gap: 6, marginBottom: 14 }}>
+        <View style={{ gap: 6 }}>
           {[
             { label: '5★', pct: pct5 },
             { label: '4★', pct: pct4 },
@@ -3965,97 +3916,15 @@ function ProfileReviewsScreen({ route, navigation }: any) {
             </View>
           ))}
         </View>
-
-        {/* Endorsed Strengths by Peers */}
-        <Text style={{ fontSize: 12.5, fontWeight: '800', color: C.white, marginBottom: 8 }}>
-          🎯 Endorsed Strengths by Peers
-        </Text>
-        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6 }}>
-          {[
-            { tag: 'Punctual & Responsive', n: 16 },
-            { tag: 'Item as Described', n: 14 },
-            { tag: 'Safe Meetup Zone Followed', n: 15 },
-            { tag: 'Fair Pricing', n: 11 },
-            { tag: 'Smooth Escrow / Cash Payment', n: 9 },
-          ].map(item => (
-            <View
-              key={item.tag}
-              style={{
-                flexDirection: 'row',
-                alignItems: 'center',
-                gap: 4,
-                backgroundColor: isDark ? C.panel2 : '#F5EFEA',
-                borderWidth: 1,
-                borderColor: isDark ? 'rgba(255,255,255,0.08)' : '#EADFD8',
-                paddingHorizontal: 9,
-                paddingVertical: 5,
-                borderRadius: 12,
-              }}
-            >
-              <Ionicons name="checkmark-circle" size={12} color={C.red} />
-              <Text style={{ fontSize: 11, fontWeight: '700', color: C.white }}>{item.tag}</Text>
-              <Text style={{ fontSize: 11, fontWeight: '800', color: C.red }}>({item.n})</Text>
-            </View>
-          ))}
-        </View>
       </View>
 
       {/* Community Feedback Section */}
       <View style={{ marginBottom: 14 }}>
         <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
           <Text style={{ fontSize: 16, fontWeight: '900', color: C.white }}>Community Feedback</Text>
-          <Text style={{ fontSize: 11, color: C.muted, fontWeight: '600' }}>Sorted by recent</Text>
-        </View>
-
-        {/* Filter Chips */}
-        <View style={{ flexDirection: 'row', gap: 6, marginBottom: 12 }}>
-          <Pressable
-            onPress={() => setFilter('all')}
-            style={{
-              paddingHorizontal: 14,
-              paddingVertical: 6,
-              borderRadius: 20,
-              backgroundColor: filter === 'all' ? C.red : (isDark ? C.panel : '#FFFFFF'),
-              borderWidth: 1,
-              borderColor: filter === 'all' ? C.red : (isDark ? C.border : '#E2D8D0'),
-            }}
-          >
-            <Text style={{ fontSize: 12, fontWeight: '800', color: filter === 'all' ? '#FFFFFF' : C.white }}>
-              All ({count || 4})
-            </Text>
-          </Pressable>
-
-          <Pressable
-            onPress={() => setFilter('seller')}
-            style={{
-              paddingHorizontal: 14,
-              paddingVertical: 6,
-              borderRadius: 20,
-              backgroundColor: filter === 'seller' ? C.red : (isDark ? C.panel : '#FFFFFF'),
-              borderWidth: 1,
-              borderColor: filter === 'seller' ? C.red : (isDark ? C.border : '#E2D8D0'),
-            }}
-          >
-            <Text style={{ fontSize: 12, fontWeight: '800', color: filter === 'seller' ? '#FFFFFF' : C.white }}>
-              As Seller
-            </Text>
-          </Pressable>
-
-          <Pressable
-            onPress={() => setFilter('buyer')}
-            style={{
-              paddingHorizontal: 14,
-              paddingVertical: 6,
-              borderRadius: 20,
-              backgroundColor: filter === 'buyer' ? C.red : (isDark ? C.panel : '#FFFFFF'),
-              borderWidth: 1,
-              borderColor: filter === 'buyer' ? C.red : (isDark ? C.border : '#E2D8D0'),
-            }}
-          >
-            <Text style={{ fontSize: 12, fontWeight: '800', color: filter === 'buyer' ? '#FFFFFF' : C.white }}>
-              As Buyer
-            </Text>
-          </Pressable>
+          <Text style={{ fontSize: 11, color: C.muted, fontWeight: '600' }}>
+            {count ? `${count} review${count === 1 ? '' : 's'}` : 'No reviews yet'}
+          </Text>
         </View>
 
         {/* Reviews List */}
@@ -4063,11 +3932,10 @@ function ProfileReviewsScreen({ route, navigation }: any) {
           <Status state={error} retry={load} />
         ) : loading ? (
           <ActivityIndicator color={C.red} style={{ marginVertical: 20 }} />
-        ) : filteredReviews.length ? (
-          filteredReviews.map((r, idx) => {
+        ) : reviews.length ? (
+          reviews.map((r, idx) => {
             const revInitials = (r.reviewer_name || 'UM').split(' ').map((n: string) => n[0]).join('').slice(0, 2).toUpperCase();
             const ratingVal = Number(r.rating || 5);
-            const helpfulCount = helpfulMap[r.review_id || String(idx)] || (r.helpful_count || (idx === 0 ? 4 : idx === 1 ? 3 : 1));
 
             return (
               <View
@@ -4154,41 +4022,18 @@ function ProfileReviewsScreen({ route, navigation }: any) {
                   "{r.comment || 'Super smooth and reliable transaction! On time and item in great condition.'}"
                 </Text>
 
-                {/* Badges Footer & Helpful Button */}
-                <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 10, flexWrap: 'wrap', gap: 6 }}>
-                  <View style={{ flexDirection: 'row', gap: 5, flexWrap: 'wrap' }}>
-                    <View style={{ backgroundColor: isDark ? 'rgba(230,36,36,0.12)' : '#FDF0EB', paddingHorizontal: 7, paddingVertical: 2, borderRadius: 6 }}>
-                      <Text style={{ fontSize: 10, fontWeight: '700', color: C.red }}>
-                        🛡️ Verified Campus Handoff
-                      </Text>
-                    </View>
-                    <View style={{ backgroundColor: isDark ? C.panel2 : '#F5EFEA', paddingHorizontal: 7, paddingVertical: 2, borderRadius: 6 }}>
-                      <Text style={{ fontSize: 10, fontWeight: '700', color: C.muted }}>
-                        📍 CCE Atrium / Library
-                      </Text>
-                    </View>
-                  </View>
-
-                  <Pressable
-                    accessibilityRole="button"
-                    onPress={() => toggleHelpful(r.review_id || String(idx))}
-                    style={{
-                      flexDirection: 'row',
-                      alignItems: 'center',
-                      gap: 4,
-                      backgroundColor: isDark ? C.panel2 : '#FAF7F5',
-                      borderWidth: 1,
-                      borderColor: isDark ? 'rgba(255,255,255,0.1)' : '#EADFD8',
-                      paddingHorizontal: 9,
-                      paddingVertical: 4,
-                      borderRadius: 10,
-                    }}
-                  >
-                    <Ionicons name="thumbs-up-outline" size={11} color={C.muted} />
-                    <Text style={{ fontSize: 10.5, fontWeight: '700', color: C.muted }}>
-                      Helpful ({helpfulCount})
+                {/* Badges Footer */}
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 10, flexWrap: 'wrap' }}>
+                  <View style={{ backgroundColor: isDark ? 'rgba(230,36,36,0.12)' : '#FDF0EB', paddingHorizontal: 7, paddingVertical: 2, borderRadius: 6 }}>
+                    <Text style={{ fontSize: 10, fontWeight: '700', color: C.red }}>
+                      🛡️ Verified Campus Handoff
                     </Text>
-                  </Pressable>
+                  </View>
+                  <View style={{ backgroundColor: isDark ? C.panel2 : '#F5EFEA', paddingHorizontal: 7, paddingVertical: 2, borderRadius: 6 }}>
+                    <Text style={{ fontSize: 10, fontWeight: '700', color: C.muted }}>
+                      📍 CCE Atrium / Library
+                    </Text>
+                  </View>
                 </View>
               </View>
             );
@@ -4214,7 +4059,7 @@ function ProfileReviewsScreen({ route, navigation }: any) {
           </Text>
         </View>
         <Text style={{ fontSize: 11.5, color: C.muted, lineHeight: 17 }}>
-          Only students with confirmed physical handoffs or QR validation at designated campus safe zones (CCE Atrium, Gym, Library) can submit reviews. Fake or coerced ratings lead to immediate UM-Pasa account suspension.
+          Only students with confirmed physical handoffs at designated campus safe zones (CCE Atrium, Gym, Library) can submit reviews. Fake or coerced ratings lead to immediate UM-Pasa account suspension.
         </Text>
       </View>
 
