@@ -99,7 +99,7 @@ async function allRows(filters: ItemFilters, ownOnly: boolean): Promise<Item[]> 
       const user = await currentAuthUser();
       query = query.eq('seller_id', user.id).is('archived_at', null);
     } else {
-      query = query.eq('status', 'available').eq('moderation_status', 'approved').is('archived_at', null);
+      query = query.in('status', ['available', 'pending']).eq('moderation_status', 'approved').is('archived_at', null);
     }
     if (filters.category) query = query.eq('category', filters.category);
     if (filters.listing_type) query = query.eq('listing_type', filters.listing_type as ItemRow['listing_type']);

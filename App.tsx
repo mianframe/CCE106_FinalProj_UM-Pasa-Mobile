@@ -269,6 +269,7 @@ function BrowseScreen({ navigation }: any) {
 async function openNotification(n:Notice,navigation:any,isAdmin:boolean) { try { if(!n.is_read) await account.markNotificationRead(n.id); } catch(e) { Alert.alert('Unable to update notification',errorMessage(e));return; } if(n.related_type==='transaction'&&n.related_id)navigation.navigate('Transaction',{id:n.related_id});else if(n.related_type==='conversation'&&n.related_id)navigation.navigate('Conversation',{id:n.related_id});else if(n.related_type==='item'&&n.related_id)navigation.navigate(isAdmin&&n.type==='listing_review'?'AdminItems':'Listing',isAdmin&&n.type==='listing_review'?{itemId:n.related_id}:{id:n.related_id});else Alert.alert('Activity update',n.message); }
 function ItemCard({ item, compact = false }: { item: Item; compact?: boolean }) {
   const isRent = item.listing_type === 'rent';
+  const isReserved = item.status === 'pending';
   return (
     <View style={s.modernCard}>
       {/* Edge-to-edge image container with floating badge */}
@@ -284,11 +285,22 @@ function ItemCard({ item, compact = false }: { item: Item; compact?: boolean }) 
         <View style={s.floatingTypeBadge}>
           <Text style={s.floatingTypeText}>{isRent ? 'RENT' : 'SALE'}</Text>
         </View>
+        {isReserved && (
+          <View style={[s.floatingReservedBadge, compact && s.floatingReservedBadgeCompact]}>
+            <View style={s.floatingReservedDot} />
+            <Text style={[s.floatingReservedText, compact && s.floatingReservedTextCompact]}>RESERVED</Text>
+          </View>
+        )}
       </View>
 
       {/* Card Content Body */}
       <View style={s.itemBody}>
-        <Text numberOfLines={1} style={s.itemCategoryKicker}>{item.category || 'CAMPUS RESOURCE'}</Text>
+        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 2 }}>
+          <Text numberOfLines={1} style={[s.itemCategoryKicker, { flex: 1 }]}>{item.category || 'CAMPUS RESOURCE'}</Text>
+          {isReserved && (
+            <Text style={{ fontSize: 8.5, fontWeight: '900', color: C.gold, letterSpacing: 0.5 }}>● RESERVED</Text>
+          )}
+        </View>
         <Text numberOfLines={2} style={compact ? s.itemTitleCompact : s.itemTitle}>{item.title}</Text>
         <Text numberOfLines={1} style={s.itemMeta}>
           {item.condition?.replace('_', ' ')} · {item.course_code || item.department?.replace('Department of ', '')}
@@ -312,6 +324,8 @@ function ItemCard({ item, compact = false }: { item: Item; compact?: boolean }) 
 function ListingScreen({ route, navigation }: any) {
   const { user } = useAuth();
   const [item, setItem] = useState<Item | null>(null);
+  const [myActiveTx, setMyActiveTx] = useState<{ id: string; status: string } | null>(null);
+  const [sellerActiveTx, setSellerActiveTx] = useState<{ id: string; status: string } | null>(null);
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState('');
   const [days, setDays] = useState('');
@@ -322,11 +336,41 @@ function ListingScreen({ route, navigation }: any) {
   const load = useCallback(async () => {
     setErr('');
     try {
-      setItem(await marketplace.get(route.params.id));
+      const it = await marketplace.get(route.params.id);
+      setItem(it);
+      if (user) {
+        if (it.seller_id === user.id) {
+          const { data: sTx } = await supabase
+            .from('transactions')
+            .select('id, status')
+            .eq('item_id', route.params.id)
+            .in('status', ['pending', 'approved'])
+            .order('created_at', { ascending: false })
+            .limit(1)
+            .maybeSingle();
+          setSellerActiveTx(sTx);
+          setMyActiveTx(null);
+        } else {
+          const { data: bTx } = await supabase
+            .from('transactions')
+            .select('id, status')
+            .eq('item_id', route.params.id)
+            .eq('buyer_id', user.id)
+            .in('status', ['pending', 'approved'])
+            .order('created_at', { ascending: false })
+            .limit(1)
+            .maybeSingle();
+          setMyActiveTx(bTx);
+          setSellerActiveTx(null);
+        }
+      } else {
+        setMyActiveTx(null);
+        setSellerActiveTx(null);
+      }
     } catch (e) {
       setErr(errorMessage(e));
     }
-  }, [route.params.id]);
+  }, [route.params.id, user]);
 
   useEffect(() => { load(); }, [load]);
 
@@ -360,12 +404,14 @@ function ListingScreen({ route, navigation }: any) {
     }
     setBusy(true);
     try {
-      await transactions.request(item.id, {
+      const tx = await transactions.request(item.id, {
         payment_method: method,
         ...(method === 'other' ? { other_payment_method: otherPayment.trim() } : {}),
         ...(item.listing_type === 'rent' ? { rental_duration_days: Number(days) } : {})
       });
       setShowPaymentModal(false);
+      setMyActiveTx({ id: tx.id, status: tx.status });
+      await load();
       Alert.alert('Request sent', 'The seller has been notified.');
     } catch (e) {
       Alert.alert('Unable to request', errorMessage(e));
@@ -405,6 +451,126 @@ function ListingScreen({ route, navigation }: any) {
           </Text>
         </View>
       )}
+      {item.status === 'sold' && (
+        <View style={{
+          backgroundColor: isDark ? 'rgba(230,36,36,0.14)' : '#FFEAE8',
+          borderWidth: 1.5,
+          borderColor: C.red,
+          borderRadius: 14,
+          padding: 14,
+          marginBottom: 14,
+        }}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+            <Ionicons name="checkmark-done-circle" size={18} color={C.red} />
+            <Text style={{ fontSize: 14, fontWeight: '800', color: C.red }}>This Item is Sold</Text>
+          </View>
+          <Text style={{ fontSize: 13, color: C.white, lineHeight: 19 }}>
+            This listing has been completed or marked sold and is no longer available on the campus marketplace.
+          </Text>
+        </View>
+      )}
+      {user?.id === item.user_id && item.status === 'pending' && (
+        <View style={{
+          backgroundColor: isDark ? 'rgba(246,200,76,0.14)' : '#FFF9E6',
+          borderWidth: 1.5,
+          borderColor: 'rgba(246,200,76,0.6)',
+          borderRadius: 14,
+          padding: 14,
+          marginBottom: 14,
+        }}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+            <Ionicons name="time" size={18} color={C.gold} />
+            <Text style={{ fontSize: 14, fontWeight: '800', color: C.gold }}>Listing Reserved (Active Exchange)</Text>
+          </View>
+          <Text style={{ fontSize: 13, color: C.white, lineHeight: 19 }}>
+            A student has requested this listing and an exchange is in progress. The item stays visible on the marketplace as “Reserved” until completed or cancelled.
+          </Text>
+          <Pressable
+            onPress={() => {
+              if (sellerActiveTx) navigation.navigate('Transaction', { id: sellerActiveTx.id });
+              else navigation.navigate('Transactions');
+            }}
+            style={{
+              marginTop: 10,
+              alignSelf: 'flex-start',
+              paddingHorizontal: 12,
+              paddingVertical: 7,
+              borderRadius: 8,
+              backgroundColor: C.panel,
+              borderWidth: 1,
+              borderColor: C.border,
+              flexDirection: 'row',
+              alignItems: 'center',
+              gap: 6
+            }}
+          >
+            <Ionicons name="swap-horizontal" size={14} color={C.gold} />
+            <Text style={{ fontSize: 12, fontWeight: '800', color: C.gold }}>
+              {sellerActiveTx ? 'Manage Transaction ›' : 'View Transactions ›'}
+            </Text>
+          </Pressable>
+        </View>
+      )}
+      {user?.id !== item.user_id && myActiveTx && (
+        <View style={{
+          backgroundColor: isDark ? 'rgba(46,160,67,0.14)' : '#E6F4EA',
+          borderWidth: 1.5,
+          borderColor: '#2EA043',
+          borderRadius: 14,
+          padding: 14,
+          marginBottom: 14,
+        }}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+            <Ionicons name="checkmark-circle" size={18} color="#2EA043" />
+            <Text style={{ fontSize: 14, fontWeight: '800', color: '#2EA043' }}>You Have an Active Request</Text>
+          </View>
+          <Text style={{ fontSize: 13, color: C.white, lineHeight: 19 }}>
+            {myActiveTx.status === 'approved'
+              ? 'Your request was approved! Meetup details are scheduled.'
+              : 'Your transaction request is awaiting seller approval and meetup scheduling.'}
+          </Text>
+          <Pressable
+            onPress={() => navigation.navigate('Transaction', { id: myActiveTx.id })}
+            style={{
+              marginTop: 10,
+              alignSelf: 'flex-start',
+              paddingHorizontal: 12,
+              paddingVertical: 7,
+              borderRadius: 8,
+              backgroundColor: C.panel,
+              borderWidth: 1,
+              borderColor: C.border,
+              flexDirection: 'row',
+              alignItems: 'center',
+              gap: 6
+            }}
+          >
+            <Ionicons name="eye-outline" size={14} color={C.gold} />
+            <Text style={{ fontSize: 12, fontWeight: '800', color: C.gold }}>View Your Transaction ›</Text>
+          </Pressable>
+        </View>
+      )}
+      {user?.id !== item.user_id && !myActiveTx && item.status === 'pending' && (
+        <View style={{
+          backgroundColor: isDark ? 'rgba(246,200,76,0.12)' : '#FFF9E6',
+          borderWidth: 1.5,
+          borderColor: 'rgba(246,200,76,0.5)',
+          borderRadius: 14,
+          padding: 14,
+          marginBottom: 14,
+        }}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+            <Ionicons name="time" size={18} color={C.gold} />
+            <Text style={{ fontSize: 14, fontWeight: '800', color: C.gold }}>Item Currently Reserved</Text>
+          </View>
+          <Text style={{ fontSize: 13, color: C.white, lineHeight: 19 }}>
+            Another student has requested this item and a campus exchange is currently in progress. If the transaction is rejected or canceled, this listing will become available again.
+          </Text>
+          <Text style={{ fontSize: 11.5, color: C.muted, marginTop: 6 }}>
+            You can still message the seller below to inquire about queueing or being next in line.
+          </Text>
+        </View>
+      )}
       {item.image ? <Image source={{ uri: imageUrl(item.image) }} style={s.heroImage} /> : null}
       <Card>
         <Text style={s.price}>{money(item.price)}{item.listing_type === 'rent' ? ' / day' : ''}</Text>
@@ -429,7 +595,7 @@ function ListingScreen({ route, navigation }: any) {
         {item.created_at ? <Text style={s.muted}>Posted: {formatPhilippineDate(item.created_at)}</Text> : null}
         {item.archived_at ? <Text style={s.muted}>Archived listing · transaction history is retained</Text> : null}
       </Card>
-      {!item.archived_at && item.listing_type === 'rent' && (
+      {!item.archived_at && item.status === 'available' && item.listing_type === 'rent' && (
         <Field
           label={`Rental days (${item.minimum_rental_days || 1}–${item.maximum_rental_days || 365})`}
           value={days}
@@ -438,7 +604,28 @@ function ListingScreen({ route, navigation }: any) {
         />
       )}
       {!item.archived_at && user?.id !== item.user_id && (
-        <Button title={busy ? 'Sending…' : 'Request this item'} disabled={busy} onPress={request} />
+        myActiveTx ? (
+          <Button
+            title="View your active request"
+            onPress={() => navigation.navigate('Transaction', { id: myActiveTx.id })}
+          />
+        ) : item.status === 'pending' ? (
+          <Button
+            title="Reserved (Pending exchange)"
+            disabled
+          />
+        ) : item.status === 'sold' ? (
+          <Button
+            title="Item sold"
+            disabled
+          />
+        ) : (
+          <Button
+            title={busy ? 'Sending…' : 'Request this item'}
+            disabled={busy}
+            onPress={request}
+          />
+        )
       )}
       {user?.id !== item.user_id && (
         <Button
@@ -456,7 +643,9 @@ function ListingScreen({ route, navigation }: any) {
               const m = await messaging.send({
                 recipient_id: item.user_id,
                 item_id: item.id,
-                body: `Hi, I'm interested in ${item.title}.`
+                body: item.status === 'pending'
+                  ? `Hi, I noticed ${item.title} is currently reserved. Please let me know if it becomes available again!`
+                  : `Hi, I'm interested in ${item.title}.`
               });
               navigation.navigate('Conversation', { id: m.conversation_id });
             } catch (e) {
@@ -467,6 +656,16 @@ function ListingScreen({ route, navigation }: any) {
       )}
       {!item.archived_at && user && (user.id === item.user_id || user.role === 'admin') && (
         <Button title="Edit listing" secondary onPress={() => navigation.navigate('ListingForm', { item })} />
+      )}
+      {user?.id === item.user_id && item.status === 'pending' && (
+        <Button
+          title="Manage active transaction"
+          secondary
+          onPress={() => {
+            if (sellerActiveTx) navigation.navigate('Transaction', { id: sellerActiveTx.id });
+            else navigation.navigate('Transactions');
+          }}
+        />
       )}
       {user?.id === item.user_id && item.status === 'available' && item.moderation_status === 'approved' && item.listing_type === 'sell' && (
         <Button
@@ -1108,6 +1307,36 @@ function MyListingsScreen({ navigation }: any) {
               <Text numberOfLines={2} style={[s.badge, { color: statusColor(i.moderation_status), marginBottom: 4 }]}>
                 {i.moderation_status === 'pending' ? 'PENDING REVIEW' : i.moderation_status?.toUpperCase()}
               </Text>
+              {i.status === 'pending' && (
+                <View style={{
+                  backgroundColor: isDark ? 'rgba(246,200,76,0.18)' : '#FFF9E6',
+                  paddingHorizontal: 7,
+                  paddingVertical: 3,
+                  borderRadius: 6,
+                  marginBottom: 6,
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  gap: 4
+                }}>
+                  <Ionicons name="time" size={11} color={C.gold} />
+                  <Text style={{ fontSize: 9.5, fontWeight: '800', color: C.gold, letterSpacing: 0.4 }}>RESERVED (IN EXCHANGE)</Text>
+                </View>
+              )}
+              {i.status === 'sold' && (
+                <View style={{
+                  backgroundColor: isDark ? 'rgba(230,36,36,0.18)' : '#FFEAE8',
+                  paddingHorizontal: 7,
+                  paddingVertical: 3,
+                  borderRadius: 6,
+                  marginBottom: 6,
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  gap: 4
+                }}>
+                  <Ionicons name="checkmark-done" size={11} color={C.red} />
+                  <Text style={{ fontSize: 9.5, fontWeight: '800', color: C.red, letterSpacing: 0.4 }}>COMPLETED / SOLD</Text>
+                </View>
+              )}
               {i.moderation_status === 'rejected' && (
                 <View style={{
                   backgroundColor: isDark ? 'rgba(230,36,36,0.15)' : '#FFEBEE',
@@ -1129,6 +1358,15 @@ function MyListingsScreen({ navigation }: any) {
               {i.status === 'available' && i.moderation_status === 'approved' && i.listing_type === 'sell' && (
                 <Pressable accessibilityRole="button" onPress={() => markSold(i)} style={s.soldButton}>
                   <Text style={s.soldButtonText}>Mark sold</Text>
+                </Pressable>
+              )}
+              {i.status === 'pending' && (
+                <Pressable
+                  accessibilityRole="button"
+                  onPress={() => navigation.navigate('Transactions')}
+                  style={[s.soldButton, { borderColor: 'rgba(246,200,76,0.4)', backgroundColor: isDark ? 'rgba(246,200,76,0.12)' : '#FFF9E6' }]}
+                >
+                  <Text style={[s.soldButtonText, { color: C.gold }]}>View exchange ›</Text>
                 </Pressable>
               )}
             </View>
@@ -2974,6 +3212,11 @@ function createStyles(_tokens?: ThemeTokens) { return StyleSheet.create({
   placeholderTag:{fontSize:10,color:C.muted,fontWeight:'700',marginTop:4},
   floatingTypeBadge:{position:'absolute',top:8,left:8,backgroundColor:'rgba(0,0,0,.68)',paddingHorizontal:8,paddingVertical:3,borderRadius:8,borderWidth:1,borderColor:'rgba(255,255,255,.15)'},
   floatingTypeText:{color:'#F6C84C',fontSize:9,fontWeight:'900',letterSpacing:.8},
+  floatingReservedBadge:{position:'absolute',top:8,right:8,backgroundColor:'rgba(246,200,76,.96)',paddingHorizontal:7,paddingVertical:3,borderRadius:8,flexDirection:'row',alignItems:'center',gap:4,shadowColor:'#000',shadowOpacity:.2,shadowRadius:3,shadowOffset:{width:0,height:1},elevation:3},
+  floatingReservedBadgeCompact:{top:6,right:6,paddingHorizontal:6,paddingVertical:2,borderRadius:6,gap:3},
+  floatingReservedDot:{width:5,height:5,borderRadius:2.5,backgroundColor:'#1A1400'},
+  floatingReservedText:{color:'#1A1400',fontSize:8.5,fontWeight:'900',letterSpacing:.6},
+  floatingReservedTextCompact:{fontSize:7.5,letterSpacing:.4},
   itemBody:{padding:10},
   itemCategoryKicker:{fontSize:8.5,fontWeight:'900',letterSpacing:1,color:C.gold,textTransform:'uppercase',marginBottom:2},
   itemTitle:{fontSize:14,fontWeight:'800',color:C.white,lineHeight:18,minHeight:36},
