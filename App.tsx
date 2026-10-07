@@ -2712,6 +2712,9 @@ function TabsRoot() {
   const { user } = useAuth();
   const insets = useSafeAreaInsets();
   const isAdmin = user?.role === 'admin';
+  const isDark = C.bg === themeTokens.dark.colors.bg;
+  const bottomPadding = insets.bottom > 0 ? Math.max(insets.bottom - 16, 6) : 6;
+  const tabHeight = 49 + bottomPadding;
   const activeIcons: Record<string, any> = {
     Home: 'grid',
     Browse: 'search',
@@ -2732,30 +2735,37 @@ function TabsRoot() {
     <Tabs.Navigator
       screenOptions={({ route }) => ({
         headerShown: false,
-        tabBarStyle: [
-          s.tabBar,
-          {
-            height: 56 + Math.max(insets.bottom, 8),
-            paddingBottom: Math.max(insets.bottom, 6),
-            paddingTop: 4,
-          },
-        ],
+        tabBarStyle: {
+          backgroundColor: C.panel,
+          borderTopColor: C.border,
+          borderTopWidth: 1,
+          height: tabHeight,
+          paddingBottom: bottomPadding,
+          paddingTop: 4,
+          elevation: 10,
+          shadowColor: '#000',
+          shadowOffset: { width: 0, height: -2 },
+          shadowOpacity: isDark ? 0.25 : 0.06,
+          shadowRadius: 4,
+        },
         tabBarItemStyle: {
           paddingHorizontal: 0,
           paddingVertical: 0,
+          justifyContent: 'center',
         },
         tabBarActiveTintColor: C.gold,
         tabBarInactiveTintColor: C.muted,
         tabBarLabelStyle: {
           fontWeight: '700',
-          fontSize: 10.5,
-          letterSpacing: -0.2,
+          fontSize: 10,
+          letterSpacing: -0.1,
+          marginTop: -1,
         },
         tabBarAllowFontScaling: false,
-        tabBarIcon: ({ color, size, focused }) => (
+        tabBarIcon: ({ color, focused }) => (
           <Ionicons
             name={focused ? activeIcons[route.name] : inactiveIcons[route.name]}
-            size={size}
+            size={21}
             color={color}
           />
         ),
