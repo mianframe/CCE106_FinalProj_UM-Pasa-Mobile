@@ -18,7 +18,10 @@
       "adaptiveIcon": {
         "foregroundImage": "./assets/UMPASALOGO.png",
         "backgroundColor": "#121214"
-      }
+      },
+      "permissions": [
+        "android.permission.RECORD_AUDIO"
+      ]
     },
     "plugins": [
       "expo-secure-store",
@@ -39,6 +42,12 @@
         }
       ],
       "@react-native-community/datetimepicker"
-    ]
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "960c95c4-301b-4e5b-800d-30299b82726c"
+      }
+    },
+    "owner": "eunoian"
   }
 }
