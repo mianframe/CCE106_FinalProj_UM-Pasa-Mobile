@@ -8,7 +8,13 @@
     "tunnel": "expo start --tunnel",
     "android": "expo run:android",
     "ios": "expo run:ios",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "prebuild": "expo prebuild --no-install",
+    "build:preview": "eas build --profile preview",
+    "build:android:preview": "eas build -p android --profile preview",
+    "build:android:development": "eas build -p android --profile development",
+    "build:android:production": "eas build -p android --profile production",
+    "build:ios:preview": "eas build -p ios --profile preview"
   },
   "dependencies": {
     "@expo/vector-icons": "^15.0.3",

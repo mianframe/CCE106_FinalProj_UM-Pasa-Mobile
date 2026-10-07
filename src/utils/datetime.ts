@@ -116,3 +116,29 @@ export function isFutureDate(date: Date | null | undefined): boolean {
   if (!date) return false;
   return date.getTime() > Date.now();
 }
+
+/**
+ * Formats a timestamp into a friendly relative time string.
+ * Examples: "Just now", "5 min ago", "2 hrs ago", "Yesterday", "3 days ago", "Oct 8"
+ */
+export function formatRelativeTime(
+  timestamp: string | number | Date | null | undefined,
+  fallback = ''
+): string {
+  if (!timestamp) return fallback;
+  const date = timestamp instanceof Date ? timestamp : new Date(timestamp);
+  if (isNaN(date.getTime())) return String(timestamp);
+
+  const diffMs = Date.now() - date.getTime();
+  const diffSec = Math.floor(diffMs / 1000);
+  if (diffSec < 60) return 'Just now';
+  const diffMin = Math.floor(diffSec / 60);
+  if (diffMin < 60) return `${diffMin} min ago`;
+  const diffHours = Math.floor(diffMin / 60);
+  if (diffHours < 24) return `${diffHours} hr${diffHours > 1 ? 's' : ''} ago`;
+  const diffDays = Math.floor(diffHours / 24);
+  if (diffDays === 1) return 'Yesterday';
+  if (diffDays < 7) return `${diffDays} days ago`;
+
+  return formatPhilippineDate(date);
+}
