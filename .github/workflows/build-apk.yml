@@ -1,0 +1,56 @@
+name: Build Android APK
+
+on:
+  push:
+    branches: [ main, master ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 📥 Checkout repository
+        uses: actions/checkout@v4
+
+      - name: 🟢 Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: ☕ Setup Java JDK
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: 🤖 Setup Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: 📦 Install dependencies
+        run: npm ci
+
+      - name: 🔐 Create Environment Variables
+        run: |
+          cat << 'EOF' > .env
+          EXPO_PUBLIC_SUPABASE_URL=https://qtboywnuopgpgmspxxng.supabase.co
+          EXPO_PUBLIC_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InF0Ym95d251b3BncGdtc3B4eG5nIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTA2NTI1MTksImV4cCI6MjEwNjIyODUxOX0.R7lPKh3SZhePIUCbv8sow1sGR7zMsmtuiFczg8_1rRk
+          EOF
+
+      - name: 🛠️ Prebuild native Android project
+        run: npx expo prebuild --platform android --clean
+
+      - name: 🔨 Compile Standalone APK
+        working-directory: android
+        run: |
+          chmod +x gradlew
+          ./gradlew assembleDebug --no-daemon
+          cp app/build/outputs/apk/debug/app-debug.apk app/build/outputs/apk/debug/UM-Pasa.apk
+
+      - name: 🚀 Upload Installable APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: UM-Pasa-Android-APK
+          path: android/app/build/outputs/apk/debug/UM-Pasa.apk
+          if-no-files-found: error
