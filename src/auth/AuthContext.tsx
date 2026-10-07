@@ -31,7 +31,7 @@ type AuthContextValue = {
   logout: () => Promise<void>;
   refreshProfile: () => Promise<Profile | null>;
   updateProfile: (values: Pick<Profile, 'full_name' | 'student_number' | 'department' | 'program'>) => Promise<void>;
-  updatePassword: (password: string) => Promise<void>;
+  updatePassword: (password: string, currentPassword?: string) => Promise<void>;
   resetPassword: (email: string) => Promise<void>;
   deleteAccount: () => Promise<void>;
 };
@@ -185,10 +185,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     await loadProfile(authUser.id);
   }, [authUser, loadProfile]);
 
-  const updatePassword = useCallback(async (password: string) => {
-    const { error } = await supabase.auth.updateUser({ password });
+  const updatePassword = useCallback(async (newPassword: string, currentPassword?: string) => {
+    if (currentPassword && authUser?.email) {
+      const { error: verifyError } = await supabase.auth.signInWithPassword({
+        email: authUser.email,
+        password: currentPassword,
+      });
+      if (verifyError) throw new Error('Current password is incorrect. Please check and try again.');
+    }
+    const { error } = await supabase.auth.updateUser({ password: newPassword });
     if (error) throw new Error(authErrorMessage(error.message));
-  }, []);
+  }, [authUser]);
 
   const resetPassword = useCallback(async (email: string) => {
     if (!supabaseConfigured) throw new Error('Supabase is not configured.');

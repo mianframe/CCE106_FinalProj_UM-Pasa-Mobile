@@ -254,8 +254,12 @@ export function RegisterScreen({ navigation }: any) {
   const submit = async () => {
     setError('');
     setSuccess('');
-    if (!fullName.trim() || !email.trim() || !password || !confirm) {
-      setError('Complete your name, email, password, and confirmation.');
+    if (!fullName.trim() || !studentNumber.trim() || !email.trim() || !password || !confirm) {
+      setError('Complete your full name, student ID, email, and password.');
+      return;
+    }
+    if (studentNumber.trim().length < 4 || studentNumber.trim().length > 50) {
+      setError('Enter a valid University of Mindanao student ID number.');
       return;
     }
     if (!/^[^\s@]+@umindanao\.edu\.ph$/i.test(email.trim())) {
@@ -270,13 +274,9 @@ export function RegisterScreen({ navigation }: any) {
       setError('The passwords do not match.');
       return;
     }
-    if (studentNumber.trim().length > 50) {
-      setError('Student number must be 50 characters or fewer.');
-      return;
-    }
     setBusy(true);
     try {
-      const result = await register({ fullName, email, password, studentNumber });
+      const result = await register({ fullName, email, password, studentNumber: studentNumber.trim() });
       setSuccess(
         result.needsEmailConfirmation
           ? 'Account created. Check your university email to confirm it, then sign in.'
@@ -295,7 +295,7 @@ export function RegisterScreen({ navigation }: any) {
   return (
     <AuthLayout title="Create student account" subtitle="Register with your University of Mindanao email.">
       <AuthField label="Full name" value={fullName} onChangeText={setFullName} />
-      <AuthField label="Student number (optional)" value={studentNumber} onChangeText={setStudentNumber} autoCapitalize="characters" />
+      <AuthField label="Student ID number (e.g. 2024-12345)" value={studentNumber} onChangeText={setStudentNumber} autoCapitalize="characters" />
       <AuthField label="UM email" value={email} onChangeText={setEmail} keyboardType="email-address" autoCapitalize="none" />
       {email.length > 0 && !email.includes('@') && (
         <Pressable

@@ -270,8 +270,9 @@ async function openNotification(n:Notice,navigation:any,isAdmin:boolean) { try {
 function ItemCard({ item, compact = false }: { item: Item; compact?: boolean }) {
   const isRent = item.listing_type === 'rent';
   const isReserved = item.status === 'pending';
+  const isSold = item.status === 'sold';
   return (
-    <View style={s.modernCard}>
+    <View style={[s.modernCard, isSold && { opacity: 0.55 }]}>
       {/* Edge-to-edge image container with floating badge */}
       <View style={s.itemImageWrap}>
         {item.image ? (
@@ -291,6 +292,11 @@ function ItemCard({ item, compact = false }: { item: Item; compact?: boolean }) 
             <Text style={[s.floatingReservedText, compact && s.floatingReservedTextCompact]}>RESERVED</Text>
           </View>
         )}
+        {isSold && (
+          <View style={[s.floatingReservedBadge, compact && s.floatingReservedBadgeCompact, { backgroundColor: '#374151' }]}>
+            <Text style={[s.floatingReservedText, compact && s.floatingReservedTextCompact, { color: '#E5E7EB' }]}>SOLD</Text>
+          </View>
+        )}
       </View>
 
       {/* Card Content Body */}
@@ -299,6 +305,9 @@ function ItemCard({ item, compact = false }: { item: Item; compact?: boolean }) 
           <Text numberOfLines={1} style={[s.itemCategoryKicker, { flex: 1 }]}>{item.category || 'CAMPUS RESOURCE'}</Text>
           {isReserved && (
             <Text style={{ fontSize: 8.5, fontWeight: '900', color: C.gold, letterSpacing: 0.5 }}>● RESERVED</Text>
+          )}
+          {isSold && (
+            <Text style={{ fontSize: 8.5, fontWeight: '900', color: C.muted, letterSpacing: 0.5 }}>● SOLD</Text>
           )}
         </View>
         <Text numberOfLines={2} style={compact ? s.itemTitleCompact : s.itemTitle}>{item.title}</Text>
@@ -1051,6 +1060,7 @@ function DashboardScreen({ navigation }: any) {
 
 function TransactionsScreen({ navigation }: any) {
   const { user } = useAuth();
+  const isDark = C.bg === themeTokens.dark.colors.bg;
   const [list, setList] = useState<Transaction[]>([]);
   const [filter, setFilter] = useState<'all' | 'pending' | 'approved' | 'completed'>('all');
   const [err, setErr] = useState('');
@@ -1112,7 +1122,7 @@ function TransactionsScreen({ navigation }: any) {
             >
               <View style={s.rowBetween}>
                 <View style={{ flex: 1, paddingRight: 8 }}>
-                  <Text numberOfLines={1} style={s.txTitle}>{t.item?.title || 'Campus transaction'}</Text>
+                  <Text numberOfLines={2} style={s.txTitle}>{t.item?.title || 'Campus transaction'}</Text>
                   <Text style={s.txPrice}>{money(t.item?.price)}</Text>
                 </View>
                 <StatusPill status={t.status} />
@@ -1146,6 +1156,43 @@ function TransactionsScreen({ navigation }: any) {
                   <Text numberOfLines={1} style={s.txMeetupSchedule}>
                     Meetup: {formatPhilippineDateTime(t.meetup_time)}
                   </Text>
+                </View>
+              ) : null}
+
+              {t.item_id ? (
+                <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-end', marginTop: 10, paddingTop: 8, borderTopWidth: 1, borderTopColor: isDark ? 'rgba(255,255,255,0.06)' : '#F3F4F6' }}>
+                  <Pressable
+                    accessibilityRole="button"
+                    onPress={async () => {
+                      try {
+                        const recipient_id = user?.id === t.buyer_id ? t.seller_id : t.buyer_id;
+                        const m = await messaging.send({
+                          recipient_id,
+                          item_id: t.item_id,
+                          body: `Hi, I want to coordinate about ${t.item?.title || 'our transaction'}.`
+                        });
+                        navigation.navigate('Conversation', { id: m.conversation_id });
+                      } catch (err) {
+                        Alert.alert('Unable to open chat', errorMessage(err));
+                      }
+                    }}
+                    style={{
+                      flexDirection: 'row',
+                      alignItems: 'center',
+                      gap: 6,
+                      paddingHorizontal: 12,
+                      paddingVertical: 6,
+                      borderRadius: 14,
+                      backgroundColor: isDark ? 'rgba(239, 68, 68, 0.15)' : '#FEE2E2',
+                      borderWidth: 1,
+                      borderColor: isDark ? '#EF4444' : '#FECACA',
+                    }}
+                  >
+                    <Ionicons name="chatbubble-ellipses-outline" size={14} color={isDark ? '#FCA5A5' : '#8B0000'} />
+                    <Text style={{ fontSize: 12, fontWeight: '700', color: isDark ? '#FCA5A5' : '#8B0000' }}>
+                      Chat with {roleLabel}
+                    </Text>
+                  </Pressable>
                 </View>
               ) : null}
             </Pressable>
@@ -1380,10 +1427,12 @@ function MyListingsScreen({ navigation }: any) {
 function ProfileScreen({ navigation }: any) {
   const { user, profile, updateProfile, updatePassword, logout, deleteAccount } = useAuth();
   const { mode, setMode } = useTheme();
+  const isDark = C.bg === themeTokens.dark.colors.bg;
   const [name, setName] = useState(profile?.full_name || user?.name || '');
   const [studentNumber, setStudentNumber] = useState(profile?.student_number || '');
   const [department, setDepartment] = useState(profile?.department || '');
   const [program, setProgram] = useState(profile?.program || '');
+  const [currentPassword, setCurrentPassword] = useState('');
   const [password, setPassword] = useState('');
   const [confirm, setConfirm] = useState('');
   const [busy, setBusy] = useState(false);
@@ -1435,7 +1484,7 @@ function ProfileScreen({ navigation }: any) {
     try {
       await updateProfile({
         full_name: name,
-        student_number: studentNumber || null,
+        student_number: profile?.student_number || studentNumber || null,
         department: department || null,
         program: program || null,
       });
@@ -1449,6 +1498,10 @@ function ProfileScreen({ navigation }: any) {
   };
 
   const savePassword = async () => {
+    if (!currentPassword) {
+      Alert.alert('Current password required', 'Please enter your current password to verify your identity.');
+      return;
+    }
     if (!password) {
       Alert.alert('Password required', 'Please enter a new password.');
       return;
@@ -1463,7 +1516,8 @@ function ProfileScreen({ navigation }: any) {
     }
     setBusy(true);
     try {
-      await updatePassword(password);
+      await updatePassword(password, currentPassword);
+      setCurrentPassword('');
       setPassword('');
       setConfirm('');
       setShowPasswordModal(false);
@@ -1675,7 +1729,21 @@ function ProfileScreen({ navigation }: any) {
             </View>
             <ScrollView showsVerticalScrollIndicator={false}>
               <Field label="Full name" value={name} onChangeText={setName} />
-              <Field label="Student number" value={studentNumber} onChangeText={setStudentNumber} autoCapitalize="characters" />
+              {profile?.student_number ? (
+                <View style={s.fieldWrap}>
+                  <Text style={s.label}>Student ID Number</Text>
+                  <View style={[s.field, { backgroundColor: isDark ? 'rgba(255,255,255,0.04)' : '#F3F4F6', flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 14 }]}>
+                    <Text style={{ color: isDark ? C.white : '#111827', fontSize: 14, fontWeight: '700' }}>{profile.student_number}</Text>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                      <Ionicons name="lock-closed" size={14} color={C.muted} />
+                      <Text style={{ fontSize: 11, color: C.muted, fontWeight: '600' }}>Verified</Text>
+                    </View>
+                  </View>
+                  <Text style={[s.muted, { marginTop: 4, fontSize: 11 }]}>Student ID is permanently verified and locked.</Text>
+                </View>
+              ) : (
+                <Field label="Student ID number" value={studentNumber} onChangeText={setStudentNumber} autoCapitalize="characters" />
+              )}
               <Field label="Department" value={department} onChangeText={setDepartment} />
               <Field label="Program" value={program} onChangeText={setProgram} />
               <View style={{ marginTop: 12 }}>
@@ -1692,15 +1760,16 @@ function ProfileScreen({ navigation }: any) {
           <View style={s.modalContent}>
             <View style={s.modalHeader}>
               <Text style={s.modalTitle}>Change Password</Text>
-              <Pressable onPress={() => setShowPasswordModal(false)} hitSlop={10}>
+              <Pressable onPress={() => { setShowPasswordModal(false); setCurrentPassword(''); setPassword(''); setConfirm(''); }} hitSlop={10}>
                 <Ionicons name="close-circle" size={24} color={C.muted} />
               </Pressable>
             </View>
+            <Field label="Current password" value={currentPassword} onChangeText={setCurrentPassword} secureTextEntry placeholder="Enter current password" />
             <Field label="New password" value={password} onChangeText={setPassword} secureTextEntry placeholder="Min. 8 characters" />
             <Field label="Confirm new password" value={confirm} onChangeText={setConfirm} secureTextEntry placeholder="Re-enter password" />
             <View style={{ marginTop: 12 }}>
               <Button title={busy ? 'Updating…' : 'Update password'} onPress={savePassword} disabled={busy} />
-              <Button title="Cancel" secondary onPress={() => setShowPasswordModal(false)} />
+              <Button title="Cancel" secondary onPress={() => { setShowPasswordModal(false); setCurrentPassword(''); setPassword(''); setConfirm(''); }} />
             </View>
           </View>
         </KeyboardAvoidingView>
@@ -1807,7 +1876,7 @@ function NotificationsScreen({ navigation }: any) {
         badgeIcon: 'shield-checkmark-outline',
         iconColor: '#10B981',
         title: 'Campus Verified',
-        pillLabel: 'Live in UM Matina Feed',
+        pillLabel: 'Live in UM Tagum Feed',
         pillExtra: '',
       };
     }
@@ -1867,12 +1936,14 @@ function NotificationsScreen({ navigation }: any) {
         accessibilityRole="button"
         onPress={() => open(n)}
         style={{
-          backgroundColor: isDark ? C.panel : '#FFFFFF',
+          backgroundColor: !n.is_read
+            ? (isDark ? 'rgba(239, 68, 68, 0.08)' : '#FEF2F2')
+            : (isDark ? C.panel : '#FFFFFF'),
           borderRadius: 16,
           padding: 14,
           marginBottom: 10,
           borderWidth: 1,
-          borderColor: !n.is_read ? (isDark ? '#8B0000' : '#FECACA') : (isDark ? C.border : '#E5E7EB'),
+          borderColor: !n.is_read ? (isDark ? '#EF4444' : '#FECACA') : (isDark ? C.border : '#E5E7EB'),
           flexDirection: 'row',
           alignItems: 'flex-start',
           gap: 12,
@@ -1910,10 +1981,10 @@ function NotificationsScreen({ navigation }: any) {
 
         <View style={{ flex: 1 }}>
           <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 2 }}>
-            <Text style={{ fontSize: 13, fontWeight: '800', color: '#8B0000' }}>
+            <Text style={{ fontSize: 13, fontWeight: '800', color: isDark ? '#F87171' : '#B91C1C' }}>
               {visuals.title}
             </Text>
-            <Text style={{ fontSize: 11, color: C.muted }}>
+            <Text style={{ fontSize: 11, color: isDark ? '#9CA3AF' : '#6B7280' }}>
               {relTime}
             </Text>
           </View>
@@ -1943,7 +2014,7 @@ function NotificationsScreen({ navigation }: any) {
             ) : null}
 
             {visuals.pillExtra ? (
-              <Text style={{ fontSize: 12, fontWeight: '900', color: '#8B0000' }}>
+              <Text style={{ fontSize: 12, fontWeight: '900', color: isDark ? '#FCA5A5' : '#B91C1C' }}>
                 {visuals.pillExtra}
               </Text>
             ) : null}
@@ -1989,7 +2060,7 @@ function NotificationsScreen({ navigation }: any) {
             </Text>
             {unreadCount > 0 && (
               <View style={{
-                backgroundColor: '#8B0000',
+                backgroundColor: isDark ? '#DC2626' : '#B91C1C',
                 paddingHorizontal: 8,
                 paddingVertical: 2,
                 borderRadius: 10,
@@ -2001,7 +2072,7 @@ function NotificationsScreen({ navigation }: any) {
             )}
           </View>
           <Text style={{ fontSize: 12, color: C.muted, marginTop: 1 }}>
-            UM Matina Student Exchange
+            UM Tagum College Student Exchange
           </Text>
         </View>
 
@@ -2034,7 +2105,7 @@ function NotificationsScreen({ navigation }: any) {
             borderColor: isDark ? C.border : '#E5E7EB',
             position: 'relative',
           }}>
-            <Ionicons name="notifications" size={19} color={unreadCount ? '#8B0000' : C.white} />
+            <Ionicons name="notifications" size={19} color={unreadCount ? (isDark ? '#F87171' : '#DC2626') : C.white} />
             {unreadCount > 0 && (
               <View style={{
                 position: 'absolute',
@@ -2252,7 +2323,7 @@ function MessagesScreen({ navigation }: any) {
             <Image source={require('./assets/UMPASALOGO.png')} style={{ width: 24, height: 24 }} resizeMode="contain" />
           </View>
           <View>
-            <Text style={{ fontSize: 13, fontWeight: '900', color: '#8B0000', letterSpacing: 0.5 }}>
+            <Text style={{ fontSize: 13, fontWeight: '900', color: isDark ? '#FCA5A5' : '#8B0000', letterSpacing: 0.5 }}>
               UM-Pasa
             </Text>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
@@ -2261,7 +2332,7 @@ function MessagesScreen({ navigation }: any) {
               </Text>
               {unreadTotal > 0 && (
                 <View style={{
-                  backgroundColor: '#8B0000',
+                  backgroundColor: isDark ? '#DC2626' : '#8B0000',
                   paddingHorizontal: 7,
                   paddingVertical: 1.5,
                   borderRadius: 10,
@@ -2290,7 +2361,7 @@ function MessagesScreen({ navigation }: any) {
               borderColor: isDark ? C.border : '#E5E7EB',
             }}
           >
-            <Ionicons name="filter-outline" size={19} color={filter !== 'all' ? '#8B0000' : C.white} />
+            <Ionicons name="filter-outline" size={19} color={filter !== 'all' ? (isDark ? '#FCA5A5' : '#8B0000') : C.white} />
           </Pressable>
           <Pressable
             accessibilityRole="button"
@@ -2478,7 +2549,7 @@ function MessagesScreen({ navigation }: any) {
       {/* UM Campus Safe Exchange Banner */}
       {showSafeBanner && (
         <View style={{
-          backgroundColor: isDark ? 'rgba(183, 2, 1, 0.12)' : '#FFF5F5',
+          backgroundColor: isDark ? 'rgba(183, 2, 1, 0.15)' : '#FFF5F5',
           borderRadius: 16,
           padding: 13,
           borderWidth: 1,
@@ -2492,7 +2563,7 @@ function MessagesScreen({ navigation }: any) {
             width: 32,
             height: 32,
             borderRadius: 10,
-            backgroundColor: '#8B0000',
+            backgroundColor: isDark ? '#DC2626' : '#8B0000',
             alignItems: 'center',
             justifyContent: 'center',
             marginTop: 2,
@@ -2500,7 +2571,7 @@ function MessagesScreen({ navigation }: any) {
             <Ionicons name="shield-checkmark" size={17} color="#FFFFFF" />
           </View>
           <View style={{ flex: 1 }}>
-            <Text style={{ fontSize: 13, fontWeight: '800', color: '#8B0000' }}>
+            <Text style={{ fontSize: 13, fontWeight: '800', color: isDark ? '#FCA5A5' : '#8B0000' }}>
               UM Campus Safe Exchange
             </Text>
             <Text style={{
@@ -2529,7 +2600,7 @@ function MessagesScreen({ navigation }: any) {
           CONVERSATIONS
         </Text>
         <Pressable onPress={markAllAsRead}>
-          <Text style={{ fontSize: 12, fontWeight: '700', color: '#8B0000' }}>
+          <Text style={{ fontSize: 12, fontWeight: '700', color: isDark ? '#F87171' : '#8B0000' }}>
             ✔ Mark all as read
           </Text>
         </Pressable>
@@ -2562,9 +2633,9 @@ function MessagesScreen({ navigation }: any) {
                 padding: 14,
                 marginBottom: 10,
                 borderWidth: 1,
-                borderColor: isUnread ? (isDark ? '#8B0000' : '#FECACA') : (isDark ? C.border : '#E5E7EB'),
+                borderColor: isUnread ? (isDark ? '#EF4444' : '#FECACA') : (isDark ? C.border : '#E5E7EB'),
                 borderLeftWidth: isUnread ? 4 : 1,
-                borderLeftColor: isUnread ? '#8B0000' : (isDark ? C.border : '#E5E7EB'),
+                borderLeftColor: isUnread ? (isDark ? '#EF4444' : '#B91C1C') : (isDark ? C.border : '#E5E7EB'),
                 shadowColor: '#000',
                 shadowOffset: { width: 0, height: 1 },
                 shadowOpacity: isDark ? 0.2 : 0.04,
@@ -2582,10 +2653,10 @@ function MessagesScreen({ navigation }: any) {
                   alignItems: 'center',
                   justifyContent: 'center',
                   borderWidth: 1.5,
-                  borderColor: '#8B0000',
+                  borderColor: isDark ? '#EF4444' : '#8B0000',
                   position: 'relative',
                 }}>
-                  <Text style={{ fontSize: 16, fontWeight: '900', color: '#8B0000' }}>
+                  <Text style={{ fontSize: 16, fontWeight: '900', color: isDark ? '#FCA5A5' : '#8B0000' }}>
                     {initials}
                   </Text>
                   <View style={{
@@ -2612,9 +2683,9 @@ function MessagesScreen({ navigation }: any) {
                       <Text style={{ fontSize: 12, color: C.muted }}>
                         {programLabel}
                       </Text>
-                      <Ionicons name="checkmark-circle" size={14} color="#8B0000" />
+                      <Ionicons name="checkmark-circle" size={14} color={isDark ? '#F87171' : '#8B0000'} />
                     </View>
-                    <Text style={{ fontSize: 11, fontWeight: '700', color: isUnread ? '#8B0000' : C.muted }}>
+                    <Text style={{ fontSize: 11, fontWeight: '700', color: isUnread ? (isDark ? '#F87171' : '#B91C1C') : (isDark ? '#9CA3AF' : C.muted) }}>
                       {timeLabel}
                     </Text>
                   </View>
@@ -2637,7 +2708,7 @@ function MessagesScreen({ navigation }: any) {
                       <Text numberOfLines={1} style={{ fontSize: 11.5, fontWeight: '700', color: C.white, maxWidth: 160 }}>
                         {c.item.title}
                       </Text>
-                      <Text style={{ fontSize: 11.5, fontWeight: '900', color: '#8B0000' }}>
+                      <Text style={{ fontSize: 11.5, fontWeight: '900', color: isDark ? '#FCA5A5' : '#8B0000' }}>
                         {c.item.listing_type === 'rent' ? `₱${c.item.price}/day` : `₱${c.item.price}`}
                       </Text>
                     </View>
@@ -2691,7 +2762,7 @@ function MessagesScreen({ navigation }: any) {
                       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
                         <Ionicons name="location-outline" size={12} color={C.muted} />
                         <Text style={{ fontSize: 11, color: C.muted }}>
-                          Matina Campus Safe Zone
+                          UM Tagum Campus Safe Zone
                         </Text>
                       </View>
                     )}
@@ -2701,7 +2772,7 @@ function MessagesScreen({ navigation }: any) {
                         width: 18,
                         height: 18,
                         borderRadius: 9,
-                        backgroundColor: '#8B0000',
+                        backgroundColor: isDark ? '#DC2626' : '#8B0000',
                         alignItems: 'center',
                         justifyContent: 'center',
                       }}>
@@ -3462,7 +3533,7 @@ function ReportsScreen() {
   txs=[...txs].sort((a,b)=>sort==='oldest'?byDate(a,b):sort==='status'?a.status.localeCompare(b.status):byDate(b,a));
   const categoryNames=Array.from(new Set([...(d.items||[]).map((i:Item)=>i.category),...(d.transactions||[]).map((t:Transaction)=>t.item?.category)].filter(Boolean)));
   const studentSummary={listed:items.length,approved_listings:items.filter(i=>i.moderation_status==='approved').length,transactions:txs.length,completed:txs.filter(t=>t.status==='completed').length,earned:txs.filter(t=>t.seller_id===user?.id&&t.status==='completed').reduce((sum,t)=>sum+Number(t.item?.price||0),0)};
-  return <Page onRefresh={load}><Heading title="My report" subtitle="Listings and transactions linked to your account."/><View style={s.stats}>{Object.entries(studentSummary).map(([k,v])=><Card key={k} style={s.stat}><Text style={s.statNum}>{String(v)}</Text><Text style={s.muted}>{k.replaceAll('_',' ')}</Text></Card>)}</View><Text style={s.label}>Transaction status</Text><View style={s.rowWrap}><Choice label="All statuses" selected={!status} onPress={()=>setStatus('')}/>{['pending','approved','rejected','completed'].map(v=><Choice key={v} label={v} selected={status===v} onPress={()=>setStatus(status===v?'':v)}/>)}</View><Text style={s.label}>Listing type</Text><View style={s.row}><Choice label="Sales and rentals" selected={!type} onPress={()=>setType('')}/><Choice label="Sale" selected={type==='sell'} onPress={()=>setType(type==='sell'?'':'sell')}/><Choice label="Rental" selected={type==='rent'} onPress={()=>setType(type==='rent'?'':'rent')}/></View><Text style={s.label}>Category</Text><View style={s.rowWrap}><Choice label="All categories" selected={!category} onPress={()=>setCategory('')}/>{categoryNames.map(v=><Choice key={v} label={v} selected={category===v} onPress={()=>setCategory(category===v?'':(v||''))}/>)}</View><Text style={s.label}>Sort</Text><View style={s.rowWrap}>{['newest','oldest','title','status'].map(v=><Choice key={v} label={v} selected={sort===v} onPress={()=>setSort(v)}/>)}</View><Heading title="Listings"/>{items.length?items.map(i=><Card key={i.id}><Text style={s.cardTitle}>{i.title}</Text><Text style={s.muted}>{i.category} · {i.listing_type} · {i.status} / {i.moderation_status}{i.created_at ? ` · ${formatPhilippineDate(i.created_at)}` : ''}</Text><Text style={s.price}>{money(i.price)}</Text></Card>):<Status state="No listings match these report filters."/>}<Heading title="Transactions"/>{txs.length?txs.map(t=><Card key={t.id}><Text style={s.cardTitle}>{t.item?.title||'Transaction'}</Text><Text style={s.muted}>{t.status} · {t.buyer?.name} / {t.seller?.name}{t.created_at ? ` · ${formatPhilippineDate(t.created_at)}` : ''}</Text></Card>):<Status state="No transactions match these report filters."/>}</Page>;
+  return <Page onRefresh={load}><Heading title="My report" subtitle="Listings and transactions linked to your account."/><View style={s.stats}>{Object.entries(studentSummary).map(([k,v])=><Card key={k} style={s.stat}><Text style={s.statNum}>{k === 'earned' ? money(Number(v)) : String(v)}</Text><Text style={s.muted}>{k.replaceAll('_',' ')}</Text></Card>)}</View><Text style={s.label}>Transaction status</Text><View style={s.rowWrap}><Choice label="All statuses" selected={!status} onPress={()=>setStatus('')}/>{['pending','approved','rejected','completed'].map(v=><Choice key={v} label={v} selected={status===v} onPress={()=>setStatus(status===v?'':v)}/>)}</View><Text style={s.label}>Listing type</Text><View style={s.row}><Choice label="Sales and rentals" selected={!type} onPress={()=>setType('')}/><Choice label="Sale" selected={type==='sell'} onPress={()=>setType(type==='sell'?'':'sell')}/><Choice label="Rental" selected={type==='rent'} onPress={()=>setType(type==='rent'?'':'rent')}/></View><Text style={s.label}>Category</Text><View style={s.rowWrap}><Choice label="All categories" selected={!category} onPress={()=>setCategory('')}/>{categoryNames.map(v=><Choice key={v} label={v} selected={category===v} onPress={()=>setCategory(category===v?'':(v||''))}/>)}</View><Text style={s.label}>Sort</Text><View style={s.rowWrap}>{['newest','oldest','title','status'].map(v=><Choice key={v} label={v} selected={sort===v} onPress={()=>setSort(v)}/>)}</View><Heading title="Listings"/>{items.length?items.map(i=><Card key={i.id}><Text style={s.cardTitle}>{i.title}</Text><Text style={s.muted}>{i.category} · {i.listing_type} · {i.status} / {i.moderation_status}{i.created_at ? ` · ${formatPhilippineDate(i.created_at)}` : ''}</Text><Text style={s.price}>{money(i.price)}</Text></Card>):<Status state="No listings match these report filters."/>}<Heading title="Transactions"/>{txs.length?txs.map(t=><Card key={t.id}><Text style={s.cardTitle}>{t.item?.title||'Transaction'}</Text><Text style={s.muted}>{t.status} · {t.buyer?.name} / {t.seller?.name}{t.created_at ? ` · ${formatPhilippineDate(t.created_at)}` : ''}</Text></Card>):<Status state="No transactions match these report filters."/>}</Page>;
 }
 
 function AboutScreen() { return <Page><Heading title="About UM-Pasa" subtitle="Academic resource marketplace"/><Card><Text style={s.section}>System purpose</Text><Text style={s.body}>UM-Pasa helps UM students list academic items, request sale or rental transactions, coordinate safely through messages, upload payment proof, and track transactions from request to completion.</Text></Card><Card><Text style={s.section}>Project information</Text><Text style={s.body}>PASA Development Team</Text><Text style={s.muted}>Student developers and system publishers of UM-Pasa.</Text><Text style={s.body}>Institution</Text><Text style={s.muted}>Department of Computing Education · Information Technology Program · UM Tagum College - Visayan Campus</Text></Card><Card><Text style={s.section}>Marketplace principles</Text><Text style={s.body}>Student-centered listings · Traceable transactions · Admin moderated resources · Sale and rental support</Text></Card></Page>; }
