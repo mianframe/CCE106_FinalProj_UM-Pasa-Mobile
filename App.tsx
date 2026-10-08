@@ -104,7 +104,7 @@ function Page({ children, refreshing, onRefresh, footer, topSafe = false, floati
   );
 }
 function Heading({ title, subtitle }: any) { return <View style={{ marginBottom: 18 }}><Text style={s.heading}>{title}</Text>{subtitle ? <Text style={s.subheading}>{subtitle}</Text> : null}</View>; }
-function MobileFooter({ navigation }: any) { const { user }=useAuth(); return <LinearGradient colors={['rgba(230,36,36,.13)','rgba(246,200,76,.055)','rgba(255,255,255,.025)']} locations={[0,.52,1]} style={s.footer}><View style={s.footerBrand}><View style={s.footerLogoRing}><Image source={require('./assets/UMPASALOGO.png')} style={s.footerLogo} resizeMode="contain"/></View><View style={{flex:1}}><Text style={s.footerTitle}>UM-Pasa</Text><Text style={s.muted}>University Marketplace</Text></View></View><Text style={s.footerCopy}>Browse items, post listings, request transactions, and track marketplace activity in one student workspace.</Text><View style={s.footerRule}/><Text style={s.eyebrow}>QUICK LINKS</Text><View style={s.footerLinks}><Pressable onPress={()=>navigation.navigate('About')} style={s.footerPill}><Text style={s.footerLinkText}>About Us</Text></Pressable><Pressable onPress={()=>navigation.navigate('Help')} style={s.footerPill}><Text style={s.footerLinkText}>Help & contact</Text></Pressable>{user&&<Pressable onPress={()=>navigation.navigate('Messages')} style={s.footerPill}><Text style={s.footerLinkText}>Inbox</Text></Pressable>}<Pressable onPress={()=>Linking.openURL('mailto:support@umindanao.edu.ph')} style={s.footerPill}><Text style={s.footerLinkText}>Email support</Text></Pressable></View><View style={s.footerRule}/><Text style={s.eyebrow}>QUICK INSTRUCTIONS</Text><Text style={s.footerStep}>01  Browse the marketplace or search by category.</Text><Text style={s.footerStep}>02  Open a listing to request it or message the seller.</Text><Text style={s.footerStep}>03  Confirm your meetup and complete the transaction.</Text><View style={s.footerBottom}><Text style={s.footerCopyright}>UM-Pasa © {new Date().getFullYear()} · University of Mindanao</Text><Text style={s.footerBadge}>University-safe trading</Text></View></LinearGradient>; }
+function MobileFooter({ navigation }: any) { const { user }=useAuth(); return <LinearGradient colors={['rgba(230,36,36,.13)','rgba(246,200,76,.055)','rgba(255,255,255,.025)']} locations={[0,.52,1]} style={s.footer}><View style={s.footerBrand}><View style={s.footerLogoRing}><Image source={require('./assets/UMPASALOGO.png')} style={s.footerLogo} resizeMode="contain"/></View><View style={{flex:1}}><Text style={s.footerTitle}>UM-Pasa</Text><Text style={s.muted}>University Marketplace</Text></View></View><Text style={s.footerCopy}>Browse items, post listings, request transactions, and track marketplace activity in one student workspace.</Text><View style={s.footerRule}/><Text style={s.eyebrow}>QUICK LINKS</Text><View style={s.footerLinks}><Pressable onPress={()=>navigation.navigate('About')} style={s.footerPill}><Text style={s.footerLinkText}>About Us</Text></Pressable><Pressable onPress={()=>navigation.navigate('Help')} style={s.footerPill}><Text style={s.footerLinkText}>How it works</Text></Pressable><Pressable onPress={()=>navigation.navigate('Support')} style={s.footerPill}><Text style={s.footerLinkText}>Campus Support</Text></Pressable>{user&&<Pressable onPress={()=>navigation.navigate('Messages')} style={s.footerPill}><Text style={s.footerLinkText}>Inbox</Text></Pressable>}<Pressable onPress={()=>Linking.openURL('mailto:support.umpasa@umindanao.edu.ph')} style={s.footerPill}><Text style={s.footerLinkText}>Email support</Text></Pressable></View><View style={s.footerRule}/><Text style={s.eyebrow}>QUICK INSTRUCTIONS</Text><Text style={s.footerStep}>01  Browse the marketplace or search by category.</Text><Text style={s.footerStep}>02  Open a listing to request it or message the seller.</Text><Text style={s.footerStep}>03  Confirm your meetup and complete the transaction.</Text><View style={s.footerBottom}><Text style={s.footerCopyright}>UM-Pasa © {new Date().getFullYear()} · University of Mindanao</Text><Text style={s.footerBadge}>University-safe trading</Text></View></LinearGradient>; }
 function Status({ state, retry }: { state: string; retry?: () => void }) { return <Card><Text style={s.body}>{state}</Text>{retry ? <Button title="Try again" secondary onPress={retry} /> : null}</Card>; }
 function money(v: any) { return `₱${Number(v || 0).toLocaleString('en-PH', { minimumFractionDigits: 2 })}`; }
 function statusColor(status: string) { return status === 'approved' || status === 'available' || status === 'completed' ? C.green : status === 'rejected' || status === 'sold' ? (C.bg === themeTokens.dark.colors.bg ? '#ff8c82' : C.red) : C.gold; }
@@ -210,7 +210,7 @@ function BrowseScreen({ navigation }: any) {
           ].map((slide,index)=><View key={slide.kicker} style={[s.carouselSlide,{width:bannerWidth}]}><Ionicons name={slide.icon as any} size={23} color="#ffc270"/><Text style={s.heroKicker}>{slide.kicker}</Text><Text style={s.heroTitle}>{slide.title}</Text><Text style={s.heroDescription}>{slide.copy}</Text><Pressable onPress={()=>navigation.navigate(index===2?'Help':'Browse')}><Text style={s.heroLink}>{index===2?'How it works  ›':'Explore marketplace  ›'}</Text></Pressable></View>)}
         </ScrollView>
         <View style={s.carouselDots}>{[0,1,2].map((dot)=><View key={dot} style={[s.carouselDot,dot===carouselIndex&&s.carouselDotActive]}/>)}</View>
-        <View style={s.heroActions}><Pressable onPress={() => navigation.navigate('About')}><Text style={s.heroLink}>About UM-Pasa  ›</Text></Pressable><View style={s.heroDivider}/><Pressable onPress={() => navigation.navigate('Help')}><Text style={s.heroLink}>How it works  ›</Text></Pressable></View>
+        <View style={s.heroActions}><Pressable onPress={() => navigation.navigate('About')}><Text style={s.heroLink}>About UM-Pasa  ›</Text></Pressable><View style={s.heroDivider}/><Pressable onPress={() => navigation.navigate('Help')}><Text style={s.heroLink}>How it works  ›</Text></Pressable><View style={s.heroDivider}/><Pressable onPress={() => navigation.navigate('Support')}><Text style={s.heroLink}>Support  ›</Text></Pressable></View>
       </LinearGradient>
       <View style={s.heroGlow}/>
     </View>
@@ -1836,6 +1836,37 @@ function ProfileScreen({ navigation }: any) {
             <Ionicons name="settings-outline" size={18} color={C.gold} />
           </View>
           <Text style={s.profileMenuLabel}>Edit Profile & Academic Info</Text>
+          <Ionicons name="chevron-forward" size={18} color={C.muted} />
+        </Pressable>
+      </View>
+
+      {/* Campus Guide & Support */}
+      <View style={s.profileMenuCard}>
+        <Pressable style={s.profileMenuItem} onPress={() => navigation.navigate('Help')}>
+          <View style={s.profileMenuIconBox}>
+            <Ionicons name="book-outline" size={18} color={C.gold} />
+          </View>
+          <Text style={s.profileMenuLabel}>Help & How It Works</Text>
+          <Ionicons name="chevron-forward" size={18} color={C.muted} />
+        </Pressable>
+
+        <View style={s.profileMenuDivider} />
+
+        <Pressable style={s.profileMenuItem} onPress={() => navigation.navigate('About')}>
+          <View style={s.profileMenuIconBox}>
+            <Ionicons name="people-outline" size={18} color={C.gold} />
+          </View>
+          <Text style={s.profileMenuLabel}>About UM-Pasa & Team</Text>
+          <Ionicons name="chevron-forward" size={18} color={C.muted} />
+        </Pressable>
+
+        <View style={s.profileMenuDivider} />
+
+        <Pressable style={s.profileMenuItem} onPress={() => navigation.navigate('Support')}>
+          <View style={s.profileMenuIconBox}>
+            <Ionicons name="shield-checkmark-outline" size={18} color={C.gold} />
+          </View>
+          <Text style={s.profileMenuLabel}>Campus Support & Safety</Text>
           <Ionicons name="chevron-forward" size={18} color={C.muted} />
         </Pressable>
       </View>
@@ -3782,205 +3813,688 @@ function ReportsScreen() {
   );
 }
 
-function AboutScreen() {
+function CampusGuideScreen({ route, navigation, initialTab = 'how' }: any) {
   const isDark = C.bg === themeTokens.dark.colors.bg;
+  const startTab = route?.params?.initialTab || initialTab || 'how';
+  const [tab, setTab] = useState<'how' | 'about' | 'support'>(startTab);
+  const [expandedFaq, setExpandedFaq] = useState<number | null>(null);
+  const [ticketCat, setTicketCat] = useState('Missing Item / Payment Issue');
+  const [ticketSubject, setTicketSubject] = useState('');
+  const [ticketMessage, setTicketMessage] = useState('');
+
+  useEffect(() => {
+    if (route?.params?.initialTab) {
+      setTab(route.params.initialTab);
+    }
+  }, [route?.params?.initialTab]);
+
+  const submitTicket = () => {
+    if (!ticketSubject.trim() || !ticketMessage.trim()) {
+      Alert.alert('Required Fields', 'Please enter both a subject and details for your inquiry.');
+      return;
+    }
+    const ticketId = `UMTC-${Math.floor(1000 + Math.random() * 9000)}`;
+    Alert.alert(
+      'Support Ticket Submitted',
+      `Your inquiry (#${ticketId}) has been dispatched to campus moderators.\n\nCategory: ${ticketCat}\n\nWe will review your inquiry and follow up through your registered institutional email shortly.`,
+      [{
+        text: 'OK',
+        onPress: () => {
+          setTicketSubject('');
+          setTicketMessage('');
+        },
+      }]
+    );
+  };
+
+  const callSecurity = () => {
+    Alert.alert(
+      'Campus Security Desk',
+      'UM Tagum College Security & Emergency Desk:\n\n• Mabini Main Gate 1: (084) 216-9999\n• Visayan Gate 2: (084) 216-8888\n• Tagum Emergency Hotline: 911\n\nWould you like to dial campus security now?',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        { text: 'Call Campus Desk', onPress: () => Linking.openURL('tel:0842169999').catch(() => {}) },
+      ]
+    );
+  };
+
+  const emailSupport = () => {
+    Linking.openURL('mailto:support.umpasa@umindanao.edu.ph?subject=UM-Pasa%20Student%20Support%20Inquiry').catch(() => {
+      Alert.alert('Official Email', 'support.umpasa@umindanao.edu.ph');
+    });
+  };
+
+  const TEAM_MEMBERS = [
+    {
+      name: 'Dongie Arapoc',
+      role: 'Group Creator & Project Lead',
+      sub: 'Full-Stack Architecture & Database Design',
+      initials: 'DA',
+      accent: C.red,
+    },
+    {
+      name: 'Ian Coronia',
+      role: 'Lead Mobile UI Engineer',
+      sub: 'Frontend Engineering & App Experience',
+      initials: 'IC',
+      accent: C.gold,
+    },
+    {
+      name: 'Rhena Mae Nalzaro',
+      role: 'UI/UX Design & QA',
+      sub: 'Interface Standards & Quality Assurance',
+      initials: 'RN',
+      accent: '#2E7D32',
+    },
+    {
+      name: 'Sophia Tuyac',
+      role: 'System Analyst & Documentation',
+      sub: 'Requirements Analysis & Technical Specs',
+      initials: 'ST',
+      accent: '#2563EB',
+    },
+  ];
+
+  const FAQS = [
+    {
+      q: "What happens if a student doesn't show up at the safe zone?",
+      a: "If a student fails to arrive within 15 minutes of the agreed schedule without notice in chat, use 'Report No-Show' on the transaction details. Repeated unexcused absences result in temporary or permanent suspension from UM-Pasa.",
+    },
+    {
+      q: "How long does administrative moderation take for new listings?",
+      a: "DCE moderators verify submitted items during regular class operating hours (8:00 AM to 5:00 PM). New items are typically approved within 1 to 12 hours.",
+    },
+    {
+      q: "Can students outside Tagum College use the platform?",
+      a: "UM-Pasa is strictly tailored to University of Mindanao Tagum College (Mabini Main & Visayan campuses) and requires an active @umindanao.edu.ph student email address.",
+    },
+  ];
+
   return (
     <Page>
-      <Heading
-        title="About UM-Pasa"
-        subtitle="Official Peer-to-Peer Academic Resource Marketplace · University of Mindanao Tagum College"
-      />
-
-      <Card style={{ marginBottom: 12 }}>
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 8 }}>
-          <View style={{ width: 32, height: 32, borderRadius: 16, backgroundColor: isDark ? 'rgba(230,36,36,0.18)' : '#FFEAE8', alignItems: 'center', justifyContent: 'center' }}>
-            <Ionicons name="repeat" size={18} color={C.red} />
-          </View>
-          <View style={{ flex: 1 }}>
-            <Text style={s.eyebrow}>ACADEMIC SUSTAINABILITY</Text>
-            <Text style={s.cardTitle}>Student Resource Circulation</Text>
-          </View>
+      {/* Header Bar matching Reference */}
+      <View style={{ marginBottom: 14 }}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 4 }}>
+          <View style={{ width: 7, height: 7, borderRadius: 3.5, backgroundColor: '#16A34A' }} />
+          <Text style={{ fontSize: 11, fontWeight: '800', color: isDark ? '#86EFAC' : '#15803D', letterSpacing: 0.8 }}>
+            STUDENT HELP GUIDE & POLICY
+          </Text>
         </View>
-        <Text style={s.body}>
-          UM-Pasa empowers students at University of Mindanao Tagum College to buy, sell, and rent course books, engineering instruments, lab uniforms, drafting tools, and tech accessories safely within our campus community.
+        <Text style={{ fontSize: 24, fontWeight: '900', color: C.white, letterSpacing: -0.4 }}>
+          Help & How It Works
         </Text>
-        <Text style={[s.body, { color: C.muted, fontSize: 13, marginTop: 4 }]}>
-          By passing academic materials forward to junior cohorts, students significantly reduce term textbook expenses while promoting zero-waste campus practices.
+        <Text style={{ fontSize: 12.5, color: C.muted, marginTop: 4, lineHeight: 18 }}>
+          The official student-to-student resource and peer exchange campus handbook · UM Tagum College
         </Text>
-      </Card>
+      </View>
 
-      <Card style={{ marginBottom: 12 }}>
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 10 }}>
-          <View style={{ width: 32, height: 32, borderRadius: 16, backgroundColor: isDark ? 'rgba(246,200,76,0.18)' : '#FFF3D6', alignItems: 'center', justifyContent: 'center' }}>
-            <Ionicons name="shield-checkmark" size={18} color={C.gold} />
-          </View>
-          <View style={{ flex: 1 }}>
-            <Text style={s.eyebrow}>CAMPUS TRUST PILLARS</Text>
-            <Text style={s.cardTitle}>Four Foundations of Safety</Text>
-          </View>
-        </View>
-        <View style={{ gap: 10 }}>
-          <View style={{ flexDirection: 'row', gap: 10 }}>
-            <Ionicons name="school-outline" size={18} color={C.gold} style={{ marginTop: 2 }} />
-            <View style={{ flex: 1 }}>
-              <Text style={{ fontSize: 13, fontWeight: '800', color: C.white }}>Verified Institutional Identity</Text>
-              <Text style={{ fontSize: 12, color: C.muted, lineHeight: 17 }}>Access is strictly restricted to verified @umindanao.edu.ph accounts and active student numbers.</Text>
-            </View>
-          </View>
-          <View style={{ flexDirection: 'row', gap: 10 }}>
-            <Ionicons name="pricetag-outline" size={18} color={C.gold} style={{ marginTop: 2 }} />
-            <View style={{ flex: 1 }}>
-              <Text style={{ fontSize: 13, fontWeight: '800', color: C.white }}>Zero Middleman Fees</Text>
-              <Text style={{ fontSize: 12, color: C.muted, lineHeight: 17 }}>Direct peer-to-peer exchanges without platform commissions or hidden service charges.</Text>
-            </View>
-          </View>
-          <View style={{ flexDirection: 'row', gap: 10 }}>
-            <Ionicons name="location-outline" size={18} color={C.gold} style={{ marginTop: 2 }} />
-            <View style={{ flex: 1 }}>
-              <Text style={{ fontSize: 13, fontWeight: '800', color: C.white }}>Designated Campus Safe Zones</Text>
-              <Text style={{ fontSize: 12, color: C.muted, lineHeight: 17 }}>Handoffs take place inside monitored college hubs: Mabini Main Library, Visayan IT Labs, and student canteens.</Text>
-            </View>
-          </View>
-          <View style={{ flexDirection: 'row', gap: 10 }}>
-            <Ionicons name="eye-outline" size={18} color={C.gold} style={{ marginTop: 2 }} />
-            <View style={{ flex: 1 }}>
-              <Text style={{ fontSize: 13, fontWeight: '800', color: C.white }}>Moderation Oversight</Text>
-              <Text style={{ fontSize: 12, color: C.muted, lineHeight: 17 }}>Every listing is verified by campus administrators before publishing to prevent non-academic contraband.</Text>
-            </View>
-          </View>
-        </View>
-      </Card>
+      {/* 3 Segmented Tabs */}
+      <View style={{
+        flexDirection: 'row',
+        gap: 6,
+        padding: 4,
+        borderRadius: 14,
+        backgroundColor: isDark ? 'rgba(255,255,255,0.04)' : '#F2ECE7',
+        borderWidth: 1,
+        borderColor: isDark ? C.border : '#E5DDD6',
+        marginBottom: 16,
+      }}>
+        <Pressable
+          accessibilityRole="button"
+          onPress={() => setTab('how')}
+          style={{
+            flex: 1,
+            paddingVertical: 9,
+            borderRadius: 10,
+            backgroundColor: tab === 'how' ? C.red : 'transparent',
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}
+        >
+          <Text style={{
+            fontSize: 12,
+            fontWeight: '800',
+            color: tab === 'how' ? '#FFFFFF' : (isDark ? C.cream : '#4B5563'),
+          }}>
+            How It Works
+          </Text>
+        </Pressable>
 
-      <Card style={{ marginBottom: 12 }}>
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 8 }}>
-          <View style={{ width: 32, height: 32, borderRadius: 16, backgroundColor: isDark ? 'rgba(46,125,50,0.18)' : '#E8F5E9', alignItems: 'center', justifyContent: 'center' }}>
-            <Ionicons name="code-slash" size={18} color="#2E7D32" />
-          </View>
-          <View style={{ flex: 1 }}>
-            <Text style={s.eyebrow}>PROJECT AFFILIATION</Text>
-            <Text style={s.cardTitle}>Academic Project & Credits</Text>
-          </View>
-        </View>
-        <View style={{ gap: 6 }}>
-          <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
-            <Text style={{ fontSize: 12.5, fontWeight: '700', color: C.muted }}>Development Team:</Text>
-            <Text style={{ fontSize: 12.5, fontWeight: '800', color: C.white }}>PASA Core Developers</Text>
-          </View>
-          <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
-            <Text style={{ fontSize: 12.5, fontWeight: '700', color: C.muted }}>Department:</Text>
-            <Text style={{ fontSize: 12.5, fontWeight: '800', color: C.white }}>Dept. of Computing Education (DCE)</Text>
-          </View>
-          <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
-            <Text style={{ fontSize: 12.5, fontWeight: '700', color: C.muted }}>Degree Program:</Text>
-            <Text style={{ fontSize: 12.5, fontWeight: '800', color: C.white }}>BS in Information Technology (BSIT)</Text>
-          </View>
-          <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
-            <Text style={{ fontSize: 12.5, fontWeight: '700', color: C.muted }}>Institution:</Text>
-            <Text style={{ fontSize: 12.5, fontWeight: '800', color: C.white }}>University of Mindanao - Tagum College</Text>
-          </View>
-          <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
-            <Text style={{ fontSize: 12.5, fontWeight: '700', color: C.muted }}>Campus Scope:</Text>
-            <Text style={{ fontSize: 12.5, fontWeight: '800', color: C.white }}>Mabini Main & Visayan Campuses</Text>
-          </View>
-        </View>
-      </Card>
+        <Pressable
+          accessibilityRole="button"
+          onPress={() => setTab('about')}
+          style={{
+            flex: 1,
+            paddingVertical: 9,
+            borderRadius: 10,
+            backgroundColor: tab === 'about' ? C.red : 'transparent',
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}
+        >
+          <Text style={{
+            fontSize: 12,
+            fontWeight: '800',
+            color: tab === 'about' ? '#FFFFFF' : (isDark ? C.cream : '#4B5563'),
+          }}>
+            About UM-Pasa
+          </Text>
+        </Pressable>
 
-      <Card style={{ marginBottom: 12 }}>
-        <Text style={s.section}>Campus Honor Code</Text>
-        <Text style={s.body}>
-          All participating students agree to accurate item condition descriptions, respectful in-app correspondence, prompt attendance at scheduled meetups, and honest transaction reviews. Violations of platform guidelines or university policies result in immediate account suspension.
-        </Text>
-      </Card>
+        <Pressable
+          accessibilityRole="button"
+          onPress={() => setTab('support')}
+          style={{
+            flex: 1,
+            paddingVertical: 9,
+            borderRadius: 10,
+            backgroundColor: tab === 'support' ? C.red : 'transparent',
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}
+        >
+          <Text style={{
+            fontSize: 12,
+            fontWeight: '800',
+            color: tab === 'support' ? '#FFFFFF' : (isDark ? C.cream : '#4B5563'),
+          }}>
+            Contact Support
+          </Text>
+        </Pressable>
+      </View>
+
+      {/* TAB 1: HOW IT WORKS */}
+      {tab === 'how' && (
+        <>
+          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
+            <Text style={{ fontSize: 13, fontWeight: '800', color: C.cream, letterSpacing: 0.6 }}>
+              CAMPUS MARKETPLACE FLOW
+            </Text>
+            <Text style={{ fontSize: 11, fontWeight: '700', color: C.muted }}>
+              Step-by-step method flow
+            </Text>
+          </View>
+
+          {/* For Sellers */}
+          <Card style={{ marginBottom: 14 }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+                <View style={{ width: 34, height: 34, borderRadius: 17, backgroundColor: isDark ? 'rgba(230,36,36,0.18)' : '#FFEAE8', alignItems: 'center', justifyContent: 'center' }}>
+                  <Ionicons name="pricetag" size={17} color={C.red} />
+                </View>
+                <Text style={{ fontSize: 16, fontWeight: '900', color: C.white }}>For Sellers</Text>
+              </View>
+              <View style={{ backgroundColor: isDark ? 'rgba(230,36,36,0.18)' : '#FFEAE8', paddingHorizontal: 8, paddingVertical: 3, borderRadius: 8, borderWidth: 1, borderColor: C.red }}>
+                <Text style={{ fontSize: 10.5, fontWeight: '800', color: C.red }}>5 Easy Steps</Text>
+              </View>
+            </View>
+
+            {[
+              {
+                num: '1',
+                title: 'Create a sale or rental listing',
+                desc: 'Add book edition or uniform size, select physical condition, and set accepted payment methods: Cash, GCash or Bank Transfer.',
+              },
+              {
+                num: '2',
+                title: 'Wait for administrative review',
+                desc: 'Student moderators verify academic relevance and uniform standards within 1–12 hours.',
+              },
+              {
+                num: '3',
+                title: 'Respond to buyer requests',
+                desc: 'Approve requests with a dedicated safe-zone meetup location (e.g. Main Library, Visayan Canteen) and time slot.',
+              },
+              {
+                num: '4',
+                title: 'Complete the verified exchange',
+                desc: 'Meet securely in person. Verify item condition and hand over securely. Digital receipts logged.',
+              },
+              {
+                num: '5',
+                title: 'Leave your review & build reputation',
+                desc: 'Both parties review each other after transactions to maintain a healthy campus ecosystem.',
+              },
+            ].map(step => (
+              <View key={step.num} style={{ flexDirection: 'row', gap: 12, alignItems: 'flex-start', marginBottom: 12 }}>
+                <View style={{ width: 24, height: 24, borderRadius: 12, backgroundColor: C.red, alignItems: 'center', justifyContent: 'center', marginTop: 1 }}>
+                  <Text style={{ fontSize: 12, fontWeight: '900', color: '#FFFFFF' }}>{step.num}</Text>
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={{ fontSize: 13.5, fontWeight: '800', color: C.white }}>{step.title}</Text>
+                  <Text style={{ fontSize: 12, color: C.muted, lineHeight: 17, marginTop: 2 }}>{step.desc}</Text>
+                </View>
+              </View>
+            ))}
+          </Card>
+
+          {/* For Buyers */}
+          <Card style={{ marginBottom: 14 }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+                <View style={{ width: 34, height: 34, borderRadius: 17, backgroundColor: isDark ? 'rgba(37,99,235,0.18)' : '#EFF6FF', alignItems: 'center', justifyContent: 'center' }}>
+                  <Ionicons name="cart" size={17} color="#2563EB" />
+                </View>
+                <Text style={{ fontSize: 16, fontWeight: '900', color: C.white }}>For Buyers</Text>
+              </View>
+              <View style={{ backgroundColor: isDark ? 'rgba(37,99,235,0.18)' : '#EFF6FF', paddingHorizontal: 8, paddingVertical: 3, borderRadius: 8, borderWidth: 1, borderColor: '#2563EB' }}>
+                <Text style={{ fontSize: 10.5, fontWeight: '800', color: '#2563EB' }}>4 Simple Steps</Text>
+              </View>
+            </View>
+
+            {[
+              {
+                num: '1',
+                title: 'Browse two-column marketplace',
+                desc: "Filter by course codes (e.g. IT 106, CS 211), college department, or 'sale' vs 'rent'.",
+              },
+              {
+                num: '2',
+                title: 'Request listing with preferred payment',
+                desc: 'Pick your method (Cash on Meetup or GCash/Bank). Agreement is locked until approved by the seller.',
+              },
+              {
+                num: '3',
+                title: 'Coordinate meetup in Messages',
+                desc: 'Once seller approves request, discuss safe details (schedule, specific campus bench/table) with them.',
+              },
+              {
+                num: '4',
+                title: 'Inspect & Pay in Safe Zone',
+                desc: 'Confirm physical handoff inside UMTC monitored safe zones and review your peer!',
+              },
+            ].map(step => (
+              <View key={step.num} style={{ flexDirection: 'row', gap: 12, alignItems: 'flex-start', marginBottom: 12 }}>
+                <View style={{ width: 24, height: 24, borderRadius: 12, backgroundColor: '#2563EB', alignItems: 'center', justifyContent: 'center', marginTop: 1 }}>
+                  <Text style={{ fontSize: 12, fontWeight: '900', color: '#FFFFFF' }}>{step.num}</Text>
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={{ fontSize: 13.5, fontWeight: '800', color: C.white }}>{step.title}</Text>
+                  <Text style={{ fontSize: 12, color: C.muted, lineHeight: 17, marginTop: 2 }}>{step.desc}</Text>
+                </View>
+              </View>
+            ))}
+          </Card>
+
+          {/* Designated Safe Handoff Zones */}
+          <Card style={{
+            marginBottom: 16,
+            borderWidth: 1.5,
+            borderColor: C.gold,
+            backgroundColor: isDark ? 'rgba(246,200,76,0.06)' : '#FFFDF7',
+          }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 8 }}>
+              <View style={{ width: 34, height: 34, borderRadius: 17, backgroundColor: isDark ? 'rgba(246,200,76,0.18)' : '#FFF3D6', alignItems: 'center', justifyContent: 'center' }}>
+                <Ionicons name="shield-checkmark" size={18} color={C.gold} />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={{ fontSize: 15, fontWeight: '900', color: C.white }}>Designated Safe Handoff Zones</Text>
+                <Text style={{ fontSize: 11, fontWeight: '700', color: isDark ? C.gold : '#8A6500' }}>Monitored Campus Exchange</Text>
+              </View>
+            </View>
+            <Text style={{ fontSize: 13, color: C.cream, lineHeight: 19 }}>
+              Always conduct exchanges inside Main Library (Mabini), Visayan IT Labs Lobby, or the College Canteen during daylight operating hours.
+            </Text>
+          </Card>
+        </>
+      )}
+
+      {/* TAB 2: ABOUT UM-PASA */}
+      {tab === 'about' && (
+        <>
+          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
+            <Text style={{ fontSize: 13, fontWeight: '800', color: C.cream, letterSpacing: 0.6 }}>
+              ABOUT UM-PASA
+            </Text>
+            <Text style={{ fontSize: 11, fontWeight: '700', color: C.muted }}>
+              System Information
+            </Text>
+          </View>
+
+          {/* System Purpose */}
+          <Card style={{ marginBottom: 14 }}>
+            <Text style={{ fontSize: 11, fontWeight: '900', color: C.gold, letterSpacing: 0.8, textTransform: 'uppercase', marginBottom: 4 }}>
+              SYSTEM PURPOSE
+            </Text>
+            <Text style={{ fontSize: 13.5, color: C.cream, lineHeight: 20 }}>
+              UM-Pasa helps University of Mindanao students list academic items, buy, and rent course materials and tools, coordinate safely through in-app chat, upload verified payment proof, and track transactions from request to completion with zero fees.
+            </Text>
+            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginTop: 12 }}>
+              {['Zero Platform Fees', 'Student ID Verified', 'Direct Handoffs'].map(pill => (
+                <View key={pill} style={{ paddingHorizontal: 10, paddingVertical: 4, borderRadius: 8, backgroundColor: isDark ? C.panel2 : '#FAF7F5', borderWidth: 1, borderColor: isDark ? 'rgba(255,255,255,0.08)' : '#EFE8E3' }}>
+                  <Text style={{ fontSize: 11, fontWeight: '700', color: C.cream }}>{pill}</Text>
+                </View>
+              ))}
+            </View>
+          </Card>
+
+          {/* The Team Behind It (Image 2) */}
+          <Card style={{ marginBottom: 14 }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
+              <Text style={{ fontSize: 11, fontWeight: '900', color: C.gold, letterSpacing: 0.8, textTransform: 'uppercase' }}>
+                PROJECT INFORMATION & CREATORS
+              </Text>
+              <View style={{ backgroundColor: isDark ? 'rgba(230,36,36,0.18)' : '#FFEAE8', paddingHorizontal: 7, paddingVertical: 2, borderRadius: 6 }}>
+                <Text style={{ fontSize: 10, fontWeight: '800', color: C.red }}>PASA Team</Text>
+              </View>
+            </View>
+            <Text style={{ fontSize: 15, fontWeight: '900', color: C.white, marginBottom: 2 }}>
+              PASA Development Team
+            </Text>
+            <Text style={{ fontSize: 12, color: C.muted, marginBottom: 14 }}>
+              Student developers and software publishers of UM-Pasa.
+            </Text>
+
+            {/* Team Grid / Cards */}
+            <View style={{ gap: 8, marginBottom: 14 }}>
+              {TEAM_MEMBERS.map(m => (
+                <View
+                  key={m.name}
+                  style={{
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    gap: 12,
+                    padding: 12,
+                    borderRadius: 14,
+                    backgroundColor: isDark ? C.panel2 : '#FAF7F5',
+                    borderWidth: 1,
+                    borderColor: isDark ? 'rgba(255,255,255,0.06)' : '#EFE8E3',
+                  }}
+                >
+                  <View style={{
+                    width: 44,
+                    height: 44,
+                    borderRadius: 22,
+                    backgroundColor: isDark ? 'rgba(255,255,255,0.08)' : '#F3ECE7',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    borderWidth: 2,
+                    borderColor: m.accent,
+                  }}>
+                    <Text style={{ fontSize: 16, fontWeight: '900', color: m.accent }}>{m.initials}</Text>
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+                      <Text style={{ fontSize: 14.5, fontWeight: '800', color: C.white }}>{m.name}</Text>
+                      <View style={{
+                        backgroundColor: isDark ? 'rgba(246,200,76,0.15)' : '#FFF3D6',
+                        paddingHorizontal: 6,
+                        paddingVertical: 1.5,
+                        borderRadius: 6,
+                      }}>
+                        <Text style={{ fontSize: 10, fontWeight: '800', color: isDark ? C.gold : '#8A6500' }}>
+                          {m.role}
+                        </Text>
+                      </View>
+                    </View>
+                    <Text style={{ fontSize: 11.5, color: C.muted, marginTop: 2 }}>{m.sub}</Text>
+                  </View>
+                </View>
+              ))}
+            </View>
+
+            {/* Institution & Department */}
+            <View style={{
+              padding: 12,
+              borderRadius: 12,
+              backgroundColor: isDark ? 'rgba(255,255,255,0.03)' : '#F8F4F0',
+              borderWidth: 1,
+              borderColor: isDark ? 'rgba(255,255,255,0.06)' : '#EAE0D8',
+              gap: 4,
+            }}>
+              <Text style={{ fontSize: 11, fontWeight: '800', color: C.muted }}>INSTITUTION & DEPARTMENT</Text>
+              <Text style={{ fontSize: 13, fontWeight: '800', color: C.white }}>
+                Department of Computing Education (DCE)
+              </Text>
+              <Text style={{ fontSize: 12, color: C.muted }}>
+                Information Technology Program · UM Tagum College & Visayan Campus
+              </Text>
+              <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 4 }}>
+                <Text style={{ fontSize: 11, color: C.gold, fontWeight: '700' }}>Application Release:</Text>
+                <Text style={{ fontSize: 11, color: C.cream, fontWeight: '700' }}>v2.4.1 (Final Capstone 2026)</Text>
+              </View>
+            </View>
+          </Card>
+
+          {/* Marketplace Principles */}
+          <Card style={{ marginBottom: 16 }}>
+            <Text style={{ fontSize: 11, fontWeight: '900', color: C.gold, letterSpacing: 0.8, textTransform: 'uppercase', marginBottom: 8 }}>
+              MARKETPLACE PRINCIPLES
+            </Text>
+            <View style={{ gap: 10 }}>
+              {[
+                { title: 'Student-centered listings', desc: 'Tailored specifically for textbooks, drafting tools, lab sets, and uniforms.' },
+                { title: 'Traceable Campus Trades', desc: 'Every deal is recorded on campus logs to protect both students legally.' },
+                { title: 'Administrative Safety Moderation', desc: 'Items undergo review to prevent commercial and non-academic contraband.' },
+                { title: 'Sale & Rental Support', desc: 'Short and term rentals supported alongside outright student purchases.' },
+              ].map(p => (
+                <View key={p.title} style={{ flexDirection: 'row', gap: 10, alignItems: 'flex-start' }}>
+                  <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: C.red, marginTop: 6 }} />
+                  <View style={{ flex: 1 }}>
+                    <Text style={{ fontSize: 13, fontWeight: '800', color: C.white }}>{p.title}</Text>
+                    <Text style={{ fontSize: 12, color: C.muted, lineHeight: 17, marginTop: 1 }}>{p.desc}</Text>
+                  </View>
+                </View>
+              ))}
+            </View>
+          </Card>
+        </>
+      )}
+
+      {/* TAB 3: CONTACT SUPPORT */}
+      {tab === 'support' && (
+        <>
+          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
+            <Text style={{ fontSize: 13, fontWeight: '800', color: C.cream, letterSpacing: 0.6 }}>
+              CONTACT SUPPORT & HELP DESK
+            </Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+              <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: '#16A34A' }} />
+              <Text style={{ fontSize: 11, fontWeight: '700', color: isDark ? '#86EFAC' : '#15803D' }}>Open 8AM–5PM</Text>
+            </View>
+          </View>
+
+          {/* 2 Quick Action Cards Row */}
+          <View style={{ flexDirection: 'row', gap: 10, marginBottom: 14 }}>
+            <View style={{ flex: 1, padding: 14, borderRadius: 14, backgroundColor: C.panel, borderWidth: 1, borderColor: C.border }}>
+              <View style={{ width: 34, height: 34, borderRadius: 17, backgroundColor: isDark ? 'rgba(22,163,74,0.18)' : '#DCFCE7', alignItems: 'center', justifyContent: 'center', marginBottom: 8 }}>
+                <Ionicons name="chatbubbles-outline" size={18} color="#16A34A" />
+              </View>
+              <Text style={{ fontSize: 14, fontWeight: '800', color: C.white }}>Moderator Chat</Text>
+              <Text style={{ fontSize: 11, color: C.muted, marginTop: 2, lineHeight: 15, marginBottom: 10 }}>Avg. response: 10m during campus hours</Text>
+              <Pressable
+                accessibilityRole="button"
+                onPress={() => navigation.navigate('Messages')}
+                style={{ paddingVertical: 8, borderRadius: 8, backgroundColor: isDark ? C.panel2 : '#EFE8E3', alignItems: 'center' }}
+              >
+                <Text style={{ fontSize: 11.5, fontWeight: '800', color: C.white }}>Start Chat ›</Text>
+              </Pressable>
+            </View>
+
+            <View style={{ flex: 1, padding: 14, borderRadius: 14, backgroundColor: C.panel, borderWidth: 1, borderColor: C.border }}>
+              <View style={{ width: 34, height: 34, borderRadius: 17, backgroundColor: isDark ? 'rgba(230,36,36,0.18)' : '#FFEAE8', alignItems: 'center', justifyContent: 'center', marginBottom: 8 }}>
+                <Ionicons name="alert-circle-outline" size={18} color={C.red} />
+              </View>
+              <Text style={{ fontSize: 14, fontWeight: '800', color: C.white }}>Report Incident</Text>
+              <Text style={{ fontSize: 11, color: C.muted, marginTop: 2, lineHeight: 15, marginBottom: 10 }}>Report scams, no-shows or banned items</Text>
+              <Pressable
+                accessibilityRole="button"
+                onPress={() => setTicketCat('Report Student Conduct / No-Show')}
+                style={{ paddingVertical: 8, borderRadius: 8, backgroundColor: isDark ? 'rgba(230,36,36,0.18)' : '#FFEAE8', alignItems: 'center' }}
+              >
+                <Text style={{ fontSize: 11.5, fontWeight: '800', color: C.red }}>File Report ›</Text>
+              </Pressable>
+            </View>
+          </View>
+
+          {/* Physical Administration */}
+          <Card style={{ marginBottom: 14 }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 6 }}>
+              <Ionicons name="business-outline" size={18} color={C.gold} />
+              <Text style={{ fontSize: 12, fontWeight: '800', color: C.gold, letterSpacing: 0.6 }}>PHYSICAL ADMINISTRATION</Text>
+            </View>
+            <Text style={{ fontSize: 13.5, fontWeight: '700', color: C.white, lineHeight: 19 }}>
+              DCE Faculty Center, 2nd Flr, IT Computer Labs Bldg, Visayan Campus
+            </Text>
+            <Text style={{ fontSize: 12, color: C.muted, marginTop: 2 }}>
+              Monday – Friday · 8:00 AM – 5:00 PM (Class Days)
+            </Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 10, paddingTop: 10, borderTopWidth: 1, borderTopColor: isDark ? 'rgba(255,255,255,0.06)' : '#EFE8E3' }}>
+              <View style={{ flex: 1, marginRight: 8 }}>
+                <Text style={{ fontSize: 11, color: C.muted }}>Official Support Email</Text>
+                <Text style={{ fontSize: 12.5, fontWeight: '800', color: C.white }}>support.umpasa@umindanao.edu.ph</Text>
+              </View>
+              <Pressable
+                accessibilityRole="button"
+                onPress={emailSupport}
+                style={{ paddingHorizontal: 10, paddingVertical: 6, borderRadius: 8, backgroundColor: C.red }}
+              >
+                <Text style={{ fontSize: 11, fontWeight: '800', color: '#FFFFFF' }}>Email Us</Text>
+              </Pressable>
+            </View>
+          </Card>
+
+          {/* Submit A Support Ticket */}
+          <Card style={{ marginBottom: 14 }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
+              <Text style={{ fontSize: 12, fontWeight: '800', color: C.gold, letterSpacing: 0.6 }}>SUBMIT A SUPPORT TICKET</Text>
+              <View style={{ backgroundColor: isDark ? C.panel2 : '#EFE8E3', paddingHorizontal: 7, paddingVertical: 2, borderRadius: 6 }}>
+                <Text style={{ fontSize: 10, fontWeight: '800', color: C.cream }}>Ticket Desk</Text>
+              </View>
+            </View>
+            <Text style={{ fontSize: 12, color: C.muted, marginBottom: 12 }}>
+              Directly send an inquiry or incident report to the campus moderation team.
+            </Text>
+
+            <Text style={{ fontSize: 12, fontWeight: '700', color: C.cream, marginBottom: 6 }}>Issue Category</Text>
+            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginBottom: 12 }}>
+              {[
+                'Missing Item / Payment Issue',
+                'Report Student Conduct / No-Show',
+                'Account & ID Verification',
+                'Listing Moderation Inquiry',
+              ].map(cat => (
+                <Pressable
+                  key={cat}
+                  onPress={() => setTicketCat(cat)}
+                  style={{
+                    paddingHorizontal: 9,
+                    paddingVertical: 5,
+                    borderRadius: 8,
+                    backgroundColor: ticketCat === cat ? C.red : (isDark ? C.panel2 : '#EAE0D8'),
+                  }}
+                >
+                  <Text style={{ fontSize: 11, fontWeight: '700', color: ticketCat === cat ? '#FFFFFF' : C.white }}>
+                    {cat}
+                  </Text>
+                </Pressable>
+              ))}
+            </View>
+
+            <Field
+              label="Subject"
+              value={ticketSubject}
+              onChangeText={setTicketSubject}
+              placeholder="e.g. Unverified GCash proof, Listing #412"
+            />
+            <Field
+              label="Detailed Description / Reference"
+              value={ticketMessage}
+              onChangeText={setTicketMessage}
+              placeholder="Provide listing title, buyer/seller name, and clear summary..."
+              multiline
+            />
+            <Button
+              title="Submit Support Ticket ✉️"
+              onPress={submitTicket}
+            />
+          </Card>
+
+          {/* Campus Safety & FAQ Accordions */}
+          <Card style={{ marginBottom: 14 }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
+              <Text style={{ fontSize: 12, fontWeight: '800', color: C.gold, letterSpacing: 0.6 }}>CAMPUS SAFETY & FAQ</Text>
+              <Text style={{ fontSize: 11, color: C.muted }}>Policies & Tips</Text>
+            </View>
+
+            {FAQS.map((faq, idx) => {
+              const isOpen = expandedFaq === idx;
+              return (
+                <Pressable
+                  key={faq.q}
+                  accessibilityRole="button"
+                  onPress={() => setExpandedFaq(isOpen ? null : idx)}
+                  style={{
+                    paddingVertical: 10,
+                    borderBottomWidth: idx < FAQS.length - 1 ? 1 : 0,
+                    borderBottomColor: isDark ? 'rgba(255,255,255,0.06)' : '#EFE8E3',
+                  }}
+                >
+                  <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
+                    <Text style={{ fontSize: 13, fontWeight: '800', color: C.white, flex: 1 }}>{faq.q}</Text>
+                    <Ionicons name={isOpen ? 'chevron-up' : 'chevron-down'} size={16} color={C.muted} />
+                  </View>
+                  {isOpen && (
+                    <Text style={{ fontSize: 12, color: C.muted, lineHeight: 17, marginTop: 6 }}>
+                      {faq.a}
+                    </Text>
+                  )}
+                </Pressable>
+              );
+            })}
+          </Card>
+
+          {/* Campus Security Hotline Red Alert Card */}
+          <View style={{
+            padding: 14,
+            borderRadius: 14,
+            backgroundColor: isDark ? 'rgba(230,36,36,0.1)' : '#FFF5F5',
+            borderWidth: 1.5,
+            borderColor: C.red,
+            marginBottom: 16,
+          }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                <Ionicons name="warning" size={18} color={C.red} />
+                <Text style={{ fontSize: 13.5, fontWeight: '900', color: C.red }}>Campus Security & Guard Desk</Text>
+              </View>
+              <View style={{ backgroundColor: C.red, paddingHorizontal: 7, paddingVertical: 2, borderRadius: 6 }}>
+                <Text style={{ fontSize: 9.5, fontWeight: '900', color: '#FFFFFF' }}>24/7 HOTLINE</Text>
+              </View>
+            </View>
+            <Text style={{ fontSize: 12, color: C.white, lineHeight: 17, marginBottom: 12 }}>
+              Immediate physical assistance needed on campus? Report to Security at Gate 1 (Mabini) or Gate 2 (Visayan) or call campus security.
+            </Text>
+            <Pressable
+              accessibilityRole="button"
+              onPress={callSecurity}
+              style={{ paddingVertical: 10, borderRadius: 10, backgroundColor: C.red, alignItems: 'center' }}
+            >
+              <Text style={{ fontSize: 12.5, fontWeight: '900', color: '#FFFFFF' }}>📞 Call Campus Security</Text>
+            </Pressable>
+          </View>
+
+          {/* Footer Note */}
+          <View style={{ alignItems: 'center', paddingVertical: 10 }}>
+            <Text style={{ fontSize: 11, fontWeight: '700', color: C.muted }}>University of Mindanao - Tagum College</Text>
+            <Text style={{ fontSize: 10.5, color: C.muted, marginTop: 2 }}>Department of Computing Education · PASA Platform</Text>
+          </View>
+        </>
+      )}
     </Page>
   );
 }
 
-function HelpScreen() {
-  const isDark = C.bg === themeTokens.dark.colors.bg;
-  return (
-    <Page>
-      <Heading
-        title="How UM-Pasa Works"
-        subtitle="Complete campus guide for buyers, sellers, and safe handoffs at UM Tagum College."
-      />
+function HelpScreen(props: any) {
+  return <CampusGuideScreen {...props} initialTab="how" />;
+}
 
-      <Card style={{ marginBottom: 12 }}>
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 8 }}>
-          <View style={{ width: 32, height: 32, borderRadius: 16, backgroundColor: isDark ? 'rgba(246,200,76,0.18)' : '#FFF3D6', alignItems: 'center', justifyContent: 'center' }}>
-            <Ionicons name="cart" size={18} color={C.gold} />
-          </View>
-          <View style={{ flex: 1 }}>
-            <Text style={s.eyebrow}>STEP-BY-STEP WORKFLOW</Text>
-            <Text style={s.cardTitle}>Guide for Buyers & Renters</Text>
-          </View>
-        </View>
-        <View style={{ gap: 8 }}>
-          <Text style={s.body}><Text style={{ fontWeight: '800', color: C.gold }}>1. Search & Filter: </Text>Find resources by department, course code (e.g., IT 106), condition, or price.</Text>
-          <Text style={s.body}><Text style={{ fontWeight: '800', color: C.gold }}>2. Send Request: </Text>Choose Cash on Meetup or GCash / Digital Bank Transfer, and submit your request.</Text>
-          <Text style={s.body}><Text style={{ fontWeight: '800', color: C.gold }}>3. Coordinate in Messages: </Text>Agree on a specific campus meetup day, time, and safe zone with the seller.</Text>
-          <Text style={s.body}><Text style={{ fontWeight: '800', color: C.gold }}>4. Inspect & Handover: </Text>Meet in person, inspect the item thoroughly before paying, and finalize the exchange.</Text>
-          <Text style={s.body}><Text style={{ fontWeight: '800', color: C.gold }}>5. Submit Review: </Text>Rate your experience to build verified peer reputation across the campus.</Text>
-        </View>
-      </Card>
+function AboutScreen(props: any) {
+  return <CampusGuideScreen {...props} initialTab="about" />;
+}
 
-      <Card style={{ marginBottom: 12 }}>
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 8 }}>
-          <View style={{ width: 32, height: 32, borderRadius: 16, backgroundColor: isDark ? 'rgba(230,36,36,0.18)' : '#FFEAE8', alignItems: 'center', justifyContent: 'center' }}>
-            <Ionicons name="pricetag" size={18} color={C.red} />
-          </View>
-          <View style={{ flex: 1 }}>
-            <Text style={s.eyebrow}>POSTING & FULFILLMENT</Text>
-            <Text style={s.cardTitle}>Guide for Sellers & Lenders</Text>
-          </View>
-        </View>
-        <View style={{ gap: 8 }}>
-          <Text style={s.body}><Text style={{ fontWeight: '800', color: C.red }}>1. Post Listing: </Text>Upload clear photos, accurate condition ratings, fair student pricing, and accepted payment options.</Text>
-          <Text style={s.body}><Text style={{ fontWeight: '800', color: C.red }}>2. Campus Review: </Text>Wait for moderator approval (usually under 24 hours) before your item appears in Browse.</Text>
-          <Text style={s.body}><Text style={{ fontWeight: '800', color: C.red }}>3. Review Requests: </Text>Approve buyer requests with designated meetup details, or decline if unavailable.</Text>
-          <Text style={s.body}><Text style={{ fontWeight: '800', color: C.red }}>4. Physical Exchange: </Text>Meet at the agreed campus location. If paid digitally, confirm payment receipt before handoff.</Text>
-          <Text style={s.body}><Text style={{ fontWeight: '800', color: C.red }}>5. Mark Completed: </Text>Confirm the transaction as completed to update your verified sales record.</Text>
-        </View>
-      </Card>
-
-      <Card style={{ marginBottom: 12 }}>
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 8 }}>
-          <View style={{ width: 32, height: 32, borderRadius: 16, backgroundColor: isDark ? 'rgba(46,125,50,0.18)' : '#E8F5E9', alignItems: 'center', justifyContent: 'center' }}>
-            <Ionicons name="location" size={18} color="#2E7D32" />
-          </View>
-          <View style={{ flex: 1 }}>
-            <Text style={s.eyebrow}>OFFICIAL HANDOFF POINTS</Text>
-            <Text style={s.cardTitle}>Designated Campus Safe Zones</Text>
-          </View>
-        </View>
-        <Text style={[s.body, { marginBottom: 8 }]}>
-          For student security, all item handoffs and currency exchanges should occur at designated campus safe zones during active operating hours:
-        </Text>
-        <View style={{ gap: 8 }}>
-          <View style={{ padding: 10, borderRadius: 10, backgroundColor: isDark ? C.panel2 : '#FAF7F5', borderWidth: 1, borderColor: C.border }}>
-            <Text style={{ fontSize: 13, fontWeight: '800', color: C.white, marginBottom: 3 }}>📍 Mabini Main Campus</Text>
-            <Text style={{ fontSize: 12, color: C.muted, lineHeight: 17 }}>• Main Library Ground Floor Lobby (Primary indoor meeting point)</Text>
-            <Text style={{ fontSize: 12, color: C.muted, lineHeight: 17 }}>• College Canteen & Student Pavilion (High foot traffic)</Text>
-            <Text style={{ fontSize: 12, color: C.muted, lineHeight: 17 }}>• Gymnasium / Admin Building Main Entrance</Text>
-          </View>
-          <View style={{ padding: 10, borderRadius: 10, backgroundColor: isDark ? C.panel2 : '#FAF7F5', borderWidth: 1, borderColor: C.border }}>
-            <Text style={{ fontSize: 13, fontWeight: '800', color: C.white, marginBottom: 3 }}>📍 Visayan Campus</Text>
-            <Text style={{ fontSize: 12, color: C.muted, lineHeight: 17 }}>• IT Computer Labs Lobby (2nd & 3rd Floor corridors)</Text>
-            <Text style={{ fontSize: 12, color: C.muted, lineHeight: 17 }}>• Visayan Library Reading & Study Area</Text>
-            <Text style={{ fontSize: 12, color: C.muted, lineHeight: 17 }}>• Campus Canteen & Central Gazebo</Text>
-          </View>
-        </View>
-      </Card>
-
-      <Card style={{ marginBottom: 12 }}>
-        <Text style={s.section}>Important Safety Guidelines</Text>
-        <View style={{ gap: 6 }}>
-          <Text style={s.body}>• <Text style={{ fontWeight: '700', color: C.white }}>Inspect First:</Text> Always inspect book editions, calculator functions, or uniform sizing before paying.</Text>
-          <Text style={s.body}>• <Text style={{ fontWeight: '700', color: C.white }}>Keep Chat In-App:</Text> Retain all scheduling messages within UM-Pasa for verifiable moderation records.</Text>
-          <Text style={s.body}>• <Text style={{ fontWeight: '700', color: C.white }}>No Cash Advances:</Text> Never wire funds before meeting. Verify GCash reference numbers together at the meetup.</Text>
-        </View>
-      </Card>
-    </Page>
-  );
+function SupportScreen(props: any) {
+  return <CampusGuideScreen {...props} initialTab="support" />;
 }
 function AdminScreen({ navigation }: any) {
   const isDark = C.bg === themeTokens.dark.colors.bg;
@@ -5049,8 +5563,9 @@ function AppStack({ authenticated, isAdmin }: { authenticated: boolean; isAdmin:
           <Stack.Screen name="Login" component={LoginScreen} options={{title:'Sign in'}} />
           <Stack.Screen name="Register" component={RegisterScreen} options={{title:'Create account'}} />
         </>}
-    <Stack.Screen name="About" component={AboutScreen}/>
-    <Stack.Screen name="Help" component={HelpScreen}/>
+    <Stack.Screen name="About" component={AboutScreen} options={{title:'About UM-Pasa'}}/>
+    <Stack.Screen name="Help" component={HelpScreen} options={{title:'Help & How It Works'}}/>
+    <Stack.Screen name="Support" component={SupportScreen} options={{title:'Campus Support'}}/>
     <Stack.Screen name="Listing" component={ListingScreen} options={{title:'Listing details'}}/>
     {authenticated&&<>
       <Stack.Screen name="ListingForm" component={ListingFormScreen} options={{title:'Manage listing'}}/>
