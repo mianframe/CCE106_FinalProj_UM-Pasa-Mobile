@@ -1573,9 +1573,14 @@ function MyListingsScreen({ navigation }: any) {
   const [items, setItems] = useState<Item[]>([]); const [err, setErr] = useState('');
   const load = useCallback(async () => { try { const report=await account.report(); setItems(report.items || []); } catch(e) { setErr(errorMessage(e)); } }, []);
   useFocusEffect(useCallback(() => { load(); }, [load]));
-  const markSold = (item: Item) => Alert.alert('Mark listing as sold?', `"${item.title}" will be marked as sold and removed from active marketplace listings.`, [
-    {text:'Cancel',style:'cancel'}, {text:'Mark sold',onPress:async()=>{try{await marketplace.markSold(item.id);await load();}catch(e){Alert.alert('Unable to mark sold',errorMessage(e));}}},
-  ]);
+  const markSold = (item: Item) => Alert.alert(
+    item.listing_type === 'rent' ? 'Mark rental as unavailable?' : 'Mark listing as sold?',
+    `"${item.title}" will be marked as ${item.listing_type === 'rent' ? 'rented / unavailable' : 'sold'} and removed from active marketplace listings.`,
+    [
+      {text:'Cancel',style:'cancel'},
+      {text: item.listing_type === 'rent' ? 'Mark unavailable' : 'Mark sold', onPress:async()=>{try{await marketplace.markSold(item.id);await load();}catch(e){Alert.alert('Unable to mark listing',errorMessage(e));}}},
+    ]
+  );
   return (
     <Page onRefresh={load}>
       <Heading title="My listings" subtitle="Manage your listed items, review status, and marketplace availability."/>
@@ -1638,9 +1643,9 @@ function MyListingsScreen({ navigation }: any) {
                   </Text>
                 </View>
               )}
-              {i.status === 'available' && i.moderation_status === 'approved' && i.listing_type === 'sell' && (
+              {i.status === 'available' && i.moderation_status === 'approved' && (
                 <Pressable accessibilityRole="button" onPress={() => markSold(i)} style={s.soldButton}>
-                  <Text style={s.soldButtonText}>Mark sold</Text>
+                  <Text style={s.soldButtonText}>{i.listing_type === 'rent' ? 'Mark unavailable' : 'Mark sold'}</Text>
                 </Pressable>
               )}
               {i.status === 'pending' && (
