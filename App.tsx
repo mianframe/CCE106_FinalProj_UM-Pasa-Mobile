@@ -605,12 +605,37 @@ function ListingScreen({ route, navigation }: any) {
         {item.archived_at ? <Text style={s.muted}>Archived listing · transaction history is retained</Text> : null}
       </Card>
       {!item.archived_at && item.status === 'available' && item.listing_type === 'rent' && (
-        <Field
-          label={`Rental days (${item.minimum_rental_days || 1}–${item.maximum_rental_days || 365})`}
-          value={days}
-          onChangeText={setDays}
-          keyboardType="number-pad"
-        />
+        <>
+          <Field
+            label={`Rental days (${item.minimum_rental_days || 1}–${item.maximum_rental_days || 365})`}
+            value={days}
+            onChangeText={setDays}
+            keyboardType="number-pad"
+            placeholder="e.g. 3"
+          />
+          {days.trim() && !isNaN(Number(days)) && Number(days) > 0 ? (
+            <View style={{
+              backgroundColor: isDark ? 'rgba(245, 158, 11, 0.12)' : '#FEF3C7',
+              borderWidth: 1,
+              borderColor: isDark ? '#B45309' : '#FDE68A',
+              borderRadius: 12,
+              padding: 12,
+              marginBottom: 10,
+            }}>
+              <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+                <Text style={{ fontSize: 13, fontWeight: '700', color: isDark ? '#FCD34D' : '#92400E' }}>
+                  Rental Duration Calculation:
+                </Text>
+                <Text style={{ fontSize: 15, fontWeight: '900', color: isDark ? '#FCD34D' : '#92400E' }}>
+                  ₱{Number(item.price) * Number(days)}
+                </Text>
+              </View>
+              <Text style={{ fontSize: 11.5, color: isDark ? '#FDE68A' : '#78350F', marginTop: 3 }}>
+                {`₱${item.price}/day × ${days} day(s) = ₱${Number(item.price) * Number(days)} total`}
+              </Text>
+            </View>
+          ) : null}
+        </>
       )}
       {!item.archived_at && user?.id !== item.user_id && (
         myActiveTx ? (
@@ -676,23 +701,28 @@ function ListingScreen({ route, navigation }: any) {
           }}
         />
       )}
-      {user?.id === item.user_id && item.status === 'available' && item.moderation_status === 'approved' && item.listing_type === 'sell' && (
+      {user?.id === item.user_id && item.status === 'available' && item.moderation_status === 'approved' && (
         <Button
-          title="Mark as sold"
+          title={item.listing_type === 'rent' ? "Mark as rented / unavailable" : "Mark as sold"}
           secondary
           onPress={() => Alert.alert(
-            'Mark listing as sold?',
-            `"${item.title}" will be marked as sold and removed from active marketplace listings.`,
+            item.listing_type === 'rent' ? 'Mark rental as unavailable?' : 'Mark listing as sold?',
+            `"${item.title}" will be marked as ${item.listing_type === 'rent' ? 'rented / unavailable' : 'sold'} and removed from active marketplace listings.`,
             [
               { text: 'Cancel', style: 'cancel' },
               {
-                text: 'Mark sold',
+                text: item.listing_type === 'rent' ? 'Mark unavailable' : 'Mark sold',
                 onPress: async () => {
                   try {
                     await marketplace.markSold(item.id);
                     await load();
                   } catch (e) {
-                    Alert.alert('Unable to mark sold', errorMessage(e));
+                    try {
+                      await marketplace.remove(item.id);
+                      await load();
+                    } catch (err) {
+                      Alert.alert('Unable to update listing', errorMessage(err || e));
+                    }
                   }
                 }
               }
@@ -743,6 +773,28 @@ function ListingScreen({ route, navigation }: any) {
                 <Ionicons name="close-circle-outline" size={24} color={C.muted} />
               </Pressable>
             </View>
+            {item.listing_type === 'rent' && (
+              <View style={{
+                backgroundColor: isDark ? 'rgba(245, 158, 11, 0.15)' : '#FEF3C7',
+                borderRadius: 12,
+                padding: 12,
+                marginBottom: 12,
+                borderWidth: 1,
+                borderColor: isDark ? '#B45309' : '#FDE68A',
+              }}>
+                <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <Text style={{ fontSize: 13, fontWeight: '800', color: isDark ? '#FCD34D' : '#92400E' }}>
+                    Total Rental Fee:
+                  </Text>
+                  <Text style={{ fontSize: 16, fontWeight: '900', color: isDark ? '#FCD34D' : '#92400E' }}>
+                    ₱{Number(item.price) * (Number(days) || 1)}
+                  </Text>
+                </View>
+                <Text style={{ fontSize: 11.5, color: isDark ? '#FDE68A' : '#78350F', marginTop: 3 }}>
+                  {`₱${item.price}/day × ${days || 1} day(s) duration`}
+                </Text>
+              </View>
+            )}
             {acceptedMethods.map((m: string) => {
               const isSelected = selectedPayment === m;
               const label =
@@ -1303,7 +1355,11 @@ function TransactionsScreen({ navigation }: any) {
               <View style={s.rowBetween}>
                 <View style={{ flex: 1, paddingRight: 8 }}>
                   <Text numberOfLines={2} style={s.txTitle}>{t.item?.title || 'Campus transaction'}</Text>
-                  <Text style={s.txPrice}>{money(t.item?.price)}</Text>
+                  <Text style={s.txPrice}>
+                    {t.rental_duration_days
+                      ? `₱${(Number(t.item?.price) || 0) * t.rental_duration_days} (${t.rental_duration_days}d · ₱${t.item?.price}/d)`
+                      : money(t.item?.price)}
+                  </Text>
                 </View>
                 <StatusPill status={t.status} />
               </View>
@@ -1489,7 +1545,7 @@ function TransactionScreen({ route, navigation }: any) {
     }
   };
 
-  return <Page bottomSafe><Heading title={t.item?.title || 'Transaction'} subtitle={`Transaction #${t.id}`} /><Card><Text style={[s.badge,{color:statusColor(t.status)}]}>{t.status?.toUpperCase()}</Text><Text style={s.price}>{money(t.item?.price)}</Text><Text style={s.body}>Buyer: {t.buyer?.name}</Text><Text style={s.body}>Seller: {t.seller?.name}</Text><Text style={s.body}>Payment: {t.payment_method?.replaceAll('_',' ')}{t.other_payment_method?` · ${t.other_payment_method}`:''}</Text>{t.rental_duration_days?<Text style={s.body}>Rental duration: {t.rental_duration_days} day(s) · Due {formatPhilippineDate(t.rental_due_date, 'to be confirmed')}</Text>:null}{t.meetup_location ? <Text style={s.body}>Meetup: {t.meetup_location} · {formatPhilippineDateTime(t.meetup_time)}</Text> : null}{pendingProposal ? <View style={{ marginTop: 8, padding: 10, borderRadius: 8, backgroundColor: isDark ? 'rgba(246,200,76,0.12)' : '#FFF9E6', borderWidth: 1, borderColor: isDark ? 'rgba(246,200,76,0.25)' : '#FFE082' }}><View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 2 }}><Ionicons name="time-outline" size={15} color={C.gold} /><Text style={{ fontSize: 12, fontWeight: '800', color: isDark ? C.gold : '#B78103' }}>Pending Meetup Proposal</Text></View><Text style={{ fontSize: 13, color: C.white, fontWeight: '600' }}>{pendingProposal.meetup_location} · {formatPhilippineDateTime(pendingProposal.meetup_time)}</Text><Text style={{ fontSize: 12, color: C.cream, marginTop: 2 }}>{pendingProposal.sender_id === user?.id ? `Waiting for ${user?.id === t.buyer_id ? t.seller?.name : t.buyer?.name} to accept` : `Proposed by ${pendingProposal.sender_id === t.buyer_id ? t.buyer?.name : t.seller?.name} (review in chat to accept)`}</Text></View> : null}<Text style={s.muted}>Payment proof: {t.payment_proof?`Uploaded ${formatPhilippineDateTime(t.payment_proof_uploaded_at, '')}`:'Not uploaded'}</Text>{proofUrl && <View style={{ marginTop: 10 }}><Text style={s.label}>Payment Proof Receipt:</Text><Image source={{ uri: proofUrl }} style={{ width: '100%', height: 220, borderRadius: 10, marginTop: 6 }} resizeMode="contain" /></View>}</Card>{isBuyer && ['pending','approved'].includes(t.status) && <View style={{ marginVertical: 6 }}><Button title={uploadingProof ? 'Uploading proof…' : t.payment_proof ? '📷 Replace payment proof' : '📷 Upload payment proof'} secondary disabled={uploadingProof} onPress={pickProof} /></View>}{isSeller && t.status === 'pending' && <><Field label="Meetup location" value={meetup} onChangeText={setMeetup} placeholder="e.g. Main Library (Mabini) or Visayan IT Labs Lobby"/><MeetupTimePicker label="Meetup date & time" value={meetupDate} onChange={setMeetupDate}/><Button title={approving ? 'Approving request…' : 'Approve request'} disabled={approving || !meetup.trim() || !meetupDate} onPress={approve} /><Button title="Reject request" danger onPress={() => run('Reject request', () => transactions.reject(t.id))} /></>}{isSeller && t.status === 'approved' && <Button title="Mark as completed" onPress={() => run('Complete exchange', () => transactions.complete(t.id))} />}{t.status === 'completed' && !t.ratings?.some((r: any) => r.reviewer_id === user?.id) && <><Text style={s.muted}>Both the buyer and seller can leave a review after completion.</Text><RatingForm id={t.id} onDone={load} /></>}{t.item && <Button title="Message participant" secondary onPress={async()=>{try{const recipient_id=user?.id===t.buyer_id?t.seller_id:t.buyer_id;const m=await messaging.send({recipient_id,item_id:t.item_id,body:`Hi, I want to coordinate about ${t.item?.title}.`});navigation.navigate('Conversation',{id:m.conversation_id});}catch(e){Alert.alert('Unable to message participant',errorMessage(e))}}}/>}</Page>;
+  return <Page bottomSafe><Heading title={t.item?.title || 'Transaction'} subtitle={`Transaction #${t.id}`} /><Card><Text style={[s.badge,{color:statusColor(t.status)}]}>{t.status?.toUpperCase()}</Text>{t.rental_duration_days ? <View style={{ marginVertical: 4 }}><Text style={s.price}>Total: ₱{(Number(t.item?.price) || 0) * t.rental_duration_days}</Text><Text style={{ fontSize: 12, color: isDark ? '#FDE68A' : '#78350F', fontWeight: '700', marginTop: 2 }}>₱{t.item?.price}/day × {t.rental_duration_days} day(s) rental</Text></View> : <Text style={s.price}>{money(t.item?.price)}</Text>}<Text style={s.body}>Buyer: {t.buyer?.name}</Text><Text style={s.body}>Seller: {t.seller?.name}</Text><Text style={s.body}>Payment: {t.payment_method?.replaceAll('_',' ')}{t.other_payment_method?` · ${t.other_payment_method}`:''}</Text>{t.rental_duration_days?<Text style={s.body}>Rental duration: {t.rental_duration_days} day(s) · Due {formatPhilippineDate(t.rental_due_date, 'to be confirmed')}</Text>:null}{t.meetup_location ? <Text style={s.body}>Meetup: {t.meetup_location} · {formatPhilippineDateTime(t.meetup_time)}</Text> : null}{pendingProposal ? <View style={{ marginTop: 8, padding: 10, borderRadius: 8, backgroundColor: isDark ? 'rgba(246,200,76,0.12)' : '#FFF9E6', borderWidth: 1, borderColor: isDark ? 'rgba(246,200,76,0.25)' : '#FFE082' }}><View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 2 }}><Ionicons name="time-outline" size={15} color={C.gold} /><Text style={{ fontSize: 12, fontWeight: '800', color: isDark ? C.gold : '#B78103' }}>Pending Meetup Proposal</Text></View><Text style={{ fontSize: 13, color: C.white, fontWeight: '600' }}>{pendingProposal.meetup_location} · {formatPhilippineDateTime(pendingProposal.meetup_time)}</Text><Text style={{ fontSize: 12, color: C.cream, marginTop: 2 }}>{pendingProposal.sender_id === user?.id ? `Waiting for ${user?.id === t.buyer_id ? t.seller?.name : t.buyer?.name} to accept` : `Proposed by ${pendingProposal.sender_id === t.buyer_id ? t.buyer?.name : t.seller?.name} (review in chat to accept)`}</Text></View> : null}<Text style={s.muted}>Payment proof: {t.payment_proof?`Uploaded ${formatPhilippineDateTime(t.payment_proof_uploaded_at, '')}`:'Not uploaded'}</Text>{proofUrl && <View style={{ marginTop: 10 }}><Text style={s.label}>Payment Proof Receipt:</Text><Image source={{ uri: proofUrl }} style={{ width: '100%', height: 220, borderRadius: 10, marginTop: 6 }} resizeMode="contain" /></View>}</Card>{isBuyer && ['pending','approved'].includes(t.status) && <View style={{ marginVertical: 6 }}><Button title={uploadingProof ? 'Uploading proof…' : t.payment_proof ? '📷 Replace payment proof' : '📷 Upload payment proof'} secondary disabled={uploadingProof} onPress={pickProof} /></View>}{isSeller && t.status === 'pending' && <><Field label="Meetup location" value={meetup} onChangeText={setMeetup} placeholder="e.g. Main Library (Mabini) or Visayan IT Labs Lobby"/><MeetupTimePicker label="Meetup date & time" value={meetupDate} onChange={setMeetupDate}/><Button title={approving ? 'Approving request…' : 'Approve request'} disabled={approving || !meetup.trim() || !meetupDate} onPress={approve} /><Button title="Reject request" danger onPress={() => run('Reject request', () => transactions.reject(t.id))} /></>}{isSeller && t.status === 'approved' && <Button title="Mark as completed" onPress={() => run('Complete exchange', async () => { await transactions.complete(t.id); if (t.item_id) { try { await marketplace.markSold(t.item_id); } catch (_) { try { await marketplace.remove(t.item_id); } catch (_) {} } } })} />}{t.status === 'completed' && !t.ratings?.some((r: any) => r.reviewer_id === user?.id) && <><Text style={s.muted}>Both the buyer and seller can leave a review after completion.</Text><RatingForm id={t.id} onDone={load} /></>}{t.item && <Button title="Message participant" secondary onPress={async()=>{try{const recipient_id=user?.id===t.buyer_id?t.seller_id:t.buyer_id;const m=await messaging.send({recipient_id,item_id:t.item_id,body:`Hi, I want to coordinate about ${t.item?.title}.`});navigation.navigate('Conversation',{id:m.conversation_id});}catch(e){Alert.alert('Unable to message participant',errorMessage(e))}}}/>}</Page>;
 }
 function RatingForm({ id, onDone }: any) {
   const [rating, setRating] = useState(5);
@@ -2960,8 +3016,8 @@ function MessagesScreen({ navigation }: any) {
 
                 {/* Content */}
                 <View style={{ flex: 1 }}>
-                  {/* Name, Program, Timestamp */}
-                  <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 2 }}>
+                  {/* Name, Program, Timestamp & Unread Badge */}
+                  <View style={{ flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 2 }}>
                     <View style={{ flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: 4, flex: 1, marginRight: 6 }}>
                       <Text style={{ fontSize: 15, fontWeight: '800', color: C.white }}>
                         {partnerName}
@@ -2971,9 +3027,24 @@ function MessagesScreen({ navigation }: any) {
                       </Text>
                       <Ionicons name="checkmark-circle" size={14} color={isDark ? '#F87171' : '#8B0000'} />
                     </View>
-                    <Text style={{ fontSize: 11, fontWeight: '700', color: isUnread ? (isDark ? '#F87171' : '#B91C1C') : (isDark ? '#9CA3AF' : C.muted) }}>
-                      {timeLabel}
-                    </Text>
+                    <View style={{ alignItems: 'flex-end', gap: 4 }}>
+                      <Text style={{ fontSize: 11, fontWeight: '700', color: isUnread ? (isDark ? '#F87171' : '#B91C1C') : (isDark ? '#9CA3AF' : C.muted) }}>
+                        {timeLabel}
+                      </Text>
+                      {isUnread && (
+                        <View style={{
+                          minWidth: 18,
+                          height: 18,
+                          paddingHorizontal: 5,
+                          borderRadius: 9,
+                          backgroundColor: isDark ? '#DC2626' : '#8B0000',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                        }}>
+                          <Text style={{ fontSize: 10, fontWeight: '900', color: '#FFFFFF' }}>1</Text>
+                        </View>
+                      )}
+                    </View>
                   </View>
 
                   {/* Item tag pill or Support Ticket badge */}
@@ -3029,7 +3100,7 @@ function MessagesScreen({ navigation }: any) {
                   </Text>
 
                   {/* Meetup / Status Pill */}
-                  <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 2 }}>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 2 }}>
                     {hasMeetup ? (
                       meetupConfirmed ? (
                         <View style={{
@@ -3040,9 +3111,10 @@ function MessagesScreen({ navigation }: any) {
                           flexDirection: 'row',
                           alignItems: 'center',
                           gap: 4,
+                          flexShrink: 1,
                         }}>
                           <Ionicons name="checkmark-done" size={12} color="#16A34A" />
-                          <Text style={{ fontSize: 11, fontWeight: '700', color: '#16A34A' }}>
+                          <Text numberOfLines={1} style={{ fontSize: 11, fontWeight: '700', color: '#16A34A', flexShrink: 1 }}>
                             Meetup Confirmed · Safe Zone Agreed
                           </Text>
                         </View>
@@ -3055,39 +3127,27 @@ function MessagesScreen({ navigation }: any) {
                           flexDirection: 'row',
                           alignItems: 'center',
                           gap: 4,
+                          flexShrink: 1,
                         }}>
                           <Ionicons name="calendar-outline" size={12} color="#D97706" />
-                          <Text style={{ fontSize: 11, fontWeight: '700', color: '#D97706' }}>
+                          <Text numberOfLines={1} style={{ fontSize: 11, fontWeight: '700', color: '#D97706', flexShrink: 1 }}>
                             {`Meetup: ${c.latest_message?.meetup_location || 'Campus'} (${c.latest_message?.meetup_time ? formatPhilippineDate(c.latest_message.meetup_time) : 'Pending'})`}
                           </Text>
                         </View>
                       )
                     ) : !c.item ? (
-                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, flexShrink: 1 }}>
                         <Ionicons name="chatbubbles-outline" size={12} color={isDark ? '#F87171' : '#8B0000'} />
-                        <Text style={{ fontSize: 11, fontWeight: '700', color: isDark ? '#F87171' : '#8B0000' }}>
+                        <Text numberOfLines={1} style={{ fontSize: 11, fontWeight: '700', color: isDark ? '#F87171' : '#8B0000', flexShrink: 1 }}>
                           Direct Moderation Assistance
                         </Text>
                       </View>
                     ) : (
-                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, flexShrink: 1 }}>
                         <Ionicons name="location-outline" size={12} color={C.muted} />
-                        <Text style={{ fontSize: 11, color: C.muted }}>
+                        <Text numberOfLines={1} style={{ fontSize: 11, color: C.muted, flexShrink: 1 }}>
                           UM Tagum Campus Safe Zone
                         </Text>
-                      </View>
-                    )}
-
-                    {isUnread && (
-                      <View style={{
-                        width: 18,
-                        height: 18,
-                        borderRadius: 9,
-                        backgroundColor: isDark ? '#DC2626' : '#8B0000',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                      }}>
-                        <Text style={{ fontSize: 10, fontWeight: '900', color: '#FFFFFF' }}>1</Text>
                       </View>
                     )}
                   </View>
@@ -3138,11 +3198,6 @@ const STUDENT_TEMPLATES = [
     label: '🕒 Propose Meetup',
     title: 'Meetup Invitation',
     text: 'Are you available to meet up at the Main Campus Library or Canteen today?',
-  },
-  {
-    label: '🚨 Report Concern',
-    title: 'Contact Admin Support',
-    text: 'Hi Admin, I would like to report an issue regarding a campus transaction or user on UM-Pasa.',
   },
   {
     label: '🤝 Handover Complete',
@@ -5976,6 +6031,32 @@ function AppStack({ authenticated, isAdmin }: { authenticated: boolean; isAdmin:
 
 function AppContent() {
   const { user, authUser, profile, loading, profileError, refreshProfile, logout } = useAuth();
+
+  useEffect(() => {
+    if (!user?.id) return;
+    const channel = supabase
+      .channel(`user-realtime-notifications:${user.id}`)
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'notifications',
+          filter: `user_id=eq.${user.id}`,
+        },
+        (payload: any) => {
+          if (payload.new?.message) {
+            Alert.alert('🔔 UM-Pasa Alert', payload.new.message);
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [user?.id]);
+
   if (loading) return <SafeAreaView style={s.loading}><ActivityIndicator color={C.gold}/><Text style={s.muted}>Restoring your UM-Pasa session…</Text></SafeAreaView>;
   if (authUser && !profile) return <SafeAreaView style={s.loading}>
     <Heading title="Profile unavailable" subtitle={profileError || 'Your account exists, but its UM-Pasa profile could not be loaded.'}/>

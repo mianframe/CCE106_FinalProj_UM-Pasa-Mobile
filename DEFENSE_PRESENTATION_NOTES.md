@@ -175,33 +175,45 @@ sequenceDiagram
    - **Try an invalid number:** Type `10` &rarr; Tap **"Request this item"**:
      - **Watch the client-side validation alert:**  
        `"Rental duration required: Please enter rental days between 1 and 7 before requesting."`
-   - **Enter a valid number:** Type `3`.
+    - **Enter a valid number:** Type `3`.
+    - **Point out the Live Calculation Box on screen:**
+      - Under the rental days input, highlight the yellow calculation card:
+        `"Rental Duration Calculation: ₱150 (₱50/day × 3 day(s) = ₱150 total)"`
 5. Tap **"Request this item"**:
+   - Point out the rental fee breakdown in the modal:
+     `"Total Rental Fee: ₱150 (₱50/day × 3 days duration)"`
    - Select payment method: **`GCash`**.
    - Tap **"Confirm Request"**.
-   - Point out that the system logs `rental_duration_days = 3` (Total: `₱50 × 3 = ₱150`).
+   - Notice the **Real-Time Notification** pop-up:
+     `"🔔 UM-Pasa Alert: New request received for Casio Calculator using GCash."`
 6. Tap **"Message Seller"** to open direct chat with the lender:
+   - Notice that peer student templates show only relevant peer options (`Check Availability`, `Propose Meetup`, `Handover Complete`).
    - Tap **`Share campus spot`** in the action bar &rarr; Select:
      `🏫 [Main] Main Library & Learning Center`.
    - Tap **`+ Propose new time`** &rarr; Pick tomorrow's date at `2:00 PM`.
    - Tap **"Send Proposal"**.
    - Point out the in-chat **Meetup Proposal Card** displaying the agreed library location.
 7. Tap the **Transactions** tab:
+   - Point out that the transaction card shows:
+     `"Total: ₱150 (3d · ₱50/d)"`
    - Tap the active transaction card:
      - Show the **Rental Status**, **GCash payment method**, and **Scheduled Campus Meetup**.
      - Tap **"Upload Payment Proof"** &rarr; Select a GCash receipt screenshot to upload directly to Supabase Storage (`receipts` bucket).
 
 #### 🎙️ What to Say:
-> *"Now we switch to the student Renter. When requesting an academic rental, the app validates the requested duration against the lender's bounds—rejecting any attempt to borrow beyond the maximum 7 days. Once 3 days are entered, the system calculates the rental total, logs the transaction, uploads GCash payment proof, and coordinates on-campus pickup inside the verified Main Library Safe Zone."*
+> *"Now we switch to the student Renter. When requesting an academic rental, the app validates the requested duration against the lender's bounds—rejecting any attempt to borrow beyond the maximum 7 days. Once 3 days are entered, the system live-calculates the rental total on screen: ₱50/day times 3 days equals ₱150 total. The transaction is logged, GCash payment proof is uploaded, and real-time notifications alert both parties over WebSockets."*
 
 ---
 
 ### Act 5: Return Handover, Mutual Rating & Store Compliance (1 Minute)
-*Objective: Demonstrate transaction completion, verified reviews, dark mode, and App Store compliance.*
+*Objective: Demonstrate transaction completion, item removal from feed, verified reviews, dark mode, and App Store compliance.*
 
 #### What to Click:
-1. Inside the transaction details, tap **"Mark as Completed"** (representing the physical return and handover of the calculator).
-2. **Submit Mutual Star Rating:**
+1. Inside the transaction details, the lender taps **"Mark as Completed"** (representing the physical return and handover of the calculator).
+2. **Demonstrate Listing Removal from Feed:**
+   - Return to the **Marketplace** feed:
+   - Point out that the completed rental listing has **disappeared from the active browse feed**!
+3. **Submit Mutual Star Rating:**
    - Select **5 Stars** (★★★★★).
    - Enter review: *"Calculator returned on time in perfect condition. Thank you!"*
    - Tap **"Submit Review"**.
