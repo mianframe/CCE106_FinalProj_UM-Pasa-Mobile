@@ -2495,7 +2495,13 @@ function MessagesScreen({ navigation }: any) {
   const markAllAsRead = async () => {
     try {
       if (user?.id) {
-        await supabase.from('messages').update({ read_at: new Date().toISOString() }).neq('sender_id', user.id);
+        const conversationIds = rows.map(r => r.id);
+        const now = new Date().toISOString();
+        setRows(prev => prev.map(r => ({
+          ...r,
+          latest_message: r.latest_message ? { ...r.latest_message, read_at: now } : undefined,
+        })));
+        await messaging.markAllRead(conversationIds);
         await load();
       }
     } catch {

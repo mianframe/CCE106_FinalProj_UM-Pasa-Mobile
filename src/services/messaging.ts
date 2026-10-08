@@ -30,6 +30,48 @@ async function markConversationDeletedLocally(userId: string, conversationId: st
   }
 }
 
+const READ_CONVERSATIONS_KEY_PREFIX = '@umpasa_read_conversations_';
+
+async function getLocalReadTimestamps(userId: string): Promise<Record<string, string>> {
+  try {
+    const raw = await AsyncStorage.getItem(`${READ_CONVERSATIONS_KEY_PREFIX}${userId}`);
+    if (!raw) return {};
+    const parsed = JSON.parse(raw);
+    return typeof parsed === 'object' && parsed !== null ? parsed : {};
+  } catch {
+    return {};
+  }
+}
+
+async function markConversationReadLocally(userId: string, conversationId: string): Promise<void> {
+  try {
+    const map = await getLocalReadTimestamps(userId);
+    map[conversationId] = new Date().toISOString();
+    await AsyncStorage.setItem(
+      `${READ_CONVERSATIONS_KEY_PREFIX}${userId}`,
+      JSON.stringify(map)
+    );
+  } catch {
+    // ignore
+  }
+}
+
+async function markAllConversationsReadLocally(userId: string, conversationIds: string[]): Promise<void> {
+  try {
+    const map = await getLocalReadTimestamps(userId);
+    const now = new Date().toISOString();
+    for (const id of conversationIds) {
+      map[id] = now;
+    }
+    await AsyncStorage.setItem(
+      `${READ_CONVERSATIONS_KEY_PREFIX}${userId}`,
+      JSON.stringify(map)
+    );
+  } catch {
+    // ignore
+  }
+}
+
 export type Message = MessageRow & { user_id: string; user?: UMUser };
 export type Conversation = ConversationRow & {
   item?: Item;
@@ -60,7 +102,10 @@ function mapMessage(row: MessageRow, people: Map<string, ProfileRow>): Message {
 export const messaging = {
   async list(): Promise<Conversation[]> {
     const user = await currentAuthUser();
-    const deletedIds = await getDeletedConversationIds(user.id);
+    const [deletedIds, readTimestamps] = await Promise.all([
+      getDeletedConversationIds(user.id),
+      getLocalReadTimestamps(user.id),
+    ]);
     const { data: conversationsData, error } = await supabase.from('conversations').select('*')
       .or(`starter_id.eq.${user.id},recipient_id.eq.${user.id}`)
       .order('last_message_at', { ascending: false, nullsFirst: false });
@@ -82,15 +127,28 @@ export const messaging = {
     }));
     const senderProfiles = await profilesById(latestRows.flatMap((row) => row ? [row.sender_id] : []));
     const allPeople = new Map([...people, ...senderProfiles]);
-    return rows.map((row, index) => ({
-      ...row,
-      item: mapItem(row.item_id ? items.get(row.item_id) : undefined, allPeople),
-      starter: people.get(row.starter_id) ? toUMUser(people.get(row.starter_id) as ProfileRow) : undefined,
-      recipient: people.get(row.recipient_id) ? toUMUser(people.get(row.recipient_id) as ProfileRow) : undefined,
-      latest_message: latestRows[index] ? mapMessage(latestRows[index] as MessageRow, allPeople) : undefined,
-    }));
+    return rows.map((row, index) => {
+      const latestMsg = latestRows[index] ? mapMessage(latestRows[index] as MessageRow, allPeople) : undefined;
+      if (latestMsg && !latestMsg.read_at && readTimestamps[row.id]) {
+        const lastReadTime = new Date(readTimestamps[row.id]).getTime();
+        const msgTime = new Date(latestMsg.created_at).getTime();
+        if (msgTime <= lastReadTime) {
+          latestMsg.read_at = readTimestamps[row.id];
+        }
+      }
+      return {
+        ...row,
+        item: mapItem(row.item_id ? items.get(row.item_id) : undefined, allPeople),
+        starter: people.get(row.starter_id) ? toUMUser(people.get(row.starter_id) as ProfileRow) : undefined,
+        recipient: people.get(row.recipient_id) ? toUMUser(people.get(row.recipient_id) as ProfileRow) : undefined,
+        latest_message: latestMsg,
+      };
+    });
   },
   async get(id: string): Promise<Conversation> {
+    const user = await currentAuthUser();
+    const readTimestamps = await getLocalReadTimestamps(user.id);
+    const lastReadTime = readTimestamps[id] ? new Date(readTimestamps[id]).getTime() : 0;
     const { data, error } = await supabase.from('conversations').select('*').eq('id', id).maybeSingle();
     const conversation = checked(data as ConversationRow | null, error, 'Conversation not found or access denied.');
     const [messagesResult, itemResult, people] = await Promise.all([
@@ -110,7 +168,13 @@ export const messaging = {
       item: mapItem(itemResult.data as ItemRow | null ?? undefined, allPeople),
       starter: people.get(conversation.starter_id) ? toUMUser(people.get(conversation.starter_id) as ProfileRow) : undefined,
       recipient: people.get(conversation.recipient_id) ? toUMUser(people.get(conversation.recipient_id) as ProfileRow) : undefined,
-      messages: messages.map((message) => mapMessage(message, allPeople)),
+      messages: messages.map((message) => {
+        const msg = mapMessage(message, allPeople);
+        if (!msg.read_at && lastReadTime && new Date(msg.created_at).getTime() <= lastReadTime) {
+          msg.read_at = readTimestamps[id];
+        }
+        return msg;
+      }),
     };
   },
   async send(values: {
@@ -158,16 +222,43 @@ export const messaging = {
   },
   async markRead(id: string): Promise<void> {
     const user = await currentAuthUser();
+    // 1. Immediately store read timestamp locally so refreshing will keep it marked as read
+    await markConversationReadLocally(user.id, id);
+
+    // 2. Try RPC in Supabase
     try {
       await (supabase.rpc as any)('mark_conversation_read', { p_conversation_id: id });
     } catch {
       // ignore
     }
+    // 3. Try direct update
     try {
       await supabase
         .from('messages')
         .update({ read_at: new Date().toISOString() })
         .eq('conversation_id', id)
+        .neq('sender_id', user.id)
+        .is('read_at', null);
+    } catch {
+      // ignore
+    }
+  },
+  async markAllRead(conversationIds: string[]): Promise<void> {
+    const user = await currentAuthUser();
+    // 1. Immediately record all conversations read locally
+    await markAllConversationsReadLocally(user.id, conversationIds);
+
+    // 2. Try RPC in Supabase
+    try {
+      await (supabase.rpc as any)('mark_all_messages_read', {});
+    } catch {
+      // ignore
+    }
+    // 3. Try direct update
+    try {
+      await supabase
+        .from('messages')
+        .update({ read_at: new Date().toISOString() })
         .neq('sender_id', user.id)
         .is('read_at', null);
     } catch {

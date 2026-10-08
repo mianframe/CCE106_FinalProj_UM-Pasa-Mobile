@@ -141,6 +141,7 @@ export type Database = {
       delete_user_account: { Args: Record<string, never>; Returns: undefined };
       delete_conversation: { Args: { p_conversation_id: string }; Returns: boolean };
       mark_conversation_read: { Args: { p_conversation_id: string }; Returns: boolean };
+      mark_all_messages_read: { Args: Record<string, never>; Returns: boolean };
     };
     Enums: Record<string, never>;
     CompositeTypes: Record<string, never>;

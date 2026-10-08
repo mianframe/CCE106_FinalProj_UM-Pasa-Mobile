@@ -102,6 +102,37 @@ $$;
 revoke all on function public.mark_conversation_read(uuid) from public, anon, authenticated;
 grant execute on function public.mark_conversation_read(uuid) to authenticated;
 
+-- Mark All Messages Read RPC
+create or replace function public.mark_all_messages_read()
+returns boolean
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_uid uuid := (select auth.uid());
+begin
+  if v_uid is null then
+    return false;
+  end if;
+
+  update public.messages
+  set read_at = now()
+  where sender_id <> v_uid
+    and read_at is null
+    and exists (
+      select 1 from public.conversations c
+      where c.id = messages.conversation_id
+        and (c.starter_id = v_uid or c.recipient_id = v_uid)
+    );
+
+  return true;
+end;
+$$;
+
+revoke all on function public.mark_all_messages_read() from public, anon, authenticated;
+grant execute on function public.mark_all_messages_read() to authenticated;
+
 -- Conversation deletion RPC
 create or replace function public.delete_conversation(p_conversation_id uuid)
 returns boolean
