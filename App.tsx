@@ -4015,14 +4015,14 @@ function CampusGuideScreen({ route, navigation, initialTab = 'how' }: any) {
             </Text>
           </View>
 
-          {/* For Sellers */}
+          {/* For Sellers / Lenders */}
           <Card style={{ marginBottom: 14 }}>
             <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
                 <View style={{ width: 34, height: 34, borderRadius: 17, backgroundColor: isDark ? 'rgba(230,36,36,0.18)' : '#FFEAE8', alignItems: 'center', justifyContent: 'center' }}>
                   <Ionicons name="pricetag" size={17} color={C.red} />
                 </View>
-                <Text style={{ fontSize: 16, fontWeight: '900', color: C.white }}>For Sellers</Text>
+                <Text style={{ fontSize: 16, fontWeight: '900', color: C.white }}>For Sellers / Lenders</Text>
               </View>
               <View style={{ backgroundColor: isDark ? 'rgba(230,36,36,0.18)' : '#FFEAE8', paddingHorizontal: 8, paddingVertical: 3, borderRadius: 8, borderWidth: 1, borderColor: C.red }}>
                 <Text style={{ fontSize: 10.5, fontWeight: '800', color: C.red }}>5 Easy Steps</Text>
@@ -4033,7 +4033,7 @@ function CampusGuideScreen({ route, navigation, initialTab = 'how' }: any) {
               {
                 num: '1',
                 title: 'Create a sale or rental listing',
-                desc: 'Add book edition or uniform size, select physical condition, and set accepted payment methods: Cash, GCash or Bank Transfer.',
+                desc: 'Add book edition or uniform size, set rental rates or sale price, and choose accepted payments (Cash, GCash, Bank Transfer).',
               },
               {
                 num: '2',
@@ -4042,7 +4042,7 @@ function CampusGuideScreen({ route, navigation, initialTab = 'how' }: any) {
               },
               {
                 num: '3',
-                title: 'Respond to buyer requests',
+                title: 'Respond to buyer / renter requests',
                 desc: 'Approve requests with a dedicated safe-zone meetup location (e.g. Main Library, Visayan Canteen) and time slot.',
               },
               {
@@ -4068,14 +4068,14 @@ function CampusGuideScreen({ route, navigation, initialTab = 'how' }: any) {
             ))}
           </Card>
 
-          {/* For Buyers */}
+          {/* For Buyers / Renters */}
           <Card style={{ marginBottom: 14 }}>
             <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
                 <View style={{ width: 34, height: 34, borderRadius: 17, backgroundColor: isDark ? 'rgba(37,99,235,0.18)' : '#EFF6FF', alignItems: 'center', justifyContent: 'center' }}>
                   <Ionicons name="cart" size={17} color="#2563EB" />
                 </View>
-                <Text style={{ fontSize: 16, fontWeight: '900', color: C.white }}>For Buyers</Text>
+                <Text style={{ fontSize: 16, fontWeight: '900', color: C.white }}>For Buyers / Renters</Text>
               </View>
               <View style={{ backgroundColor: isDark ? 'rgba(37,99,235,0.18)' : '#EFF6FF', paddingHorizontal: 8, paddingVertical: 3, borderRadius: 8, borderWidth: 1, borderColor: '#2563EB' }}>
                 <Text style={{ fontSize: 10.5, fontWeight: '800', color: '#2563EB' }}>4 Simple Steps</Text>
@@ -4090,18 +4090,18 @@ function CampusGuideScreen({ route, navigation, initialTab = 'how' }: any) {
               },
               {
                 num: '2',
-                title: 'Request listing with preferred payment',
-                desc: 'Pick your method (Cash on Meetup or GCash/Bank). Agreement is locked until approved by the seller.',
+                title: 'Request listing to buy or rent',
+                desc: 'Pick your preferred payment (Cash on Meetup or GCash/Bank). Request is locked until approved by the seller or lender.',
               },
               {
                 num: '3',
                 title: 'Coordinate meetup in Messages',
-                desc: 'Once seller approves request, discuss safe details (schedule, specific campus bench/table) with them.',
+                desc: 'Once approved by seller or lender, discuss safe details (schedule, specific campus bench/table) in chat.',
               },
               {
                 num: '4',
-                title: 'Inspect & Pay in Safe Zone',
-                desc: 'Confirm physical handoff inside UMTC monitored safe zones and review your peer!',
+                title: 'Inspect & Pay / Collect in Safe Zone',
+                desc: 'Confirm physical handoff inside UMTC monitored safe zones, inspect item, and review your peer!',
               },
             ].map(step => (
               <View key={step.num} style={{ flexDirection: 'row', gap: 12, alignItems: 'flex-start', marginBottom: 12 }}>
