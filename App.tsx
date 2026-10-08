@@ -104,6 +104,26 @@ function Page({ children, refreshing, onRefresh, footer, topSafe = false, floati
   );
 }
 function Heading({ title, subtitle }: any) { return <View style={{ marginBottom: 18 }}><Text style={s.heading}>{title}</Text>{subtitle ? <Text style={s.subheading}>{subtitle}</Text> : null}</View>; }
+function navigateToMessages(navigation: any) {
+  if (!navigation) return;
+  const state = navigation.getState ? navigation.getState() : null;
+  const routeNames = state?.routeNames || [];
+  if (routeNames.includes('Messages')) {
+    navigation.navigate('Messages');
+    return;
+  }
+  const parent = navigation.getParent ? navigation.getParent() : null;
+  const parentRoutes = parent?.getState ? parent.getState()?.routeNames || [] : [];
+  if (parentRoutes.includes('Messages')) {
+    parent.navigate('Messages');
+    return;
+  }
+  try {
+    navigation.navigate('Main', { screen: 'Messages' });
+  } catch {
+    navigation.navigate('Messages');
+  }
+}
 function MobileFooter({ navigation }: any) {
   const { user } = useAuth();
   return (
@@ -119,7 +139,7 @@ function MobileFooter({ navigation }: any) {
         <Pressable onPress={()=>navigation.navigate('About')} style={s.footerPill}><Text style={s.footerLinkText}>About us</Text></Pressable>
         <Pressable onPress={()=>navigation.navigate('Help')} style={s.footerPill}><Text style={s.footerLinkText}>How it works</Text></Pressable>
         <Pressable onPress={()=>navigation.navigate('Support')} style={s.footerPill}><Text style={s.footerLinkText}>Support</Text></Pressable>
-        {user&&<Pressable onPress={()=>navigation.navigate('Messages')} style={s.footerPill}><Text style={s.footerLinkText}>Inbox</Text></Pressable>}
+        {user&&<Pressable onPress={()=>navigateToMessages(navigation)} style={s.footerPill}><Text style={s.footerLinkText}>Inbox</Text></Pressable>}
       </View>
       <View style={s.footerRule}/>
       <Text style={s.footerSectionTitle}>Campus trade guide</Text>
@@ -4347,7 +4367,7 @@ function CampusGuideScreen({ route, navigation, initialTab = 'how' }: any) {
     }
 
     if (user.role === 'admin') {
-      navigation.navigate('Messages');
+      navigateToMessages(navigation);
       return;
     }
 
@@ -4405,15 +4425,38 @@ function CampusGuideScreen({ route, navigation, initialTab = 'how' }: any) {
       'UM Tagum College Security & Emergency Desk:\n\n• Mabini Main Gate 1: (084) 216-9999\n• Visayan Gate 2: (084) 216-8888\n• Tagum Emergency Hotline: 911\n\nWould you like to dial campus security now?',
       [
         { text: 'Cancel', style: 'cancel' },
-        { text: 'Call Campus Desk', onPress: () => Linking.openURL('tel:0842169999').catch(() => {}) },
+        {
+          text: 'Call Campus Desk',
+          onPress: async () => {
+            const telUrl = 'tel:0842169999';
+            try {
+              const can = await Linking.canOpenURL(telUrl);
+              if (can) {
+                await Linking.openURL(telUrl);
+              } else {
+                Alert.alert('Campus Security Desk', 'Security Desk: (084) 216-9999\nEmergency Hotline: 911');
+              }
+            } catch {
+              Alert.alert('Campus Security Desk', 'Security Desk: (084) 216-9999\nEmergency Hotline: 911');
+            }
+          },
+        },
       ]
     );
   };
 
-  const emailSupport = () => {
-    Linking.openURL('mailto:support.umpasa@umindanao.edu.ph?subject=UM-Pasa%20Student%20Support%20Inquiry').catch(() => {
+  const emailSupport = async () => {
+    const mailUrl = 'mailto:support.umpasa@umindanao.edu.ph?subject=UM-Pasa%20Student%20Support%20Inquiry';
+    try {
+      const can = await Linking.canOpenURL(mailUrl);
+      if (can) {
+        await Linking.openURL(mailUrl);
+      } else {
+        Alert.alert('Official Email', 'support.umpasa@umindanao.edu.ph');
+      }
+    } catch {
       Alert.alert('Official Email', 'support.umpasa@umindanao.edu.ph');
-    });
+    }
   };
 
   const TEAM_MEMBERS = [
@@ -5143,7 +5186,7 @@ function AdminScreen({ navigation }: any) {
           {/* Address Student Reports - Replaced slot */}
           <Pressable
             accessibilityRole="button"
-            onPress={() => navigation.navigate('Messages')}
+            onPress={() => navigateToMessages(navigation)}
             style={{
               flex: 1,
               padding: 14,
@@ -5268,7 +5311,7 @@ function AdminScreen({ navigation }: any) {
       {/* Module 2: Address Student Reports */}
       <Pressable
         accessibilityRole="button"
-        onPress={() => navigation.navigate('Messages')}
+        onPress={() => navigateToMessages(navigation)}
         style={{
           flexDirection: 'row',
           alignItems: 'center',
@@ -5753,7 +5796,7 @@ function ProfileReviewsScreen({ route, navigation }: any) {
       {user?.id !== route.params.id && (
         <Pressable
           accessibilityRole="button"
-          onPress={() => navigation.navigate('Messages')}
+          onPress={() => navigateToMessages(navigation)}
           style={{
             backgroundColor: C.red,
             borderRadius: 16,
