@@ -172,7 +172,7 @@ function BrowseScreen({ navigation }: any) {
       <LinearGradient colors={['#55201c', '#2b191a', '#1b1a1e']} start={{x:0,y:0}} end={{x:1,y:1}} style={s.marketHeroGradient}>
         <View style={s.brandRow}>
           <View style={s.brandMark}><Image source={require('./assets/UMPASALOGO.png')} style={s.brandLogo} resizeMode="contain"/></View>
-          <View style={{flex:1}}><Text style={s.brandName}>UM-Pasa</Text><Text style={s.brandCaption}>UM TAGUM COLLEGE · TAGUM CITY</Text></View>
+          <View style={{flex:1}}><Text style={s.brandName}>UM-Pasa</Text><Text style={s.brandCaption}>UM TAGUM COLLEGE</Text></View>
           {!user && (
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
               <Pressable
@@ -3814,6 +3814,7 @@ function ReportsScreen() {
 }
 
 function CampusGuideScreen({ route, navigation, initialTab = 'how' }: any) {
+  const { user } = useAuth();
   const isDark = C.bg === themeTokens.dark.colors.bg;
   const startTab = route?.params?.initialTab || initialTab || 'how';
   const [tab, setTab] = useState<'how' | 'about' | 'support'>(startTab);
@@ -3821,12 +3822,60 @@ function CampusGuideScreen({ route, navigation, initialTab = 'how' }: any) {
   const [ticketCat, setTicketCat] = useState('Missing Item / Payment Issue');
   const [ticketSubject, setTicketSubject] = useState('');
   const [ticketMessage, setTicketMessage] = useState('');
+  const [startingChat, setStartingChat] = useState(false);
 
   useEffect(() => {
     if (route?.params?.initialTab) {
       setTab(route.params.initialTab);
     }
   }, [route?.params?.initialTab]);
+
+  const startAdminChat = async () => {
+    if (!user) {
+      Alert.alert(
+        'Sign In Required',
+        'Please sign in to chat directly with a campus moderator.',
+        [
+          { text: 'Sign In', onPress: () => navigation.navigate('Login') },
+          { text: 'Cancel', style: 'cancel' },
+        ]
+      );
+      return;
+    }
+
+    if (user.role === 'admin') {
+      navigation.navigate('Messages');
+      return;
+    }
+
+    try {
+      setStartingChat(true);
+
+      const { data: convs } = await supabase
+        .from('conversations')
+        .select('id, starter_id, recipient_id')
+        .is('item_id', null)
+        .or(`starter_id.eq.${user.id},recipient_id.eq.${user.id}`)
+        .order('last_message_at', { ascending: false })
+        .limit(1);
+
+      if (convs && convs.length > 0) {
+        navigation.navigate('Conversation', { id: convs[0].id });
+        return;
+      }
+
+      const adminId = 'd26f1431-913b-46bd-b397-ecff4edd7162';
+      const m = await messaging.send({
+        recipient_id: adminId,
+        body: 'Hello Campus Moderator, I am reaching out for student support.',
+      });
+      navigation.navigate('Conversation', { id: m.conversation_id });
+    } catch (e) {
+      Alert.alert('Unable to start moderator chat', errorMessage(e));
+    } finally {
+      setStartingChat(false);
+    }
+  };
 
   const submitTicket = () => {
     if (!ticketSubject.trim() || !ticketMessage.trim()) {
@@ -4304,10 +4353,15 @@ function CampusGuideScreen({ route, navigation, initialTab = 'how' }: any) {
               <Text style={{ fontSize: 11, color: C.muted, marginTop: 2, lineHeight: 15, marginBottom: 10 }}>Avg. response: 10m during campus hours</Text>
               <Pressable
                 accessibilityRole="button"
-                onPress={() => navigation.navigate('Messages')}
+                disabled={startingChat}
+                onPress={startAdminChat}
                 style={{ paddingVertical: 8, borderRadius: 8, backgroundColor: isDark ? C.panel2 : '#EFE8E3', alignItems: 'center' }}
               >
-                <Text style={{ fontSize: 11.5, fontWeight: '800', color: C.white }}>Start Chat ›</Text>
+                {startingChat ? (
+                  <ActivityIndicator size="small" color={C.white} />
+                ) : (
+                  <Text style={{ fontSize: 11.5, fontWeight: '800', color: C.white }}>Start Chat ›</Text>
+                )}
               </Pressable>
             </View>
 
