@@ -1,7 +1,8 @@
--- Phase 28: Rental completion and seller-initiated closed/rented state.
+-- Phase 28: Rental completion, seller-initiated closed/rented state, and conversation deletion.
 -- Run in Supabase SQL Editor.
 -- 1. When complete_transaction is invoked (both sale and rental), marks the listing 'sold' so it cleanly disappears from the active marketplace feed.
 -- 2. Allows mark_listing_sold to work for both 'sell' and 'rent' listings so sellers can close active rentals.
+-- 3. Enables secure deletion of conversations and cascades deletion of linked messages.
 
 create or replace function public.complete_transaction(p_transaction_id uuid)
 returns uuid
@@ -73,3 +74,49 @@ $$;
 
 revoke all on function public.mark_listing_sold(uuid) from public, anon, authenticated;
 grant execute on function public.mark_listing_sold(uuid) to authenticated;
+
+-- Conversation deletion RPC
+create or replace function public.delete_conversation(p_conversation_id uuid)
+returns boolean
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_uid uuid := (select auth.uid());
+  v_conv public.conversations%rowtype;
+begin
+  if v_uid is null then
+    raise exception 'Sign in to delete a conversation' using errcode = '42501';
+  end if;
+
+  select * into v_conv
+  from public.conversations
+  where id = p_conversation_id;
+
+  if not found then
+    return true;
+  end if;
+
+  if v_conv.starter_id <> v_uid and v_conv.recipient_id <> v_uid and not exists (
+    select 1 from public.profiles where id = v_uid and role = 'admin'
+  ) then
+    raise exception 'You do not have permission to delete this conversation' using errcode = '42501';
+  end if;
+
+  delete from public.conversations where id = p_conversation_id;
+  return true;
+end;
+$$;
+
+revoke all on function public.delete_conversation(uuid) from public, anon, authenticated;
+grant execute on function public.delete_conversation(uuid) to authenticated;
+
+-- RLS DELETE policy on conversations
+drop policy if exists "participants and admin can delete conversations" on public.conversations;
+create policy "participants and admin can delete conversations"
+on public.conversations for delete to authenticated
+using (
+  auth.uid() = starter_id or auth.uid() = recipient_id
+  or exists (select 1 from public.profiles where id = auth.uid() and role = 'admin')
+);

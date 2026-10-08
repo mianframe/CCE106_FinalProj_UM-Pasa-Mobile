@@ -127,4 +127,11 @@ export const messaging = {
     const people = await profilesById([row.sender_id]);
     return mapMessage(row, people);
   },
+  async delete(id: string): Promise<void> {
+    const { error } = await supabase.rpc('delete_conversation', { p_conversation_id: id });
+    if (error) {
+      const { error: directError } = await supabase.from('conversations').delete().eq('id', id);
+      if (directError) throw new Error(error.message || directError.message);
+    }
+  },
 };

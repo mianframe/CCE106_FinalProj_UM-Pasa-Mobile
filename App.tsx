@@ -2503,6 +2503,28 @@ function MessagesScreen({ navigation }: any) {
     }
   };
 
+  const confirmDeleteConversation = (conversationId: string, name: string) => {
+    Alert.alert(
+      'Delete Conversation?',
+      `Are you sure you want to delete your conversation with ${name}? All messages will be permanently removed.`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await messaging.delete(conversationId);
+              await load();
+            } catch (e) {
+              Alert.alert('Unable to delete conversation', errorMessage(e));
+            }
+          },
+        },
+      ]
+    );
+  };
+
   // Counts
   const unreadTotal = rows.filter(c => !c.latest_message?.read_at && c.latest_message?.sender_id !== user?.id).length;
   const reportsCount = rows.filter(c => !c.item_id).length;
@@ -3028,9 +3050,23 @@ function MessagesScreen({ navigation }: any) {
                       <Ionicons name="checkmark-circle" size={14} color={isDark ? '#F87171' : '#8B0000'} />
                     </View>
                     <View style={{ alignItems: 'flex-end', gap: 4 }}>
-                      <Text style={{ fontSize: 11, fontWeight: '700', color: isUnread ? (isDark ? '#F87171' : '#B91C1C') : (isDark ? '#9CA3AF' : C.muted) }}>
-                        {timeLabel}
-                      </Text>
+                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                        <Text style={{ fontSize: 11, fontWeight: '700', color: isUnread ? (isDark ? '#F87171' : '#B91C1C') : (isDark ? '#9CA3AF' : C.muted) }}>
+                          {timeLabel}
+                        </Text>
+                        <Pressable
+                          accessibilityRole="button"
+                          accessibilityLabel="Delete conversation"
+                          hitSlop={8}
+                          onPress={(e: any) => {
+                            e?.stopPropagation?.();
+                            confirmDeleteConversation(c.id, partnerName);
+                          }}
+                          style={{ padding: 2 }}
+                        >
+                          <Ionicons name="trash-outline" size={15} color={isDark ? '#9CA3AF' : '#6B7280'} />
+                        </Pressable>
+                      </View>
                       {isUnread && (
                         <View style={{
                           minWidth: 18,
@@ -3274,6 +3310,44 @@ function ConversationScreen({ route, navigation }: any) {
       return () => clearTimeout(timer);
     }
   }, [c?.messages?.length]);
+
+  const confirmDelete = () => {
+    Alert.alert(
+      'Delete Conversation?',
+      'Are you sure you want to delete this conversation? All messages in this chat will be permanently removed.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await messaging.delete(route.params.id);
+              navigation.goBack();
+            } catch (e) {
+              Alert.alert('Unable to delete conversation', errorMessage(e));
+            }
+          },
+        },
+      ]
+    );
+  };
+
+  useEffect(() => {
+    navigation.setOptions({
+      headerRight: () => (
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Delete conversation"
+          hitSlop={10}
+          onPress={confirmDelete}
+          style={{ paddingHorizontal: 12, paddingVertical: 6 }}
+        >
+          <Ionicons name="trash-outline" size={20} color={isDark ? '#F87171' : '#B91C1C'} />
+        </Pressable>
+      ),
+    });
+  }, [navigation, isDark, route.params.id]);
 
   const send = async () => {
     if (!body.trim() || sending) return;

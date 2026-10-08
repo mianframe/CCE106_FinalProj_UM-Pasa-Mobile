@@ -139,6 +139,7 @@ export type Database = {
       public_profile_reviews: { Args: { p_user_id: string }; Returns: { review_id: string; rating: number; comment: string | null; created_at: string; reviewer_name: string; item_title: string | null }[] };
       admin_set_profile_role: { Args: { p_user_id: string; p_role: 'student' | 'admin' }; Returns: undefined };
       delete_user_account: { Args: Record<string, never>; Returns: undefined };
+      delete_conversation: { Args: { p_conversation_id: string }; Returns: boolean };
     };
     Enums: Record<string, never>;
     CompositeTypes: Record<string, never>;
