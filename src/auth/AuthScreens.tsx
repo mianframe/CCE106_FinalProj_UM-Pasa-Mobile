@@ -61,6 +61,7 @@ function AuthLayout({
   children: React.ReactNode;
 }) {
   const { mode } = useTheme();
+  const C = themeTokens[mode].colors;
   const s = createStyles(mode);
 
   return (
@@ -68,7 +69,10 @@ function AuthLayout({
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ flex: 1 }}>
         <ScrollView contentContainerStyle={s.page} keyboardShouldPersistTaps="handled">
           <Image source={require('../../assets/UMPASALOGO.png')} style={s.logo} resizeMode="contain" />
-          <Text style={s.tagline}>UM TAGUM COLLEGE · ACADEMIC MARKETPLACE</Text>
+          <View style={s.campusBadge}>
+            <Ionicons name="school-outline" size={13} color={C.gold} />
+            <Text style={s.campusBadgeText}>UM Tagum College · Student Marketplace</Text>
+          </View>
           <Text style={s.title}>{title}</Text>
           <Text style={s.subtitle}>{subtitle}</Text>
           {children}
@@ -84,7 +88,7 @@ function SubmitButton({ title, busy, onPress }: { title: string; busy: boolean; 
 
   return (
     <Pressable accessibilityRole="button" disabled={busy} onPress={onPress} style={[s.buttonShell, busy && { opacity: 0.65 }]}>
-      <LinearGradient colors={['#f23b31', '#b70201', '#790101']} style={s.button}>
+      <LinearGradient colors={['#BA1B1B', '#990000', '#770000']} style={s.button}>
         {busy ? <ActivityIndicator color="#ffffff" /> : <Text style={s.buttonText}>{title}</Text>}
       </LinearGradient>
     </Pressable>
@@ -190,7 +194,7 @@ export function LoginScreen({ navigation }: any) {
 
       <View style={s.dividerRow}>
         <View style={s.dividerLine} />
-        <Text style={s.dividerText}>OR SIGN IN WITH EMAIL</Text>
+        <Text style={s.dividerText}>or continue with UM email</Text>
         <View style={s.dividerLine} />
       </View>
 
@@ -328,7 +332,25 @@ function createStyles(mode: ThemeMode) {
     safe: { flex: 1, backgroundColor: C.bg },
     page: { flexGrow: 1, justifyContent: 'center', padding: 20, paddingBottom: 36 },
     logo: { width: 170, height: 110, alignSelf: 'center', marginBottom: 4 },
-    tagline: { textAlign: 'center', letterSpacing: 2.2, color: C.gold, fontWeight: '800', fontSize: 10, marginBottom: 24 },
+    campusBadge: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      alignSelf: 'center',
+      gap: 6,
+      paddingHorizontal: 12,
+      paddingVertical: 5,
+      borderRadius: 14,
+      backgroundColor: isDark ? 'rgba(246, 200, 76, 0.12)' : '#F5EFEB',
+      borderWidth: 1,
+      borderColor: isDark ? 'rgba(246, 200, 76, 0.25)' : '#E6DCD6',
+      marginBottom: 20,
+    },
+    campusBadgeText: {
+      fontSize: 11.5,
+      fontWeight: '700',
+      color: isDark ? C.gold : '#8A6500',
+    },
     title: { fontSize: 24, fontWeight: '900', color: C.white, marginBottom: 5, letterSpacing: -0.3 },
     subtitle: { fontSize: 13, color: C.cream, lineHeight: 19, marginBottom: 16 },
     fieldWrap: { marginBottom: 12 },

@@ -28,7 +28,7 @@ const Stack = createNativeStackNavigator<any>(); const Tabs = createBottomTabNav
 const SHOW_DELETE_ACCOUNT = false;
 
 function Button({ title, onPress, secondary = false, danger = false, disabled = false }: any) {
-  return <Pressable accessibilityRole="button" disabled={disabled} onPress={onPress} style={[s.buttonShell, secondary && s.buttonSecondary, danger && s.buttonDanger, disabled && { opacity: .55 }]}><LinearGradient colors={secondary ? (C.bg === themeTokens.dark.colors.bg ? ['rgba(255,255,255,.12)','rgba(255,255,255,.035)'] : ['#FFF4EC','#FFEFE5']) : danger ? ['#a61111','#650606'] : ['#f23b31','#b70201','#790101']} start={{x:0,y:0}} end={{x:1,y:1}} style={s.button}><Text style={[s.buttonText, secondary && { color: C.gold }]}>{title}</Text></LinearGradient></Pressable>;
+  return <Pressable accessibilityRole="button" disabled={disabled} onPress={onPress} style={[s.buttonShell, secondary && s.buttonSecondary, danger && s.buttonDanger, disabled && { opacity: .55 }]}><LinearGradient colors={secondary ? (C.bg === themeTokens.dark.colors.bg ? ['rgba(255,255,255,.12)','rgba(255,255,255,.035)'] : ['#FFF4EC','#FFEFE5']) : danger ? ['#a61111','#650606'] : ['#BA1B1B','#990000','#770000']} start={{x:0,y:0}} end={{x:1,y:1}} style={s.button}><Text style={[s.buttonText, secondary && { color: C.gold }]}>{title}</Text></LinearGradient></Pressable>;
 }
 function Field({ label, value, onChangeText, placeholder, multiline, secureTextEntry, keyboardType, autoCapitalize = 'sentences', onSubmitEditing }: any) {
   return <View style={s.fieldWrap}><Text style={s.label}>{label}</Text><TextInput value={value} onChangeText={onChangeText} placeholder={placeholder || label} placeholderTextColor={C.muted} multiline={multiline} secureTextEntry={secureTextEntry} keyboardType={keyboardType} autoCapitalize={autoCapitalize} onSubmitEditing={onSubmitEditing} style={[s.field, multiline && { minHeight: 100, textAlignVertical: 'top' }]} /></View>;
@@ -104,17 +104,76 @@ function Page({ children, refreshing, onRefresh, footer, topSafe = false, floati
   );
 }
 function Heading({ title, subtitle }: any) { return <View style={{ marginBottom: 18 }}><Text style={s.heading}>{title}</Text>{subtitle ? <Text style={s.subheading}>{subtitle}</Text> : null}</View>; }
-function MobileFooter({ navigation }: any) { const { user }=useAuth(); return <LinearGradient colors={['rgba(230,36,36,.13)','rgba(246,200,76,.055)','rgba(255,255,255,.025)']} locations={[0,.52,1]} style={s.footer}><View style={s.footerBrand}><View style={s.footerLogoRing}><Image source={require('./assets/UMPASALOGO.png')} style={s.footerLogo} resizeMode="contain"/></View><View style={{flex:1}}><Text style={s.footerTitle}>UM-Pasa</Text><Text style={s.muted}>University Marketplace</Text></View></View><Text style={s.footerCopy}>Browse items, post listings, request transactions, and track marketplace activity in one student workspace.</Text><View style={s.footerRule}/><Text style={s.eyebrow}>QUICK LINKS</Text><View style={s.footerLinks}><Pressable onPress={()=>navigation.navigate('About')} style={s.footerPill}><Text style={s.footerLinkText}>About Us</Text></Pressable><Pressable onPress={()=>navigation.navigate('Help')} style={s.footerPill}><Text style={s.footerLinkText}>How it works</Text></Pressable><Pressable onPress={()=>navigation.navigate('Support')} style={s.footerPill}><Text style={s.footerLinkText}>Support</Text></Pressable>{user&&<Pressable onPress={()=>navigation.navigate('Messages')} style={s.footerPill}><Text style={s.footerLinkText}>Inbox</Text></Pressable>}</View><View style={s.footerRule}/><Text style={s.eyebrow}>QUICK INSTRUCTIONS</Text><Text style={s.footerStep}>01  Browse the marketplace or search by category.</Text><Text style={s.footerStep}>02  Open a listing to request it or message the seller.</Text><Text style={s.footerStep}>03  Confirm your meetup and complete the transaction.</Text><View style={s.footerBottom}><Text style={s.footerCopyright}>UM-Pasa © {new Date().getFullYear()} · University of Mindanao</Text><Text style={s.footerBadge}>University-safe trading</Text></View></LinearGradient>; }
-function Status({ state, retry }: { state: string; retry?: () => void }) { return <Card><Text style={s.body}>{state}</Text>{retry ? <Button title="Try again" secondary onPress={retry} /> : null}</Card>; }
+function MobileFooter({ navigation }: any) {
+  const { user } = useAuth();
+  return (
+    <LinearGradient colors={['rgba(153,0,0,.12)','rgba(246,200,76,.05)','rgba(255,255,255,.02)']} locations={[0,.52,1]} style={s.footer}>
+      <View style={s.footerBrand}>
+        <View style={s.footerLogoRing}><Image source={require('./assets/UMPASALOGO.png')} style={s.footerLogo} resizeMode="contain"/></View>
+        <View style={{flex:1}}><Text style={s.footerTitle}>UM-Pasa</Text><Text style={s.muted}>University of Mindanao · Academic Marketplace</Text></View>
+      </View>
+      <Text style={s.footerCopy}>Campus peer exchange for textbooks, uniforms, and academic gear with zero platform fees.</Text>
+      <View style={s.footerRule}/>
+      <Text style={s.footerSectionTitle}>Quick navigation</Text>
+      <View style={s.footerLinks}>
+        <Pressable onPress={()=>navigation.navigate('About')} style={s.footerPill}><Text style={s.footerLinkText}>About us</Text></Pressable>
+        <Pressable onPress={()=>navigation.navigate('Help')} style={s.footerPill}><Text style={s.footerLinkText}>How it works</Text></Pressable>
+        <Pressable onPress={()=>navigation.navigate('Support')} style={s.footerPill}><Text style={s.footerLinkText}>Support</Text></Pressable>
+        {user&&<Pressable onPress={()=>navigation.navigate('Messages')} style={s.footerPill}><Text style={s.footerLinkText}>Inbox</Text></Pressable>}
+      </View>
+      <View style={s.footerRule}/>
+      <Text style={s.footerSectionTitle}>Campus trade guide</Text>
+      <View style={s.footerStepRow}>
+        <View style={s.footerStepBadge}><Text style={s.footerStepBadgeText}>1</Text></View>
+        <Text style={s.footerStepText}>Browse textbooks, uniforms, or gear by category.</Text>
+      </View>
+      <View style={s.footerStepRow}>
+        <View style={s.footerStepBadge}><Text style={s.footerStepBadgeText}>2</Text></View>
+        <Text style={s.footerStepText}>Request an item or message the seller to set a campus meetup.</Text>
+      </View>
+      <View style={s.footerStepRow}>
+        <View style={s.footerStepBadge}><Text style={s.footerStepBadgeText}>3</Text></View>
+        <Text style={s.footerStepText}>Meet at monitored zones (Library, IT Labs, Canteen) to complete the deal.</Text>
+      </View>
+      <View style={s.footerBottom}>
+        <Text style={s.footerCopyright}>UM-Pasa © {new Date().getFullYear()} · University of Mindanao</Text>
+        <Text style={s.footerBadge}>Campus-verified trading</Text>
+      </View>
+    </LinearGradient>
+  );
+}
+function Status({ state, retry, icon }: { state: string; retry?: () => void; icon?: keyof typeof Ionicons.glyphMap }) {
+  const isDark = C.bg === themeTokens.dark.colors.bg;
+  return (
+    <View style={s.emptyStateBox}>
+      <View style={s.emptyStateIconWrap}>
+        <Ionicons name={icon || 'information-circle-outline'} size={24} color={C.gold} />
+      </View>
+      <Text style={s.emptyStateText}>{state}</Text>
+      {retry ? <Button title="Try again" secondary onPress={retry} /> : null}
+    </View>
+  );
+}
 function money(v: any) { return `₱${Number(v || 0).toLocaleString('en-PH', { minimumFractionDigits: 2 })}`; }
 function statusColor(status: string) { return status === 'approved' || status === 'available' || status === 'completed' ? C.green : status === 'rejected' || status === 'sold' ? (C.bg === themeTokens.dark.colors.bg ? '#ff8c82' : C.red) : C.gold; }
+function formatStatusLabel(s: string) {
+  const clean = (s || 'pending').toLowerCase();
+  if (clean === 'approved') return 'Approved';
+  if (clean === 'available') return 'Available';
+  if (clean === 'completed') return 'Completed';
+  if (clean === 'rejected') return 'Declined';
+  if (clean === 'sold') return 'Sold';
+  if (clean === 'pending') return 'Pending';
+  if (clean === 'cancelled') return 'Cancelled';
+  return clean.charAt(0).toUpperCase() + clean.slice(1);
+}
 function StatusPill({ status }: { status: string }) {
   const sLower = (status || '').toLowerCase();
   const isDark = C.bg === themeTokens.dark.colors.bg;
   let bg = isDark ? 'rgba(246, 200, 76, 0.14)' : 'rgba(138, 101, 0, 0.12)';
   let text = isDark ? '#F6C84C' : '#8A6500';
   let dot = isDark ? '#F6C84C' : '#8A6500';
-  let label = (status || 'pending').toUpperCase();
+  let label = formatStatusLabel(status);
 
   if (sLower === 'approved' || sLower === 'available') {
     bg = isDark ? 'rgba(74, 222, 128, 0.15)' : 'rgba(22, 101, 52, 0.12)';
@@ -169,10 +228,10 @@ function BrowseScreen({ navigation }: any) {
   const isDark = C.bg === themeTokens.dark.colors.bg;
   return <Page refreshing={loading} onRefresh={load} footer={{navigation}} topSafe={!!user}>
     <View style={s.marketHero}>
-      <LinearGradient colors={['#55201c', '#2b191a', '#1b1a1e']} start={{x:0,y:0}} end={{x:1,y:1}} style={s.marketHeroGradient}>
+      <LinearGradient colors={['#4A1210', '#2B1214', '#151419']} start={{x:0,y:0}} end={{x:1,y:1}} style={s.marketHeroGradient}>
         <View style={s.brandRow}>
           <View style={s.brandMark}><Image source={require('./assets/UMPASALOGO.png')} style={s.brandLogo} resizeMode="contain"/></View>
-          <View style={{flex:1}}><Text style={s.brandName}>UM-Pasa</Text><Text style={s.brandCaption}>UM TAGUM COLLEGE</Text></View>
+          <View style={{flex:1}}><Text style={s.brandName}>UM-Pasa</Text><Text style={s.brandCaption}>UM Tagum College</Text></View>
           {!user && (
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
               <Pressable
@@ -204,9 +263,9 @@ function BrowseScreen({ navigation }: any) {
           style={[s.heroCarousel, { width: bannerWidth }]}
         >
           {[
-            {icon:'bag-handle-outline',kicker:'CAMPUS ACADEMIC EXCHANGE',title:'Essential resources for every semester.',copy:'Browse textbooks, uniforms, engineering kits, drafting tools, and calculators across Mabini and Visayan.'},
-            {icon:'repeat-outline',kicker:'PASS IT FORWARD',title:'Give academic items another semester.',copy:'Pass on completed course materials to lower years at fair student prices or rent items per semester.'},
-            {icon:'shield-checkmark-outline',kicker:'MONITORED SAFE ZONES',title:'Trade safely at campus landmarks.',copy:'Handoffs at Main Library, Visayan IT Labs, Canteen, and Gym with zero platform fees.'},
+            {icon:'bag-handle-outline',kicker:'Campus academic exchange',title:'Essential resources for every semester.',copy:'Browse textbooks, uniforms, engineering kits, drafting tools, and calculators across Mabini and Visayan.'},
+            {icon:'repeat-outline',kicker:'Pass it forward',title:'Give academic items another semester.',copy:'Pass on completed course materials to lower years at fair student prices or rent items per semester.'},
+            {icon:'shield-checkmark-outline',kicker:'Verified meetup zones',title:'Trade safely at campus landmarks.',copy:'Handoffs at Main Library, Visayan IT Labs, Canteen, and Gym with zero platform fees.'},
           ].map((slide,index)=><View key={slide.kicker} style={[s.carouselSlide,{width:bannerWidth}]}><Ionicons name={slide.icon as any} size={23} color="#ffc270"/><Text style={s.heroKicker}>{slide.kicker}</Text><Text style={s.heroTitle}>{slide.title}</Text><Text style={s.heroDescription}>{slide.copy}</Text><Pressable onPress={()=>navigation.navigate(index===2?'Help':'Browse')}><Text style={s.heroLink}>{index===2?'How it works  ›':'Explore marketplace  ›'}</Text></Pressable></View>)}
         </ScrollView>
         <View style={s.carouselDots}>{[0,1,2].map((dot)=><View key={dot} style={[s.carouselDot,dot===carouselIndex&&s.carouselDotActive]}/>)}</View>
@@ -216,7 +275,7 @@ function BrowseScreen({ navigation }: any) {
     </View>
 
     <Card style={s.searchPanel}>
-      <Text style={s.searchLabel}>SEARCH ACADEMIC RESOURCES</Text>
+      <Text style={s.searchLabel}>Search campus resources</Text>
       <View style={s.searchRow}>
         <View style={s.searchInputWrap}>
           <Ionicons name="search-outline" size={18} color={C.muted} style={{ marginLeft: 12 }} />
@@ -236,34 +295,34 @@ function BrowseScreen({ navigation }: any) {
           ) : null}
         </View>
         <Pressable accessibilityRole="button" onPress={load} style={s.searchButton}>
-          <LinearGradient colors={['#ef4035', '#b70201', '#810101']} style={s.searchButtonGradient}>
-            <Text style={s.searchButtonText}>GO</Text>
+          <LinearGradient colors={['#BA1B1B', '#990000', '#770000']} style={s.searchButtonGradient}>
+            <Ionicons name="search" size={18} color="#FFFFFF" />
           </LinearGradient>
         </Pressable>
       </View>
       <Text style={s.searchHint}>Try “Calculators”, “Uniforms”, “Drafting”, or course codes like “IT 101” or “ACT 211”.</Text>
     </Card>
 
-    <View style={s.sectionTop}><View><Text style={s.sectionKicker}>CAMPUS FEED</Text><Text style={s.sectionTitle}>Available resources</Text></View><Text style={s.resultCount}>{items.length} found</Text></View>
-    <Text style={s.filterLabel}>LISTING TYPE</Text>
+    <View style={s.sectionTop}><View><Text style={s.sectionKicker}>Campus feed</Text><Text style={s.sectionTitle}>Available resources</Text></View><Text style={s.resultCount}>{items.length} found</Text></View>
+    <Text style={s.filterLabel}>Listing type</Text>
     <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.chipStrip}>
       {[['All types', undefined, 'layers-outline'], ['For sale', 'sell', 'pricetag-outline'], ['For rent', 'rent', 'repeat-outline']].map(([label, value, icon]: any) => <Choice key={label} label={label} icon={icon} selected={filters.listing_type === value} onPress={() => setFilter('listing_type', value)}/>)}
     </ScrollView>
-    <Text style={s.filterLabel}>POPULAR CATEGORIES</Text>
+    <Text style={s.filterLabel}>Popular categories</Text>
     <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.chipStrip}>
       <Choice key="All" label="All" icon="grid-outline" selected={!filters.category} onPress={() => setFilter('category', undefined)} />
       {categories.map((value) => <Choice key={value} label={value} icon={getCategoryIcon(value)} selected={filters.category === value} onPress={() => setFilter('category', filters.category === value ? undefined : value)}/>)}
     </ScrollView>
-    <View style={s.sortRow}><Text style={s.filterLabel}>SORT BY</Text><ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.sortChoices}>{[['Newest','newest','time-outline'],['Oldest','oldest','calendar-outline'],['Price ↑','price_low','trending-up-outline'],['Price ↓','price_high','trending-down-outline']].map(([label,value,icon]:any)=><Choice key={label} label={label} icon={icon} selected={filters.sort===value} onPress={()=>setFilter('sort',value)}/>)}</ScrollView></View>
+    <View style={s.sortRow}><Text style={s.filterLabel}>Sort by</Text><ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.sortChoices}>{[['Newest','newest','time-outline'],['Oldest','oldest','calendar-outline'],['Price ↑','price_low','trending-up-outline'],['Price ↓','price_high','trending-down-outline']].map(([label,value,icon]:any)=><Choice key={label} label={label} icon={icon} selected={filters.sort===value} onPress={()=>setFilter('sort',value)}/>)}</ScrollView></View>
 
     <Pressable style={s.filterToggle} onPress={() => setShowFilters(!showFilters)}><View><Text style={s.filterToggleTitle}>More filters {selectedCount ? '· ' + selectedCount + ' selected' : ''}</Text><Text style={s.filterToggleHint}>Condition, program and course</Text></View><Text style={s.filterChevron}>{showFilters ? '−' : '+'}</Text></Pressable>
     {showFilters && <Card style={s.advancedFilters}>
-      <Text style={s.filterLabel}>CONDITION</Text><View style={s.rowWrap}>{[['Any',undefined],...['new','like_new','good','fair','poor'].map(v=>[v.replace('_',' '),v])].map(([label,value]:any)=><Choice key={label} label={label} selected={filters.condition===value} onPress={()=>toggle('condition',value)}/>)}</View>
-      <Text style={s.filterLabel}>DEPARTMENT</Text><View style={s.rowWrap}><Choice label="All departments" selected={!filters.department} onPress={()=>setFilters({...filters,department:undefined,program:undefined})}/>{departments.map(v=><Choice key={v} label={v.replace('Department of ','')} selected={filters.department===v} onPress={()=>setFilters({...filters,department:filters.department===v?undefined:v,program:undefined})}/>)}</View>
-      {programsForDepartment.length > 0 && <><Text style={s.filterLabel}>PROGRAM</Text><View style={s.rowWrap}><Choice label="All programs" selected={!filters.program} onPress={()=>setFilter('program',undefined)}/>{programsForDepartment.map(v=><Choice key={v} label={v} selected={filters.program===v} onPress={()=>toggle('program',v)}/>)}</View></>}
+      <Text style={s.filterLabel}>Condition</Text><View style={s.rowWrap}>{[['Any',undefined],...['new','like_new','good','fair','poor'].map(v=>[v.replace('_',' '),v])].map(([label,value]:any)=><Choice key={label} label={label} selected={filters.condition===value} onPress={()=>toggle('condition',value)}/>)}</View>
+      <Text style={s.filterLabel}>Department</Text><View style={s.rowWrap}><Choice label="All departments" selected={!filters.department} onPress={()=>setFilters({...filters,department:undefined,program:undefined})}/>{departments.map(v=><Choice key={v} label={v.replace('Department of ','')} selected={filters.department===v} onPress={()=>setFilters({...filters,department:filters.department===v?undefined:v,program:undefined})}/>)}</View>
+      {programsForDepartment.length > 0 && <><Text style={s.filterLabel}>Program</Text><View style={s.rowWrap}><Choice label="All programs" selected={!filters.program} onPress={()=>setFilter('program',undefined)}/>{programsForDepartment.map(v=><Choice key={v} label={v} selected={filters.program===v} onPress={()=>toggle('program',v)}/>)}</View></>}
       <Field label="Course code" value={filters.course_code||''} onChangeText={(v:string)=>setFilter('course_code',v||undefined)} autoCapitalize="characters" onSubmitEditing={load}/>
     </Card>}
-    {error ? <Status state={error} retry={load}/> : loading && !items.length ? <View style={s.loadingBlock}><ActivityIndicator color={C.red}/><Text style={s.muted}>Finding campus listings…</Text></View> : !items.length ? <Status state="No approved listings match your search yet. Try adjusting your filters or keywords." retry={load}/> : <View style={s.listingGrid}>{items.map(item=><Pressable key={item.id} style={[s.gridItem,{width:(width-43)/2}]} onPress={()=>navigation.navigate('Listing',{id:item.id})}><ItemCard item={item} compact/></Pressable>)}</View>}
+    {error ? <Status state={error} icon="alert-circle-outline" retry={load}/> : loading && !items.length ? <View style={s.loadingBlock}><ActivityIndicator color={C.red}/><Text style={s.muted}>Finding campus listings…</Text></View> : !items.length ? <Status state="No approved listings match your search yet. Try adjusting your filters or keywords." icon="search-outline" retry={load}/> : <View style={s.listingGrid}>{items.map(item=><Pressable key={item.id} style={[s.gridItem,{width:(width-43)/2}]} onPress={()=>navigation.navigate('Listing',{id:item.id})}><ItemCard item={item} compact/></Pressable>)}</View>}
   </Page>;
 }
 async function openNotification(n:Notice,navigation:any,isAdmin:boolean) { try { if(!n.is_read) await account.markNotificationRead(n.id); } catch(e) { Alert.alert('Unable to update notification',errorMessage(e));return; } if(n.related_type==='transaction'&&n.related_id)navigation.navigate('Transaction',{id:n.related_id});else if(n.related_type==='conversation'&&n.related_id)navigation.navigate('Conversation',{id:n.related_id});else if(n.related_type==='item'&&n.related_id)navigation.navigate(isAdmin&&n.type==='listing_review'?'AdminItems':'Listing',isAdmin&&n.type==='listing_review'?{itemId:n.related_id}:{id:n.related_id});else Alert.alert('Activity update',n.message); }
@@ -284,17 +343,17 @@ function ItemCard({ item, compact = false }: { item: Item; compact?: boolean }) 
           </View>
         )}
         <View style={s.floatingTypeBadge}>
-          <Text style={s.floatingTypeText}>{isRent ? 'RENT' : 'SALE'}</Text>
+          <Text style={s.floatingTypeText}>{isRent ? 'For rent' : 'For sale'}</Text>
         </View>
         {isReserved && (
           <View style={[s.floatingReservedBadge, compact && s.floatingReservedBadgeCompact]}>
             <View style={s.floatingReservedDot} />
-            <Text style={[s.floatingReservedText, compact && s.floatingReservedTextCompact]}>RESERVED</Text>
+            <Text style={[s.floatingReservedText, compact && s.floatingReservedTextCompact]}>Reserved</Text>
           </View>
         )}
         {isSold && (
           <View style={[s.floatingReservedBadge, compact && s.floatingReservedBadgeCompact, { backgroundColor: '#374151' }]}>
-            <Text style={[s.floatingReservedText, compact && s.floatingReservedTextCompact, { color: '#E5E7EB' }]}>SOLD</Text>
+            <Text style={[s.floatingReservedText, compact && s.floatingReservedTextCompact, { color: '#E5E7EB' }]}>Sold</Text>
           </View>
         )}
       </View>
@@ -302,12 +361,12 @@ function ItemCard({ item, compact = false }: { item: Item; compact?: boolean }) 
       {/* Card Content Body */}
       <View style={s.itemBody}>
         <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 2 }}>
-          <Text numberOfLines={1} style={[s.itemCategoryKicker, { flex: 1 }]}>{item.category || 'CAMPUS RESOURCE'}</Text>
+          <Text numberOfLines={1} style={[s.itemCategoryKicker, { flex: 1 }]}>{item.category || 'Campus resource'}</Text>
           {isReserved && (
-            <Text style={{ fontSize: 8.5, fontWeight: '900', color: C.gold, letterSpacing: 0.5 }}>● RESERVED</Text>
+            <Text style={{ fontSize: 9, fontWeight: '800', color: C.gold }}>● Reserved</Text>
           )}
           {isSold && (
-            <Text style={{ fontSize: 8.5, fontWeight: '900', color: C.muted, letterSpacing: 0.5 }}>● SOLD</Text>
+            <Text style={{ fontSize: 9, fontWeight: '800', color: C.muted }}>● Sold</Text>
           )}
         </View>
         <Text numberOfLines={2} style={compact ? s.itemTitleCompact : s.itemTitle}>{item.title}</Text>
@@ -320,7 +379,7 @@ function ItemCard({ item, compact = false }: { item: Item; compact?: boolean }) 
           </Text>
           {!compact && (
             <Text numberOfLines={1} style={s.itemSeller}>
-              {item.user?.name?.split(' ')[0] || 'Student'} ›
+              {`By ${item.user?.name?.split(' ')[0] || 'Student'}`} ›
             </Text>
           )}
         </View>
@@ -584,30 +643,62 @@ function ListingScreen({ route, navigation }: any) {
       <Card>
         <Text style={s.price}>{money(item.price)}{item.listing_type === 'rent' ? ' / day' : ''}</Text>
         <Text style={s.body}>{item.description}</Text>
-        <Text style={s.muted}>Condition: {item.condition?.replace('_', ' ')}</Text>
-        <Text style={s.muted}>Department: {item.department}{item.program ? ` · ${item.program}` : ''}</Text>
+        <View style={{ height: 1, backgroundColor: C.border, marginVertical: 10 }} />
+        <View style={{ gap: 6 }}>
+          <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+            <Text style={s.muted}>Condition</Text>
+            <Text style={[s.body, { marginVertical: 0, fontWeight: '700' }]}>{item.condition?.replace('_', ' ')}</Text>
+          </View>
+          <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+            <Text style={s.muted}>Department</Text>
+            <Text style={[s.body, { marginVertical: 0, fontWeight: '700', textAlign: 'right', flex: 1, marginLeft: 16 }]} numberOfLines={1}>
+              {item.department}{item.program ? ` · ${item.program}` : ''}
+            </Text>
+          </View>
+          <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+            <Text style={s.muted}>Payment accepted</Text>
+            <Text style={[s.body, { marginVertical: 0, fontWeight: '700' }]}>
+              {acceptedMethods.map((v: string) => v.replaceAll('_', ' ')).join(', ')}
+            </Text>
+          </View>
+          {item.created_at ? (
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+              <Text style={s.muted}>Posted on</Text>
+              <Text style={[s.body, { marginVertical: 0, fontWeight: '700' }]}>{formatPhilippineDate(item.created_at)}</Text>
+            </View>
+          ) : null}
+        </View>
+        <View style={{ height: 1, backgroundColor: C.border, marginVertical: 10 }} />
         {item.user ? (
           <Pressable
             accessibilityRole="button"
             accessibilityLabel={`View reviews for ${item.user.name}`}
             onPress={() => navigation.navigate('ProfileReviews', { id: item.user_id, name: item.user?.name, role: item.user?.role })}
-            style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 5 }}
+            style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 4 }}
           >
-            <Text style={[s.muted, { color: C.gold, fontWeight: '700', marginTop: 0 }]}>Seller: {item.user?.name}</Text>
-            <Ionicons name="star" size={12} color={C.gold} />
-            <Text style={{ fontSize: 12, color: C.gold, fontWeight: '700' }}>Reviews ›</Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+              <View style={{ width: 32, height: 32, borderRadius: 16, backgroundColor: isDark ? 'rgba(246,200,76,0.15)' : '#F5EFEB', alignItems: 'center', justifyContent: 'center' }}>
+                <Text style={{ fontSize: 13, fontWeight: '900', color: C.gold }}>{(item.user?.name || 'S')[0]}</Text>
+              </View>
+              <View>
+                <Text style={{ fontSize: 13, fontWeight: '700', color: C.white }}>{item.user?.name}</Text>
+                <Text style={{ fontSize: 11, color: C.muted }}>Verified UM student seller</Text>
+              </View>
+            </View>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+              <Ionicons name="star" size={13} color={C.gold} />
+              <Text style={{ fontSize: 12, color: C.gold, fontWeight: '700' }}>Reviews ›</Text>
+            </View>
           </Pressable>
         ) : (
           <Text style={s.muted}>Seller: UM student</Text>
         )}
-        <Text style={s.muted}>Payment: {acceptedMethods.map((v: string) => v.replaceAll('_', ' ')).join(', ')}</Text>
-        {item.created_at ? <Text style={s.muted}>Posted: {formatPhilippineDate(item.created_at)}</Text> : null}
-        {item.archived_at ? <Text style={s.muted}>Archived listing · transaction history is retained</Text> : null}
+        {item.archived_at ? <Text style={[s.muted, { marginTop: 8 }]}>Archived listing · transaction history is retained</Text> : null}
       </Card>
       {!item.archived_at && item.status === 'available' && item.listing_type === 'rent' && (
         <>
           <Field
-            label={`Rental days (${item.minimum_rental_days || 1}–${item.maximum_rental_days || 365})`}
+            label={`Rental duration in days (${item.minimum_rental_days || 1}–${item.maximum_rental_days || 365})`}
             value={days}
             onChangeText={setDays}
             keyboardType="number-pad"
@@ -615,23 +706,23 @@ function ListingScreen({ route, navigation }: any) {
           />
           {days.trim() && !isNaN(Number(days)) && Number(days) > 0 ? (
             <View style={{
-              backgroundColor: isDark ? 'rgba(245, 158, 11, 0.12)' : '#FEF3C7',
+              backgroundColor: isDark ? 'rgba(246, 200, 76, 0.12)' : '#FEF3C7',
               borderWidth: 1,
               borderColor: isDark ? '#B45309' : '#FDE68A',
-              borderRadius: 12,
-              padding: 12,
-              marginBottom: 10,
+              borderRadius: 14,
+              padding: 14,
+              marginBottom: 12,
             }}>
               <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
                 <Text style={{ fontSize: 13, fontWeight: '700', color: isDark ? '#FCD34D' : '#92400E' }}>
-                  Rental Duration Calculation:
+                  Estimated rental cost
                 </Text>
-                <Text style={{ fontSize: 15, fontWeight: '900', color: isDark ? '#FCD34D' : '#92400E' }}>
+                <Text style={{ fontSize: 18, fontWeight: '900', color: isDark ? '#FCD34D' : '#92400E' }}>
                   ₱{Number(item.price) * Number(days)}
                 </Text>
               </View>
-              <Text style={{ fontSize: 11.5, color: isDark ? '#FDE68A' : '#78350F', marginTop: 3 }}>
-                {`₱${item.price}/day × ${days} day(s) = ₱${Number(item.price) * Number(days)} total`}
+              <Text style={{ fontSize: 12, color: isDark ? '#FDE68A' : '#78350F', marginTop: 4 }}>
+                {`₱${item.price}/day × ${days} day${Number(days) === 1 ? '' : 's'}`}
               </Text>
             </View>
           ) : null}
@@ -645,7 +736,7 @@ function ListingScreen({ route, navigation }: any) {
           />
         ) : item.status === 'pending' ? (
           <Button
-            title="Reserved (Pending exchange)"
+            title="Reserved (Exchange in progress)"
             disabled
           />
         ) : item.status === 'sold' ? (
@@ -655,7 +746,13 @@ function ListingScreen({ route, navigation }: any) {
           />
         ) : (
           <Button
-            title={busy ? 'Sending…' : 'Request this item'}
+            title={
+              busy
+                ? 'Sending request…'
+                : item.listing_type === 'rent'
+                ? `Rent for ${days ? days : 1} day${Number(days) === 1 ? '' : 's'} (${money(Number(item.price) * Math.max(1, Number(days) || 1))})`
+                : `Purchase item (${money(item.price)})`
+            }
             disabled={busy}
             onPress={request}
           />
@@ -931,7 +1028,7 @@ function ListingFormScreen({ route, navigation }: any) {
   return (
     <Page bottomSafe>
       <Heading
-        title={edit ? 'Edit Listing' : 'Post Academic Item'}
+        title={edit ? 'Edit listing' : 'Post campus listing'}
         subtitle="Student listings are reviewed by campus moderators before being published."
       />
       <Field
@@ -1094,7 +1191,7 @@ function ListingFormScreen({ route, navigation }: any) {
         </View>
       ) : (
         <View style={{ marginBottom: 14 }}>
-          <Button title="📷 Select photo from library" secondary onPress={pickImage} />
+          <Button title="Select photo from library" secondary onPress={pickImage} />
         </View>
       )}
       <Button
@@ -1235,7 +1332,7 @@ function DashboardScreen({ navigation }: any) {
       {user?.role === 'admin' ? (
         <Button title={`Review listings${stats.pendingItems ? ` · ${stats.pendingItems}` : ''}`} onPress={() => navigation.navigate('AdminItems')} />
       ) : (
-        <Button title="＋  Post academic item" onPress={() => navigation.navigate('ListingForm')} />
+        <Button title="＋ Post campus listing" onPress={() => navigation.navigate('ListingForm')} />
       )}
       <View style={s.stats}>
         {dashboardTiles.map(([n, v]) => (
@@ -1322,8 +1419,8 @@ function TransactionsScreen({ navigation }: any) {
       <View style={[s.rowWrap, { marginBottom: 14 }]}>
         {[
           ['all', 'All'],
-          ['pending', 'Pending Approval'],
-          ['approved', 'Approved / Scheduled'],
+          ['pending', 'Pending approval'],
+          ['approved', 'Scheduled meetups'],
           ['completed', 'Completed'],
         ].map(([key, label]) => (
           <Choice
@@ -1336,9 +1433,9 @@ function TransactionsScreen({ navigation }: any) {
       </View>
 
       {err ? (
-        <Status state={err} retry={load} />
+        <Status state={err} icon="alert-circle-outline" retry={load} />
       ) : !filtered.length && !busy ? (
-        <Status state={filter === 'all' ? 'No transactions yet. Browse listings to request an item.' : `No ${filter} transactions found.`} />
+        <Status state={filter === 'all' ? 'No transactions yet. Browse campus listings to request an item.' : `No ${filter} transactions found.`} icon="receipt-outline" />
       ) : (
         filtered.map(t => {
           const isSeller = user?.id === t.seller_id;
@@ -1545,7 +1642,7 @@ function TransactionScreen({ route, navigation }: any) {
     }
   };
 
-  return <Page bottomSafe><Heading title={t.item?.title || 'Transaction'} subtitle={`Transaction #${t.id}`} /><Card><Text style={[s.badge,{color:statusColor(t.status)}]}>{t.status?.toUpperCase()}</Text>{t.rental_duration_days ? <View style={{ marginVertical: 4 }}><Text style={s.price}>Total: ₱{(Number(t.item?.price) || 0) * t.rental_duration_days}</Text><Text style={{ fontSize: 12, color: isDark ? '#FDE68A' : '#78350F', fontWeight: '700', marginTop: 2 }}>₱{t.item?.price}/day × {t.rental_duration_days} day(s) rental</Text></View> : <Text style={s.price}>{money(t.item?.price)}</Text>}<Text style={s.body}>Buyer: {t.buyer?.name}</Text><Text style={s.body}>Seller: {t.seller?.name}</Text><Text style={s.body}>Payment: {t.payment_method?.replaceAll('_',' ')}{t.other_payment_method?` · ${t.other_payment_method}`:''}</Text>{t.rental_duration_days?<Text style={s.body}>Rental duration: {t.rental_duration_days} day(s) · Due {formatPhilippineDate(t.rental_due_date, 'to be confirmed')}</Text>:null}{t.meetup_location ? <Text style={s.body}>Meetup: {t.meetup_location} · {formatPhilippineDateTime(t.meetup_time)}</Text> : null}{pendingProposal ? <View style={{ marginTop: 8, padding: 10, borderRadius: 8, backgroundColor: isDark ? 'rgba(246,200,76,0.12)' : '#FFF9E6', borderWidth: 1, borderColor: isDark ? 'rgba(246,200,76,0.25)' : '#FFE082' }}><View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 2 }}><Ionicons name="time-outline" size={15} color={C.gold} /><Text style={{ fontSize: 12, fontWeight: '800', color: isDark ? C.gold : '#B78103' }}>Pending Meetup Proposal</Text></View><Text style={{ fontSize: 13, color: C.white, fontWeight: '600' }}>{pendingProposal.meetup_location} · {formatPhilippineDateTime(pendingProposal.meetup_time)}</Text><Text style={{ fontSize: 12, color: C.cream, marginTop: 2 }}>{pendingProposal.sender_id === user?.id ? `Waiting for ${user?.id === t.buyer_id ? t.seller?.name : t.buyer?.name} to accept` : `Proposed by ${pendingProposal.sender_id === t.buyer_id ? t.buyer?.name : t.seller?.name} (review in chat to accept)`}</Text></View> : null}<Text style={s.muted}>Payment proof: {t.payment_proof?`Uploaded ${formatPhilippineDateTime(t.payment_proof_uploaded_at, '')}`:'Not uploaded'}</Text>{proofUrl && <View style={{ marginTop: 10 }}><Text style={s.label}>Payment Proof Receipt:</Text><Image source={{ uri: proofUrl }} style={{ width: '100%', height: 220, borderRadius: 10, marginTop: 6 }} resizeMode="contain" /></View>}</Card>{isBuyer && ['pending','approved'].includes(t.status) && <View style={{ marginVertical: 6 }}><Button title={uploadingProof ? 'Uploading proof…' : t.payment_proof ? '📷 Replace payment proof' : '📷 Upload payment proof'} secondary disabled={uploadingProof} onPress={pickProof} /></View>}{isSeller && t.status === 'pending' && <><Field label="Meetup location" value={meetup} onChangeText={setMeetup} placeholder="e.g. Main Library (Mabini) or Visayan IT Labs Lobby"/><MeetupTimePicker label="Meetup date & time" value={meetupDate} onChange={setMeetupDate}/><Button title={approving ? 'Approving request…' : 'Approve request'} disabled={approving || !meetup.trim() || !meetupDate} onPress={approve} /><Button title="Reject request" danger onPress={() => run('Reject request', () => transactions.reject(t.id))} /></>}{isSeller && t.status === 'approved' && <Button title="Mark as completed" onPress={() => run('Complete exchange', async () => { await transactions.complete(t.id); if (t.item_id) { try { await marketplace.markSold(t.item_id); } catch (_) { try { await marketplace.remove(t.item_id); } catch (_) {} } } })} />}{t.status === 'completed' && !t.ratings?.some((r: any) => r.reviewer_id === user?.id) && <><Text style={s.muted}>Both the buyer and seller can leave a review after completion.</Text><RatingForm id={t.id} onDone={load} /></>}{t.item && <Button title="Message participant" secondary onPress={async()=>{try{const recipient_id=user?.id===t.buyer_id?t.seller_id:t.buyer_id;const m=await messaging.send({recipient_id,item_id:t.item_id,body:`Hi, I want to coordinate about ${t.item?.title}.`});navigation.navigate('Conversation',{id:m.conversation_id});}catch(e){Alert.alert('Unable to message participant',errorMessage(e))}}}/>}</Page>;
+  return <Page bottomSafe><Heading title={t.item?.title || 'Transaction'} subtitle={`Transaction #${t.id}`} /><Card><View style={{marginBottom: 6}}><StatusPill status={t.status} /></View>{t.rental_duration_days ? <View style={{ marginVertical: 4 }}><Text style={s.price}>Total: ₱{(Number(t.item?.price) || 0) * t.rental_duration_days}</Text><Text style={{ fontSize: 12, color: isDark ? '#FDE68A' : '#78350F', fontWeight: '700', marginTop: 2 }}>₱{t.item?.price}/day × {t.rental_duration_days} day(s) rental</Text></View> : <Text style={s.price}>{money(t.item?.price)}</Text>}<Text style={s.body}>Buyer: {t.buyer?.name}</Text><Text style={s.body}>Seller: {t.seller?.name}</Text><Text style={s.body}>Payment: {t.payment_method?.replaceAll('_',' ')}{t.other_payment_method?` · ${t.other_payment_method}`:''}</Text>{t.rental_duration_days?<Text style={s.body}>Rental duration: {t.rental_duration_days} day(s) · Due {formatPhilippineDate(t.rental_due_date, 'to be confirmed')}</Text>:null}{t.meetup_location ? <Text style={s.body}>Meetup: {t.meetup_location} · {formatPhilippineDateTime(t.meetup_time)}</Text> : null}{pendingProposal ? <View style={{ marginTop: 8, padding: 10, borderRadius: 8, backgroundColor: isDark ? 'rgba(246,200,76,0.12)' : '#FFF9E6', borderWidth: 1, borderColor: isDark ? 'rgba(246,200,76,0.25)' : '#FFE082' }}><View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 2 }}><Ionicons name="time-outline" size={15} color={C.gold} /><Text style={{ fontSize: 12, fontWeight: '800', color: isDark ? C.gold : '#B78103' }}>Pending meetup proposal</Text></View><Text style={{ fontSize: 13, color: C.white, fontWeight: '600' }}>{pendingProposal.meetup_location} · {formatPhilippineDateTime(pendingProposal.meetup_time)}</Text><Text style={{ fontSize: 12, color: C.cream, marginTop: 2 }}>{pendingProposal.sender_id === user?.id ? `Waiting for ${user?.id === t.buyer_id ? t.seller?.name : t.buyer?.name} to accept` : `Proposed by ${pendingProposal.sender_id === t.buyer_id ? t.buyer?.name : t.seller?.name} (review in chat to accept)`}</Text></View> : null}<Text style={s.muted}>Payment proof: {t.payment_proof?`Uploaded ${formatPhilippineDateTime(t.payment_proof_uploaded_at, '')}`:'Not uploaded'}</Text>{proofUrl && <View style={{ marginTop: 10 }}><Text style={s.label}>Payment receipt photo</Text><Image source={{ uri: proofUrl }} style={{ width: '100%', height: 220, borderRadius: 10, marginTop: 6 }} resizeMode="contain" /></View>}</Card>{isBuyer && ['pending','approved'].includes(t.status) && <View style={{ marginVertical: 6 }}><Button title={uploadingProof ? 'Uploading proof…' : t.payment_proof ? 'Replace payment receipt' : 'Upload payment receipt'} secondary disabled={uploadingProof} onPress={pickProof} /></View>}{isSeller && t.status === 'pending' && <><Field label="Meetup location" value={meetup} onChangeText={setMeetup} placeholder="e.g. Main Library (Mabini) or Visayan IT Labs Lobby"/><MeetupTimePicker label="Meetup date & time" value={meetupDate} onChange={setMeetupDate}/><Button title={approving ? 'Approving request…' : 'Approve request'} disabled={approving || !meetup.trim() || !meetupDate} onPress={approve} /><Button title="Reject request" danger onPress={() => run('Reject request', () => transactions.reject(t.id))} /></>}{isSeller && t.status === 'approved' && <Button title="Mark as completed" onPress={() => run('Complete exchange', async () => { await transactions.complete(t.id); if (t.item_id) { try { await marketplace.markSold(t.item_id); } catch (_) { try { await marketplace.remove(t.item_id); } catch (_) {} } } })} />}{t.status === 'completed' && !t.ratings?.some((r: any) => r.reviewer_id === user?.id) && <><Text style={s.muted}>Both the buyer and seller can leave a review after completion.</Text><RatingForm id={t.id} onDone={load} /></>}{t.item && <Button title="Message participant" secondary onPress={async()=>{try{const recipient_id=user?.id===t.buyer_id?t.seller_id:t.buyer_id;const m=await messaging.send({recipient_id,item_id:t.item_id,body:`Hi, I want to coordinate about ${t.item?.title}.`});navigation.navigate('Conversation',{id:m.conversation_id});}catch(e){Alert.alert('Unable to message participant',errorMessage(e))}}}/>}</Page>;
 }
 function RatingForm({ id, onDone }: any) {
   const [rating, setRating] = useState(5);
@@ -1584,8 +1681,8 @@ function MyListingsScreen({ navigation }: any) {
   return (
     <Page onRefresh={load}>
       <Heading title="My listings" subtitle="Manage your listed items, review status, and marketplace availability."/>
-      <Button title="+ Post academic item" onPress={() => navigation.navigate('ListingForm', {})} />
-      {err ? <Status state={err} retry={load} /> : !items.length ? <Status state="You do not have any listings yet. Tap above to share academic resources with fellow students!" /> : (
+      <Button title="＋  Post campus listing" onPress={() => navigation.navigate('ListingForm', {})} />
+      {err ? <Status state={err} icon="alert-circle-outline" retry={load} /> : !items.length ? <Status state="You do not have any listings yet. Tap above to share academic resources with fellow students!" icon="cube-outline" /> : (
         <View style={s.listingGrid}>
           {items.map(i => (
             <View key={i.id} style={{ width: (width - 43) / 2 }}>
@@ -1593,7 +1690,7 @@ function MyListingsScreen({ navigation }: any) {
                 <ItemCard item={i} compact />
               </Pressable>
               <Text numberOfLines={2} style={[s.badge, { color: statusColor(i.moderation_status), marginBottom: 4 }]}>
-                {i.moderation_status === 'pending' ? 'PENDING REVIEW' : i.moderation_status?.toUpperCase()}
+                {formatStatusLabel(i.moderation_status)}
               </Text>
               {i.status === 'pending' && (
                 <View style={{
@@ -1607,7 +1704,7 @@ function MyListingsScreen({ navigation }: any) {
                   gap: 4
                 }}>
                   <Ionicons name="time" size={11} color={C.gold} />
-                  <Text style={{ fontSize: 9.5, fontWeight: '800', color: C.gold, letterSpacing: 0.4 }}>RESERVED (IN EXCHANGE)</Text>
+                  <Text style={{ fontSize: 9.5, fontWeight: '800', color: C.gold, letterSpacing: 0.2 }}>Reserved (in exchange)</Text>
                 </View>
               )}
               {i.status === 'sold' && (
@@ -1622,7 +1719,7 @@ function MyListingsScreen({ navigation }: any) {
                   gap: 4
                 }}>
                   <Ionicons name="checkmark-done" size={11} color={C.red} />
-                  <Text style={{ fontSize: 9.5, fontWeight: '800', color: C.red, letterSpacing: 0.4 }}>COMPLETED / SOLD</Text>
+                  <Text style={{ fontSize: 9.5, fontWeight: '800', color: C.red, letterSpacing: 0.2 }}>Completed / sold</Text>
                 </View>
               )}
               {i.moderation_status === 'rejected' && (
@@ -1876,7 +1973,7 @@ function ProfileScreen({ navigation }: any) {
           <View style={s.profileMenuIconBox}>
             <Ionicons name="pricetag-outline" size={18} color={C.gold} />
           </View>
-          <Text style={s.profileMenuLabel}>My Listings</Text>
+          <Text style={s.profileMenuLabel}>My listings</Text>
           <Ionicons name="chevron-forward" size={18} color={C.muted} />
         </Pressable>
 
@@ -1886,7 +1983,7 @@ function ProfileScreen({ navigation }: any) {
           <View style={s.profileMenuIconBox}>
             <Ionicons name="stats-chart-outline" size={18} color={C.gold} />
           </View>
-          <Text style={s.profileMenuLabel}>My Campus Report</Text>
+          <Text style={s.profileMenuLabel}>My campus activity report</Text>
           <Ionicons name="chevron-forward" size={18} color={C.muted} />
         </Pressable>
 
@@ -1896,7 +1993,7 @@ function ProfileScreen({ navigation }: any) {
           <View style={s.profileMenuIconBox}>
             <Ionicons name="settings-outline" size={18} color={C.gold} />
           </View>
-          <Text style={s.profileMenuLabel}>Edit Profile & Academic Info</Text>
+          <Text style={s.profileMenuLabel}>Edit profile & academic info</Text>
           <Ionicons name="chevron-forward" size={18} color={C.muted} />
         </Pressable>
       </View>
@@ -1907,7 +2004,7 @@ function ProfileScreen({ navigation }: any) {
           <View style={s.profileMenuIconBox}>
             <Ionicons name="book-outline" size={18} color={C.gold} />
           </View>
-          <Text style={s.profileMenuLabel}>Help & How It Works</Text>
+          <Text style={s.profileMenuLabel}>How campus exchange works</Text>
           <Ionicons name="chevron-forward" size={18} color={C.muted} />
         </Pressable>
 
@@ -1917,7 +2014,7 @@ function ProfileScreen({ navigation }: any) {
           <View style={s.profileMenuIconBox}>
             <Ionicons name="people-outline" size={18} color={C.gold} />
           </View>
-          <Text style={s.profileMenuLabel}>About UM-Pasa & Team</Text>
+          <Text style={s.profileMenuLabel}>About UM-Pasa</Text>
           <Ionicons name="chevron-forward" size={18} color={C.muted} />
         </Pressable>
 
@@ -1927,14 +2024,14 @@ function ProfileScreen({ navigation }: any) {
           <View style={s.profileMenuIconBox}>
             <Ionicons name="shield-checkmark-outline" size={18} color={C.gold} />
           </View>
-          <Text style={s.profileMenuLabel}>Campus Support & Safety</Text>
+          <Text style={s.profileMenuLabel}>Campus safety & moderator support</Text>
           <Ionicons name="chevron-forward" size={18} color={C.muted} />
         </Pressable>
       </View>
 
       <View style={s.profileMenuCard}>
         <View style={s.profileAppearanceHeader}>
-          <Text style={s.profileAppearanceTitle}>Theme Appearance</Text>
+          <Text style={s.profileAppearanceTitle}>Appearance</Text>
           <View style={s.segmentedPillContainer}>
             <Pressable
               onPress={() => setMode('light')}
@@ -2127,7 +2224,7 @@ function NotificationsScreen({ navigation }: any) {
         badgeBg: isDark ? 'rgba(79, 70, 229, 0.22)' : '#EEF2FF',
         badgeIcon: 'book-outline',
         iconColor: '#6366F1',
-        title: 'Buy Request',
+        title: 'Buy request',
         pillLabel: 'Pickup: Main Gate',
         pillExtra: '₱350.00',
       };
@@ -2137,8 +2234,8 @@ function NotificationsScreen({ navigation }: any) {
         badgeBg: isDark ? 'rgba(124, 58, 237, 0.22)' : '#F5F3FF',
         badgeIcon: 'calendar-outline',
         iconColor: '#8B5CF6',
-        title: 'Meetup Scheduled',
-        pillLabel: '📍 Library Ground Flr',
+        title: 'Meetup scheduled',
+        pillLabel: 'Library Ground Flr',
         pillExtra: 'Tomorrow, 1:30 PM',
       };
     }
@@ -2147,7 +2244,7 @@ function NotificationsScreen({ navigation }: any) {
         badgeBg: isDark ? 'rgba(16, 185, 129, 0.22)' : '#ECFDF5',
         badgeIcon: 'shield-checkmark-outline',
         iconColor: '#10B981',
-        title: 'Campus Verified',
+        title: 'Campus verified',
         pillLabel: 'Live in UM Tagum Feed',
         pillExtra: '',
       };
@@ -2157,7 +2254,7 @@ function NotificationsScreen({ navigation }: any) {
         badgeBg: isDark ? 'rgba(20, 184, 166, 0.22)' : '#F0FDFA',
         badgeIcon: 'receipt-outline',
         iconColor: '#14B8A6',
-        title: 'Payment Confirmation',
+        title: 'Payment confirmation',
         pillLabel: 'Verify receipt photo',
         pillExtra: '',
       };
@@ -2167,7 +2264,7 @@ function NotificationsScreen({ navigation }: any) {
         badgeBg: isDark ? 'rgba(245, 158, 11, 0.22)' : '#FEF3C7',
         badgeIcon: 'star',
         iconColor: '#D97706',
-        title: '★ 5.0 Star Feedback',
+        title: '5.0-star feedback',
         pillLabel: 'Verified Review',
         pillExtra: '',
       };
@@ -2176,7 +2273,7 @@ function NotificationsScreen({ navigation }: any) {
       badgeBg: isDark ? 'rgba(100, 116, 139, 0.22)' : '#F1F5F9',
       badgeIcon: 'information-circle-outline',
       iconColor: '#64748B',
-      title: 'Action Needed',
+      title: 'Action needed',
       pillLabel: 'Campus Notice',
       pillExtra: '',
     };
@@ -2338,7 +2435,7 @@ function NotificationsScreen({ navigation }: any) {
                 borderRadius: 10,
               }}>
                 <Text style={{ color: '#FFFFFF', fontSize: 11, fontWeight: '800' }}>
-                  {unreadCount} New
+                  {unreadCount} new
                 </Text>
               </View>
             )}
@@ -2400,8 +2497,8 @@ function NotificationsScreen({ navigation }: any) {
         contentContainerStyle={{ gap: 8, paddingVertical: 6, marginBottom: 12 }}
       >
         {[
-          { key: 'all', label: 'All •' },
-          { key: 'unread', label: '• Unread' },
+          { key: 'all', label: 'All' },
+          { key: 'unread', label: 'Unread' },
           { key: 'requests', label: 'Requests' },
           { key: 'approved', label: 'Approved' },
           { key: 'meetups', label: 'Meetups' },
@@ -2434,16 +2531,16 @@ function NotificationsScreen({ navigation }: any) {
 
       {/* Content */}
       {err ? (
-        <Status state={err} retry={load} />
+        <Status state={err} icon="alert-circle-outline" retry={load} />
       ) : !visible.length ? (
-        <Status state="No notifications in this view." />
+        <Status state="You're all caught up! No notifications in this view." icon="notifications-outline" />
       ) : (
         <>
           {todayItems.length > 0 && (
             <View style={{ marginTop: 4, marginBottom: 10 }}>
               <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
-                <Text style={{ fontSize: 11.5, fontWeight: '900', color: C.muted, letterSpacing: 0.8 }}>
-                  TODAY
+                <Text style={{ fontSize: 13, fontWeight: '800', color: C.white }}>
+                  Today
                 </Text>
                 <Text style={{ fontSize: 11, color: C.muted }}>
                   Real-time alerts
@@ -2456,11 +2553,11 @@ function NotificationsScreen({ navigation }: any) {
           {earlierItems.length > 0 && (
             <View style={{ marginTop: 8, marginBottom: 10 }}>
               <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
-                <Text style={{ fontSize: 11.5, fontWeight: '900', color: C.muted, letterSpacing: 0.8 }}>
-                  EARLIER
+                <Text style={{ fontSize: 13, fontWeight: '800', color: C.white }}>
+                  Earlier
                 </Text>
                 <Text style={{ fontSize: 11, color: C.muted }}>
-                  Completed & Notices
+                  Completed & notices
                 </Text>
               </View>
               {earlierItems.map(renderNoticeCard)}
@@ -2602,7 +2699,7 @@ function MessagesScreen({ navigation }: any) {
           >
             <Ionicons name="create-outline" size={18} color="#FFFFFF" />
             <Text style={{ color: '#FFFFFF', fontWeight: '800', fontSize: 13.5 }}>
-              New Message
+              New message
             </Text>
           </Pressable>
         </View>
@@ -2971,8 +3068,8 @@ function MessagesScreen({ navigation }: any) {
         justifyContent: 'space-between',
         marginBottom: 8,
       }}>
-        <Text style={{ fontSize: 11, fontWeight: '800', letterSpacing: 0.8, color: C.muted }}>
-          CONVERSATIONS
+        <Text style={{ fontSize: 13, fontWeight: '800', color: C.white }}>
+          Active conversations
         </Text>
         <Pressable onPress={markAllAsRead}>
           <Text style={{ fontSize: 12, fontWeight: '700', color: isDark ? '#F87171' : '#8B0000' }}>
@@ -2983,9 +3080,9 @@ function MessagesScreen({ navigation }: any) {
 
       {/* Conversations List */}
       {err ? (
-        <Status state={err} retry={load} />
+        <Status state={err} icon="alert-circle-outline" retry={load} />
       ) : !filteredRows.length ? (
-        <Status state="No conversations yet. Browse the campus marketplace to message a student seller." />
+        <Status state="No conversations found. Browse the campus marketplace to message a student seller." icon="chatbubbles-outline" />
       ) : (
         filteredRows.map(c => {
           const person = c.starter_id === user?.id ? c.recipient : c.starter;
@@ -3468,7 +3565,7 @@ function ConversationScreen({ route, navigation }: any) {
                 </View>
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 1 }}>
                   <Text numberOfLines={1} style={{ fontSize: 11.5, color: C.muted }}>
-                    {person?.role === 'admin' ? 'Campus Admin' : 'UMTC Student'}
+                    {person?.role === 'admin' ? 'Campus administrator' : 'UM Tagum student'}
                   </Text>
                   <Text style={{ fontSize: 11, color: C.gold, fontWeight: '700' }}>★ 5.0</Text>
                   <Text style={{ fontSize: 11, color: C.gold, fontWeight: '700' }}>· Reviews ›</Text>
@@ -3584,7 +3681,7 @@ function ConversationScreen({ route, navigation }: any) {
           {/* Collapsible Meetup Propose Form */}
           {showPropose && (
             <View style={{ marginTop: 8, padding: 12, backgroundColor: C.bg, borderRadius: 12, borderWidth: 1, borderColor: C.border }}>
-              <Text style={[s.section, { fontSize: 13, marginBottom: 6 }]}>Schedule UMTC Safe Exchange</Text>
+              <Text style={[s.section, { fontSize: 13, marginBottom: 6 }]}>Schedule campus exchange</Text>
               <Field
                 label="Meetup campus spot"
                 value={location}
@@ -3595,7 +3692,7 @@ function ConversationScreen({ route, navigation }: any) {
               <View style={{ flexDirection: 'row', gap: 8, marginTop: 4 }}>
                 <View style={{ flex: 1 }}>
                   <Button
-                    title={proposing ? "Sending proposal…" : "Send Proposal"}
+                    title={proposing ? "Sending proposal…" : "Send proposal"}
                     disabled={proposing || !location.trim() || !meetupDate}
                     secondary
                     onPress={propose}
@@ -3689,8 +3786,8 @@ function ConversationScreen({ route, navigation }: any) {
                         <Ionicons name="location" size={16} color={C.red} />
                       </View>
                       <View style={{ flex: 1 }}>
-                        <Text style={{ fontSize: 10, fontWeight: '800', color: C.muted, letterSpacing: 0.8 }}>CAMPUS LANDMARK SPOT</Text>
-                        <Text style={{ fontSize: 14, fontWeight: '700', color: C.white, marginTop: 1 }}>{m.meetup_location || 'Designated Campus Safe Spot'}</Text>
+                        <Text style={{ fontSize: 11, fontWeight: '800', color: C.muted }}>Campus landmark spot</Text>
+                        <Text style={{ fontSize: 14, fontWeight: '700', color: C.white, marginTop: 1 }}>{m.meetup_location || 'Designated campus safe spot'}</Text>
                         <Text style={{ fontSize: 11, color: C.cream, marginTop: 1 }}>
                           {m.meetup_location?.toLowerCase().includes('visayan') || m.meetup_location?.toLowerCase().includes('engineering') || m.meetup_location?.toLowerCase().includes('gazebo')
                             ? 'UM Tagum · Visayan Campus · In-person exchange'
@@ -3705,7 +3802,7 @@ function ConversationScreen({ route, navigation }: any) {
                         <Ionicons name="time" size={16} color={C.gold} />
                       </View>
                       <View style={{ flex: 1 }}>
-                        <Text style={{ fontSize: 10, fontWeight: '800', color: C.muted, letterSpacing: 0.8 }}>SCHEDULED TIME</Text>
+                        <Text style={{ fontSize: 11, fontWeight: '800', color: C.muted }}>Scheduled meetup time</Text>
                         <Text style={{ fontSize: 14, fontWeight: '700', color: C.white, marginTop: 1 }}>
                           {m.meetup_time ? formatPhilippineDateTime(m.meetup_time) : 'Time not specified'}
                         </Text>
@@ -3936,7 +4033,7 @@ function ConversationScreen({ route, navigation }: any) {
             >
               <Ionicons name="documents-outline" size={13} color={isDark ? '#FCA5A5' : '#8B0000'} />
               <Text style={{ fontSize: 12, fontWeight: '800', color: isDark ? '#FCA5A5' : '#8B0000' }}>
-                📋 Templates ▾
+                Templates ▾
               </Text>
             </Pressable>
 
@@ -3980,7 +4077,7 @@ function ConversationScreen({ route, navigation }: any) {
               }}
             >
               <Ionicons name="calendar-outline" size={13} color={C.gold} />
-              <Text style={{ fontSize: 12, fontWeight: '700', color: C.white }}>+ Propose new time</Text>
+              <Text style={{ fontSize: 12, fontWeight: '700', color: C.white }}>Propose new time</Text>
             </Pressable>
 
             <Pressable
@@ -3990,12 +4087,12 @@ function ConversationScreen({ route, navigation }: any) {
                   'UM Tagum College Safe Spots',
                   'Choose a monitored campus exchange location at UMTC:',
                   [
-                    { text: '🏫 [Main] Main Library & Learning Center', onPress: () => { setLocation('Main Campus Library & Learning Center'); setShowPropose(true); } },
-                    { text: '🍽️ [Main] Main Canteen (Mabini)', onPress: () => { setLocation('Main Campus Canteen (Mabini)'); setShowPropose(true); } },
-                    { text: '🏀 [Main] Main Gym & Admin Lobby', onPress: () => { setLocation('Main Gym / Admin & Registrar Lobby'); setShowPropose(true); } },
-                    { text: '💻 [Visayan] Engineering & IT Labs Lobby', onPress: () => { setLocation('Engineering & IT Labs Bldg Lobby (Visayan)'); setShowPropose(true); } },
-                    { text: '📚 [Visayan] Visayan Library Study Zone', onPress: () => { setLocation('Visayan Campus Library Study Zone'); setShowPropose(true); } },
-                    { text: '🌿 [Visayan] Visayan Canteen & Gazebo', onPress: () => { setLocation('Visayan Campus Canteen & Gazebo'); setShowPropose(true); } },
+                    { text: '[Main] Library & Learning Center', onPress: () => { setLocation('Main Campus Library & Learning Center'); setShowPropose(true); } },
+                    { text: '[Main] Canteen (Mabini)', onPress: () => { setLocation('Main Campus Canteen (Mabini)'); setShowPropose(true); } },
+                    { text: '[Main] Gym & Registrar Lobby', onPress: () => { setLocation('Main Gym / Admin & Registrar Lobby'); setShowPropose(true); } },
+                    { text: '[Visayan] IT Labs Lobby', onPress: () => { setLocation('Engineering & IT Labs Bldg Lobby (Visayan)'); setShowPropose(true); } },
+                    { text: '[Visayan] Library Study Zone', onPress: () => { setLocation('Visayan Campus Library Study Zone'); setShowPropose(true); } },
+                    { text: '[Visayan] Canteen & Gazebo', onPress: () => { setLocation('Visayan Campus Canteen & Gazebo'); setShowPropose(true); } },
                     { text: 'Cancel', style: 'cancel' },
                   ]
                 );
@@ -4141,15 +4238,15 @@ function ReportsScreen() {
     earned: txs.filter(t=>t.seller_id===user?.id&&t.status==='completed').reduce((sum,t)=>sum+Number(t.item?.price||0),0)
   };
   const statLabels: Record<string, string>={
-    listed: 'Posted Items',
-    approved: 'Live / Approved',
-    transactions: 'Total Requests',
-    completed: 'Completed Deals',
-    earned: 'Verified Earnings'
+    listed: 'Posted items',
+    approved: 'Live & approved',
+    transactions: 'Total requests',
+    completed: 'Completed trades',
+    earned: 'Verified earnings'
   };
   return (
     <Page onRefresh={load}>
-      <Heading title="My Campus Report" subtitle="Academic listings, exchange velocity, and verified student earnings."/>
+      <Heading title="My campus report" subtitle="Academic listings, exchange velocity, and verified student earnings."/>
       <View style={s.stats}>
         {Object.entries(studentSummary).map(([k,v])=>(
           <Card key={k} style={s.stat}>
@@ -4161,16 +4258,16 @@ function ReportsScreen() {
       <Text style={s.label}>Transaction status</Text>
       <View style={s.rowWrap}>
         <Choice label="All statuses" selected={!status} onPress={()=>setStatus('')}/>
-        <Choice label="Pending Approval" selected={status==='pending'} onPress={()=>setStatus(status==='pending'?'':'pending')}/>
-        <Choice label="Approved / Active" selected={status==='approved'} onPress={()=>setStatus(status==='approved'?'':'approved')}/>
+        <Choice label="Pending approval" selected={status==='pending'} onPress={()=>setStatus(status==='pending'?'':'pending')}/>
+        <Choice label="Approved & active" selected={status==='approved'} onPress={()=>setStatus(status==='approved'?'':'approved')}/>
         <Choice label="Declined" selected={status==='rejected'} onPress={()=>setStatus(status==='rejected'?'':'rejected')}/>
         <Choice label="Completed" selected={status==='completed'} onPress={()=>setStatus(status==='completed'?'':'completed')}/>
       </View>
       <Text style={s.label}>Listing type</Text>
       <View style={s.row}>
         <Choice label="Sales and rentals" selected={!type} onPress={()=>setType('')}/>
-        <Choice label="For Sale" selected={type==='sell'} onPress={()=>setType(type==='sell'?'':'sell')}/>
-        <Choice label="For Rent" selected={type==='rent'} onPress={()=>setType(type==='rent'?'':'rent')}/>
+        <Choice label="For sale" selected={type==='sell'} onPress={()=>setType(type==='sell'?'':'sell')}/>
+        <Choice label="For rent" selected={type==='rent'} onPress={()=>setType(type==='rent'?'':'rent')}/>
       </View>
       <Text style={s.label}>Resource category</Text>
       <View style={s.rowWrap}>
@@ -4184,21 +4281,21 @@ function ReportsScreen() {
         <Choice label="Item title" selected={sort==='title'} onPress={()=>setSort('title')}/>
         <Choice label="Status" selected={sort==='status'} onPress={()=>setSort('status')}/>
       </View>
-      <Heading title="My Academic Listings"/>
+      <Heading title="My campus listings"/>
       {items.length ? items.map(i=>(
         <Card key={i.id}>
           <Text style={s.cardTitle}>{i.title}</Text>
-          <Text style={s.muted}>{i.category} · {i.listing_type === 'rent' ? 'For Rent' : 'For Sale'} · {i.status?.toUpperCase()} / Moderation: {i.moderation_status?.toUpperCase()}{i.created_at ? ` · ${formatPhilippineDate(i.created_at)}` : ''}</Text>
+          <Text style={s.muted}>{i.category} · {i.listing_type === 'rent' ? 'For rent' : 'For sale'} · {formatStatusLabel(i.status)} · Moderation: {formatStatusLabel(i.moderation_status)}{i.created_at ? ` · ${formatPhilippineDate(i.created_at)}` : ''}</Text>
           <Text style={s.price}>{money(i.price)}{i.listing_type === 'rent' ? ' / day' : ''}</Text>
         </Card>
-      )) : <Status state="No academic listings match your current filters."/>}
-      <Heading title="Transaction History"/>
+      )) : <Status state="No academic listings match your current filters." icon="book-outline"/>}
+      <Heading title="Transaction history"/>
       {txs.length ? txs.map(t=>(
         <Card key={t.id}>
           <Text style={s.cardTitle}>{t.item?.title||'Transaction'}</Text>
-          <Text style={s.muted}>{t.status?.toUpperCase()} · Buyer: {t.buyer?.name} / Seller: {t.seller?.name}{t.created_at ? ` · ${formatPhilippineDate(t.created_at)}` : ''}</Text>
+          <Text style={s.muted}>{formatStatusLabel(t.status)} · Buyer: {t.buyer?.name} / Seller: {t.seller?.name}{t.created_at ? ` · ${formatPhilippineDate(t.created_at)}` : ''}</Text>
         </Card>
-      )) : <Status state="No transaction records match your current filters."/>}
+      )) : <Status state="No transaction records match your current filters." icon="receipt-outline"/>}
     </Page>
   );
 }
@@ -4355,8 +4452,8 @@ function CampusGuideScreen({ route, navigation, initialTab = 'how' }: any) {
       <View style={{ marginBottom: 14 }}>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 4 }}>
           <View style={{ width: 7, height: 7, borderRadius: 3.5, backgroundColor: '#16A34A' }} />
-          <Text style={{ fontSize: 11, fontWeight: '800', color: isDark ? '#86EFAC' : '#15803D', letterSpacing: 0.8 }}>
-            STUDENT HELP GUIDE & POLICY
+          <Text style={{ fontSize: 11, fontWeight: '800', color: isDark ? '#86EFAC' : '#15803D' }}>
+            Student guide & policies
           </Text>
         </View>
         <Text style={{ fontSize: 24, fontWeight: '900', color: C.white, letterSpacing: -0.4 }}>
@@ -4446,8 +4543,8 @@ function CampusGuideScreen({ route, navigation, initialTab = 'how' }: any) {
       {tab === 'how' && (
         <>
           <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
-            <Text style={{ fontSize: 13, fontWeight: '800', color: C.cream, letterSpacing: 0.6 }}>
-              CAMPUS MARKETPLACE FLOW
+            <Text style={{ fontSize: 13, fontWeight: '800', color: C.cream }}>
+              Campus marketplace flow
             </Text>
             <Text style={{ fontSize: 11, fontWeight: '700', color: C.muted }}>
               Step-by-step method flow
@@ -4582,8 +4679,8 @@ function CampusGuideScreen({ route, navigation, initialTab = 'how' }: any) {
       {tab === 'about' && (
         <>
           <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
-            <Text style={{ fontSize: 13, fontWeight: '800', color: C.cream, letterSpacing: 0.6 }}>
-              ABOUT UM-PASA
+            <Text style={{ fontSize: 13, fontWeight: '800', color: C.cream }}>
+              About UM-Pasa
             </Text>
             <Text style={{ fontSize: 11, fontWeight: '700', color: C.muted }}>
               System Information
@@ -4592,8 +4689,8 @@ function CampusGuideScreen({ route, navigation, initialTab = 'how' }: any) {
 
           {/* System Purpose */}
           <Card style={{ marginBottom: 14 }}>
-            <Text style={{ fontSize: 11, fontWeight: '900', color: C.gold, letterSpacing: 0.8, textTransform: 'uppercase', marginBottom: 4 }}>
-              SYSTEM PURPOSE
+            <Text style={{ fontSize: 11, fontWeight: '900', color: C.gold, marginBottom: 4 }}>
+              System purpose
             </Text>
             <Text style={{ fontSize: 13.5, color: C.cream, lineHeight: 20 }}>
               UM-Pasa helps University of Mindanao students list academic items, buy, and rent course materials and tools, coordinate safely through in-app chat, upload verified payment proof, and track transactions from request to completion with zero fees.
@@ -4610,8 +4707,8 @@ function CampusGuideScreen({ route, navigation, initialTab = 'how' }: any) {
           {/* The Team Behind It (Image 2) */}
           <Card style={{ marginBottom: 14 }}>
             <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
-              <Text style={{ fontSize: 11, fontWeight: '900', color: C.gold, letterSpacing: 0.8, textTransform: 'uppercase' }}>
-                PROJECT INFORMATION & CREATORS
+              <Text style={{ fontSize: 11, fontWeight: '900', color: C.gold }}>
+                Project information & creators
               </Text>
               <View style={{ backgroundColor: isDark ? 'rgba(230,36,36,0.18)' : '#FFEAE8', paddingHorizontal: 7, paddingVertical: 2, borderRadius: 6 }}>
                 <Text style={{ fontSize: 10, fontWeight: '800', color: C.red }}>PASA Team</Text>
@@ -4681,7 +4778,7 @@ function CampusGuideScreen({ route, navigation, initialTab = 'how' }: any) {
               borderColor: isDark ? 'rgba(255,255,255,0.06)' : '#EAE0D8',
               gap: 4,
             }}>
-              <Text style={{ fontSize: 11, fontWeight: '800', color: C.muted }}>INSTITUTION & DEPARTMENT</Text>
+              <Text style={{ fontSize: 11, fontWeight: '800', color: C.muted }}>Institution & department</Text>
               <Text style={{ fontSize: 13, fontWeight: '800', color: C.white }}>
                 Department of Computing Education (DCE)
               </Text>
@@ -4697,8 +4794,8 @@ function CampusGuideScreen({ route, navigation, initialTab = 'how' }: any) {
 
           {/* Marketplace Principles */}
           <Card style={{ marginBottom: 16 }}>
-            <Text style={{ fontSize: 11, fontWeight: '900', color: C.gold, letterSpacing: 0.8, textTransform: 'uppercase', marginBottom: 8 }}>
-              MARKETPLACE PRINCIPLES
+            <Text style={{ fontSize: 11, fontWeight: '900', color: C.gold, marginBottom: 8 }}>
+              Marketplace principles
             </Text>
             <View style={{ gap: 10 }}>
               {[
@@ -4724,8 +4821,8 @@ function CampusGuideScreen({ route, navigation, initialTab = 'how' }: any) {
       {tab === 'support' && (
         <>
           <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
-            <Text style={{ fontSize: 13, fontWeight: '800', color: C.cream, letterSpacing: 0.6 }}>
-              CONTACT SUPPORT & HELP DESK
+            <Text style={{ fontSize: 13, fontWeight: '800', color: C.cream }}>
+              Contact support & helpdesk
             </Text>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
               <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: '#16A34A' }} />
@@ -4750,7 +4847,7 @@ function CampusGuideScreen({ route, navigation, initialTab = 'how' }: any) {
                 {startingChat ? (
                   <ActivityIndicator size="small" color={C.white} />
                 ) : (
-                  <Text style={{ fontSize: 11.5, fontWeight: '800', color: C.white }}>Start Chat ›</Text>
+                  <Text style={{ fontSize: 11.5, fontWeight: '800', color: C.white }}>Start chat ›</Text>
                 )}
               </Pressable>
             </View>
@@ -4766,7 +4863,7 @@ function CampusGuideScreen({ route, navigation, initialTab = 'how' }: any) {
                 onPress={() => setTicketCat('Report Student Conduct / No-Show')}
                 style={{ paddingVertical: 8, borderRadius: 8, backgroundColor: isDark ? 'rgba(230,36,36,0.18)' : '#FFEAE8', alignItems: 'center' }}
               >
-                <Text style={{ fontSize: 11.5, fontWeight: '800', color: C.red }}>File Report ›</Text>
+                <Text style={{ fontSize: 11.5, fontWeight: '800', color: C.red }}>File report ›</Text>
               </Pressable>
             </View>
           </View>
@@ -4775,7 +4872,7 @@ function CampusGuideScreen({ route, navigation, initialTab = 'how' }: any) {
           <Card style={{ marginBottom: 14 }}>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 6 }}>
               <Ionicons name="business-outline" size={18} color={C.gold} />
-              <Text style={{ fontSize: 12, fontWeight: '800', color: C.gold, letterSpacing: 0.6 }}>PHYSICAL ADMINISTRATION</Text>
+              <Text style={{ fontSize: 12, fontWeight: '800', color: C.gold }}>Physical administration</Text>
             </View>
             <Text style={{ fontSize: 13.5, fontWeight: '700', color: C.white, lineHeight: 19 }}>
               DCE Faculty Center, 2nd Flr, IT Computer Labs Bldg, Visayan Campus
@@ -4801,7 +4898,7 @@ function CampusGuideScreen({ route, navigation, initialTab = 'how' }: any) {
           {/* Submit A Support Ticket */}
           <Card style={{ marginBottom: 14 }}>
             <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
-              <Text style={{ fontSize: 12, fontWeight: '800', color: C.gold, letterSpacing: 0.6 }}>SUBMIT A SUPPORT TICKET</Text>
+              <Text style={{ fontSize: 12, fontWeight: '800', color: C.gold }}>Submit a support ticket</Text>
               <View style={{ backgroundColor: isDark ? C.panel2 : '#EFE8E3', paddingHorizontal: 7, paddingVertical: 2, borderRadius: 6 }}>
                 <Text style={{ fontSize: 10, fontWeight: '800', color: C.cream }}>Ticket Desk</Text>
               </View>
@@ -4849,7 +4946,7 @@ function CampusGuideScreen({ route, navigation, initialTab = 'how' }: any) {
               multiline
             />
             <Button
-              title="Submit Support Ticket ✉️"
+              title="Submit support ticket"
               onPress={submitTicket}
             />
           </Card>
@@ -4857,7 +4954,7 @@ function CampusGuideScreen({ route, navigation, initialTab = 'how' }: any) {
           {/* Campus Safety & FAQ Accordions */}
           <Card style={{ marginBottom: 14 }}>
             <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
-              <Text style={{ fontSize: 12, fontWeight: '800', color: C.gold, letterSpacing: 0.6 }}>CAMPUS SAFETY & FAQ</Text>
+              <Text style={{ fontSize: 12, fontWeight: '800', color: C.gold }}>Campus safety & FAQ</Text>
               <Text style={{ fontSize: 11, color: C.muted }}>Policies & Tips</Text>
             </View>
 
@@ -4903,7 +5000,7 @@ function CampusGuideScreen({ route, navigation, initialTab = 'how' }: any) {
                 <Text style={{ fontSize: 13.5, fontWeight: '900', color: C.red }}>Campus Security & Guard Desk</Text>
               </View>
               <View style={{ backgroundColor: C.red, paddingHorizontal: 7, paddingVertical: 2, borderRadius: 6 }}>
-                <Text style={{ fontSize: 9.5, fontWeight: '900', color: '#FFFFFF' }}>24/7 HOTLINE</Text>
+                <Text style={{ fontSize: 9.5, fontWeight: '900', color: '#FFFFFF' }}>24/7 hotline</Text>
               </View>
             </View>
             <Text style={{ fontSize: 12, color: C.white, lineHeight: 17, marginBottom: 12 }}>
@@ -4914,7 +5011,7 @@ function CampusGuideScreen({ route, navigation, initialTab = 'how' }: any) {
               onPress={callSecurity}
               style={{ paddingVertical: 10, borderRadius: 10, backgroundColor: C.red, alignItems: 'center' }}
             >
-              <Text style={{ fontSize: 12.5, fontWeight: '900', color: '#FFFFFF' }}>📞 Call Campus Security</Text>
+              <Text style={{ fontSize: 12.5, fontWeight: '900', color: '#FFFFFF' }}>Call campus security</Text>
             </Pressable>
           </View>
 
@@ -4997,7 +5094,7 @@ function AdminScreen({ navigation }: any) {
       {/* Platform Pulse 2x2 Grid (Mockup 1) */}
       <View style={{ marginBottom: 20 }}>
         <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
-          <Text style={{ fontSize: 13, fontWeight: '800', color: C.cream, letterSpacing: 0.6 }}>PLATFORM PULSE</Text>
+          <Text style={{ fontSize: 13, fontWeight: '800', color: C.cream }}>Platform pulse</Text>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
             <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: '#2E7D32' }} />
             <Text style={{ fontSize: 11, fontWeight: '700', color: isDark ? '#81C784' : '#2E7D32' }}>Live Sync</Text>
@@ -5101,7 +5198,7 @@ function AdminScreen({ navigation }: any) {
                 <Text style={{ fontSize: 16, fontWeight: '900', color: C.white }}>Pending Review</Text>
                 {pulse.pending > 0 && (
                   <View style={{ paddingHorizontal: 7, paddingVertical: 2, borderRadius: 8, backgroundColor: C.red }}>
-                    <Text style={{ fontSize: 10.5, fontWeight: '900', color: '#FFFFFF' }}>{pulse.pending} REQUIRED</Text>
+                    <Text style={{ fontSize: 10.5, fontWeight: '900', color: '#FFFFFF' }}>{pulse.pending} required</Text>
                   </View>
                 )}
               </View>
@@ -5119,7 +5216,7 @@ function AdminScreen({ navigation }: any) {
       </View>
 
       {/* Operational Modules List (Mockup 1) */}
-      <Text style={{ fontSize: 13, fontWeight: '800', color: C.cream, letterSpacing: 0.6, marginBottom: 10 }}>OPERATIONAL MODULES</Text>
+      <Text style={{ fontSize: 13, fontWeight: '800', color: C.cream, marginBottom: 10 }}>Operational modules</Text>
 
       {/* Module 1: Listing Moderation Queue */}
       <Pressable
@@ -5373,7 +5470,7 @@ function ProfileReviewsScreen({ route, navigation }: any) {
                 borderRadius: 8,
               }}>
                 <Text style={{ fontSize: 10.5, fontWeight: '800', color: C.red }}>
-                  🎓 {targetRole}
+                  {targetRole}
                 </Text>
               </View>
             </View>
@@ -5381,7 +5478,7 @@ function ProfileReviewsScreen({ route, navigation }: any) {
               {targetDept}{targetProg ? ` · ${targetProg}` : ''}
             </Text>
             <Text style={{ fontSize: 11, color: C.muted, marginTop: 1 }}>
-              📍 UM Tagum Main & Visayan Campus
+              UM Tagum Main & Visayan Campus
             </Text>
           </View>
         </View>
@@ -5406,7 +5503,7 @@ function ProfileReviewsScreen({ route, navigation }: any) {
             </Text>
           </View>
           <Text style={{ fontSize: 10.5, fontWeight: '700', color: isDark ? '#FDE68A' : '#B45309' }}>
-            🛡️ Verified Student
+            Verified student
           </Text>
         </View>
 
@@ -5414,7 +5511,7 @@ function ProfileReviewsScreen({ route, navigation }: any) {
         <View style={{ flexDirection: 'row', gap: 8, marginTop: 12 }}>
           <View style={{ flex: 1, backgroundColor: isDark ? C.panel2 : '#FAF7F5', borderRadius: 12, paddingVertical: 10, alignItems: 'center', borderWidth: 1, borderColor: isDark ? 'rgba(255,255,255,0.06)' : '#EFE8E3' }}>
             <Text style={{ fontSize: 15, fontWeight: '900', color: C.red }}>100%</Text>
-            <Text style={{ fontSize: 10, fontWeight: '700', color: C.muted, marginTop: 2 }}>On-Time</Text>
+            <Text style={{ fontSize: 10, fontWeight: '700', color: C.muted, marginTop: 2 }}>On-time</Text>
           </View>
           <View style={{ flex: 1, backgroundColor: isDark ? C.panel2 : '#FAF7F5', borderRadius: 12, paddingVertical: 10, alignItems: 'center', borderWidth: 1, borderColor: isDark ? 'rgba(255,255,255,0.06)' : '#EFE8E3' }}>
             <Text style={{ fontSize: 15, fontWeight: '900', color: C.white }}>{count}</Text>
@@ -5443,7 +5540,7 @@ function ProfileReviewsScreen({ route, navigation }: any) {
         <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
           <Text style={{ fontSize: 15, fontWeight: '800', color: C.white }}>Reputation Metrics</Text>
           <View style={{ backgroundColor: isDark ? 'rgba(230,36,36,0.14)' : '#FDF0EB', paddingHorizontal: 8, paddingVertical: 3, borderRadius: 6 }}>
-            <Text style={{ fontSize: 10.5, fontWeight: '800', color: C.red }}>100% UM Verified</Text>
+            <Text style={{ fontSize: 10.5, fontWeight: '800', color: C.red }}>100% UM verified</Text>
           </View>
         </View>
 
@@ -5599,12 +5696,12 @@ function ProfileReviewsScreen({ route, navigation }: any) {
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 10, flexWrap: 'wrap' }}>
                   <View style={{ backgroundColor: isDark ? 'rgba(230,36,36,0.12)' : '#FDF0EB', paddingHorizontal: 7, paddingVertical: 2, borderRadius: 6 }}>
                     <Text style={{ fontSize: 10, fontWeight: '700', color: C.red }}>
-                      🛡️ Verified Campus Handoff
+                      Verified campus handoff
                     </Text>
                   </View>
                   <View style={{ backgroundColor: isDark ? C.panel2 : '#F5EFEA', paddingHorizontal: 7, paddingVertical: 2, borderRadius: 6 }}>
                     <Text style={{ fontSize: 10, fontWeight: '700', color: C.muted }}>
-                      📍 Main Library / Visayan IT Labs
+                      Main Library / Visayan IT Labs
                     </Text>
                   </View>
                 </View>
@@ -5612,7 +5709,7 @@ function ProfileReviewsScreen({ route, navigation }: any) {
             );
           })
         ) : (
-          <Status state="This student has no reviews yet." />
+          <Status state="No reviews recorded for this student yet." icon="star-outline" />
         )}
       </View>
 
@@ -5693,8 +5790,8 @@ function AdminItemsScreen({route}:any) {
     }
   };
   const pending=rows.filter((item)=>item.moderation_status==='pending');
-  return <Page onRefresh={load} refreshing={busy}><Heading title="Listing review" subtitle={`${pending.length} listing${pending.length===1?'':'s'} awaiting a decision.`}/>{err?<Status state={err} retry={load}/>:busy?<ActivityIndicator color={C.red}/>:!pending.length?<Status state="No listings to review."/>:pending.map(i=><Card key={i.id}>
-    <Pressable accessibilityRole="button" onPress={()=>setExpandedId(expandedId===i.id?null:i.id)}><View style={s.rowBetween}><View style={{flex:1}}><Text style={s.cardTitle}>{i.title}</Text><Text style={s.muted}>{i.user?.name||'UM student'} · {i.category} · {money(i.price)}</Text></View><View style={{alignItems:'flex-end'}}><Text style={[s.badge,{color:C.gold}]}>PENDING</Text><Ionicons name={expandedId===i.id?'chevron-up':'chevron-down'} size={18} color={C.muted}/></View></View></Pressable>
+  return <Page onRefresh={load} refreshing={busy}><Heading title="Listing review" subtitle={`${pending.length} listing${pending.length===1?'':'s'} awaiting a decision.`}/>{err?<Status state={err} icon="alert-circle-outline" retry={load}/>:busy?<ActivityIndicator color={C.red}/>:!pending.length?<Status state="The moderation queue is all caught up! No pending listings await review." icon="checkmark-circle-outline"/>:pending.map(i=><Card key={i.id}>
+    <Pressable accessibilityRole="button" onPress={()=>setExpandedId(expandedId===i.id?null:i.id)}><View style={s.rowBetween}><View style={{flex:1}}><Text style={s.cardTitle}>{i.title}</Text><Text style={s.muted}>{i.user?.name||'UM student'} · {i.category} · {money(i.price)}</Text></View><View style={{alignItems:'flex-end'}}><Text style={[s.badge,{color:C.gold}]}>Pending</Text><Ionicons name={expandedId===i.id?'chevron-up':'chevron-down'} size={18} color={C.muted}/></View></View></Pressable>
     {expandedId===i.id&&<>
     {i.image?<Image source={{uri:imageUrl(i.image)}} style={s.adminListingImage} resizeMode="cover"/>:null}
     <Text style={s.adminPrice}>{money(i.price)}{i.listing_type==='rent'?' / day':''} · {i.listing_type==='rent'?'For rent':'For sale'}</Text>
@@ -5710,8 +5807,8 @@ function AdminItemsScreen({route}:any) {
       borderColor: isDark ? 'rgba(255,255,255,0.08)' : '#EAE0D8',
     }}>
       <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
-        <Text style={{ fontSize: 11, fontWeight: '800', color: C.gold, letterSpacing: 0.8 }}>SAFETY & COMPLIANCE CHECKS</Text>
-        <Text style={{ fontSize: 11, fontWeight: '800', color: '#2E7D32' }}>3/3 PASSED</Text>
+        <Text style={{ fontSize: 11.5, fontWeight: '800', color: C.gold }}>Safety & compliance check</Text>
+        <Text style={{ fontSize: 11.5, fontWeight: '800', color: '#2E7D32' }}>3/3 passed</Text>
       </View>
       <View style={{ gap: 6 }}>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
@@ -5831,11 +5928,11 @@ function AdminUsersScreen() {
         placeholder="Filter by name, email, student ID..."
       />
       {err ? (
-        <Status state={err} retry={load} />
+        <Status state={err} icon="alert-circle-outline" retry={load} />
       ) : busy ? (
         <ActivityIndicator color={C.gold} />
       ) : !filtered.length ? (
-        <Status state="No student accounts match your search." />
+        <Status state="No student accounts match your search." icon="people-outline" />
       ) : (
         filtered.map(u => (
           <Card key={u.id}>
@@ -5858,7 +5955,7 @@ function AdminUsersScreen() {
                 borderColor: u.role === 'admin' ? C.red : C.gold,
               }}>
                 <Text style={{ fontSize: 10.5, fontWeight: '800', color: u.role === 'admin' ? C.red : (isDark ? C.gold : '#8A6500') }}>
-                  {u.role === 'admin' ? 'ADMIN' : 'STUDENT'}
+                  {u.role === 'admin' ? 'Admin' : 'Student'}
                 </Text>
               </View>
             </View>
@@ -5874,7 +5971,7 @@ function TransactionSummary({t}: {t:Transaction}) {
     <View style={s.adminDetails}>
       <Text style={s.adminDetail}>Buyer: {t.buyer?.name||'—'}</Text>
       <Text style={s.adminDetail}>Seller: {t.seller?.name||'—'}</Text>
-      <Text style={s.adminDetail}>Listing: {t.item?.title||'—'} · {t.item?.category||'—'} · {t.item?.listing_type==='rent'?'For Rent':'For Sale'}</Text>
+      <Text style={s.adminDetail}>Listing: {t.item?.title||'—'} · {t.item?.category||'—'} · {t.item?.listing_type==='rent'?'For rent':'For sale'}</Text>
       <Text style={s.adminDetail}>Payment Method: {t.payment_method?.replaceAll('_',' ')||'—'}{t.other_payment_method?` (${t.other_payment_method})`:''}</Text>
       <Text style={s.adminDetail}>Rental duration: {t.rental_duration_days?`${t.rental_duration_days} days`:'Not applicable'}</Text>
       <Text style={s.adminDetail}>Rental due: {formatPhilippineDate(t.rental_due_date, 'Not set')}</Text>
@@ -5906,14 +6003,14 @@ function AdminTransactionsScreen() {
   return (
     <Page onRefresh={load} refreshing={busy}>
       <Heading title="Campus Exchange Records" subtitle="Monitor active requests, safe meetup locations, and digital payment receipts."/>
-      {err ? <Status state={err} retry={load}/> : busy ? <ActivityIndicator color={C.gold}/> : !rows.length ? <Status state="No transaction records logged yet."/> : rows.map(t=>(
+      {err ? <Status state={err} icon="alert-circle-outline" retry={load}/> : busy ? <ActivityIndicator color={C.gold}/> : !rows.length ? <Status state="No transaction records logged yet." icon="receipt-outline"/> : rows.map(t=>(
         <Card key={t.id}>
           <Pressable accessibilityRole="button" onPress={()=>setExpandedId(expandedId===t.id?null:t.id)}>
             <View style={s.rowBetween}>
               <Text style={[s.cardTitle,{flex:1}]}>{t.item?.title||'Transaction'}</Text>
               <Ionicons name={expandedId===t.id?'chevron-up':'chevron-down'} size={18} color={C.muted}/>
             </View>
-            <Text style={s.muted}>{t.status?.toUpperCase()} · Buyer: {t.buyer?.name} / Seller: {t.seller?.name}{t.created_at ? ` · ${formatPhilippineDate(t.created_at)}` : ''}</Text>
+            <Text style={s.muted}>{formatStatusLabel(t.status)} · Buyer: {t.buyer?.name} / Seller: {t.seller?.name}{t.created_at ? ` · ${formatPhilippineDate(t.created_at)}` : ''}</Text>
           </Pressable>
           {expandedId===t.id&&<TransactionSummary t={t}/>}
         </Card>
@@ -5937,17 +6034,17 @@ function AdminReportScreen() {
     gcash: reportTxs.filter(t=>t.payment_method==='gcash').length
   };
   const statLabels: Record<string, string>={
-    items: 'Total Items',
-    pendingListings: 'Awaiting Review',
-    approvedListings: 'Live On Campus',
-    transactions: 'Total Exchanges',
-    completed: 'Completed Deals',
-    gcash: 'GCash Payments'
+    items: 'Total items',
+    pendingListings: 'Awaiting review',
+    approvedListings: 'Live on campus',
+    transactions: 'Total exchanges',
+    completed: 'Completed trades',
+    gcash: 'GCash payments'
   };
   return (
     <Page refreshing={busy} onRefresh={load}>
       <Heading title="Campus Platform Report" subtitle="System-wide analytics, exchange velocity, and category distribution."/>
-      {err?<Status state={err} retry={load}/>:busy?<ActivityIndicator color={C.gold}/>:<>
+      {err?<Status state={err} icon="alert-circle-outline" retry={load}/>:busy?<ActivityIndicator color={C.gold}/>:<>
         <View style={s.stats}>
           {Object.entries(summary).map(([k,v])=>(
             <Card key={k} style={s.stat}>
@@ -5956,21 +6053,21 @@ function AdminReportScreen() {
             </Card>
           ))}
         </View>
-        <Text style={s.label}>Exchange Status</Text>
+        <Text style={s.label}>Exchange status</Text>
         <View style={s.rowWrap}>
           <Choice label="All statuses" selected={!status} onPress={()=>setStatus('')}/>
-          <Choice label="Pending Approval" selected={status==='pending'} onPress={()=>setStatus(status==='pending'?'':'pending')}/>
-          <Choice label="Approved / Active" selected={status==='approved'} onPress={()=>setStatus(status==='approved'?'':'approved')}/>
+          <Choice label="Pending approval" selected={status==='pending'} onPress={()=>setStatus(status==='pending'?'':'pending')}/>
+          <Choice label="Approved & active" selected={status==='approved'} onPress={()=>setStatus(status==='approved'?'':'approved')}/>
           <Choice label="Declined" selected={status==='rejected'} onPress={()=>setStatus(status==='rejected'?'':'rejected')}/>
           <Choice label="Completed" selected={status==='completed'} onPress={()=>setStatus(status==='completed'?'':'completed')}/>
         </View>
-        <Text style={s.label}>Listing Type</Text>
+        <Text style={s.label}>Listing type</Text>
         <View style={s.row}>
           <Choice label="Sales and rentals" selected={!type} onPress={()=>setType('')}/>
-          <Choice label="For Sale" selected={type==='sell'} onPress={()=>setType(type==='sell'?'':'sell')}/>
-          <Choice label="For Rent" selected={type==='rent'} onPress={()=>setType(type==='rent'?'':'rent')}/>
+          <Choice label="For sale" selected={type==='sell'} onPress={()=>setType(type==='sell'?'':'sell')}/>
+          <Choice label="For rent" selected={type==='rent'} onPress={()=>setType(type==='rent'?'':'rent')}/>
         </View>
-        <Text style={s.label}>Academic Category</Text>
+        <Text style={s.label}>Academic category</Text>
         <View style={s.rowWrap}>
           <Choice label="All categories" selected={!category} onPress={()=>setCategory('')}/>
           {categories.map(v=><Choice key={v} label={v} selected={category===v} onPress={()=>setCategory(category===v?'':(v||''))}/>)}
@@ -5982,15 +6079,15 @@ function AdminReportScreen() {
           <Choice label="Item title" selected={sort==='title'} onPress={()=>setSort('title')}/>
           <Choice label="Status" selected={sort==='status'} onPress={()=>setSort('status')}/>
         </View>
-        <Heading title="Campus Listings"/>
+        <Heading title="Campus listings"/>
         {reportItems.length?reportItems.map(i=>(
           <Card key={i.id}>
             <Text style={s.cardTitle}>{i.title}</Text>
-            <Text style={s.muted}>{i.user?.name} · {i.category} · {i.listing_type === 'rent' ? 'For Rent' : 'For Sale'} · {i.status?.toUpperCase()} / Moderation: {i.moderation_status?.toUpperCase()}{i.created_at ? ` · ${formatPhilippineDate(i.created_at)}` : ''}</Text>
+            <Text style={s.muted}>{i.user?.name} · {i.category} · {i.listing_type === 'rent' ? 'For rent' : 'For sale'} · {formatStatusLabel(i.status)} · Moderation: {formatStatusLabel(i.moderation_status)}{i.created_at ? ` · ${formatPhilippineDate(i.created_at)}` : ''}</Text>
             <Text style={s.price}>{money(i.price)}{i.listing_type === 'rent' ? ' / day' : ''}</Text>
           </Card>
-        )):<Status state="No listings match these report filters."/>}
-        <Heading title="Campus Transactions"/>
+        )):<Status state="No listings match these report filters." icon="pricetag-outline"/>}
+        <Heading title="Campus transactions"/>
         {reportTxs.length?reportTxs.map(t=>(
           <Card key={t.id}>
             <Pressable accessibilityRole="button" onPress={()=>setExpandedTxId(expandedTxId===t.id?null:t.id)}>
@@ -5998,11 +6095,11 @@ function AdminReportScreen() {
                 <Text style={[s.cardTitle,{flex:1}]}>{t.item?.title||'Transaction'}</Text>
                 <Ionicons name={expandedTxId===t.id?'chevron-up':'chevron-down'} size={18} color={C.muted}/>
               </View>
-              <Text style={s.muted}>{t.status?.toUpperCase()} · Buyer: {t.buyer?.name} / Seller: {t.seller?.name}{t.created_at ? ` · ${formatPhilippineDate(t.created_at)}` : ''}</Text>
+              <Text style={s.muted}>{formatStatusLabel(t.status)} · Buyer: {t.buyer?.name} / Seller: {t.seller?.name}{t.created_at ? ` · ${formatPhilippineDate(t.created_at)}` : ''}</Text>
             </Pressable>
             {expandedTxId===t.id&&<TransactionSummary t={t}/>}
           </Card>
-        )):<Status state="No transactions match these report filters."/>}
+        )):<Status state="No transactions match these report filters." icon="receipt-outline"/>}
       </>}
     </Page>
   );
@@ -6297,13 +6394,20 @@ function createStyles(_tokens?: ThemeTokens) { return StyleSheet.create({
   footerTitle:{fontSize:17,color:C.white,fontWeight:'900'},
   footerCopy:{color:C.muted,fontSize:12,lineHeight:19,marginTop:12},
   footerRule:{height:1,backgroundColor:C.border,marginVertical:12},
-  footerLinks:{flexDirection:'row',flexWrap:'wrap',gap:7,marginTop:8},
+  footerSectionTitle:{fontSize:12,fontWeight:'800',color:C.gold,marginBottom:8},
+  footerLinks:{flexDirection:'row',flexWrap:'wrap',gap:7,marginTop:4},
   footerPill:{paddingHorizontal:11,paddingVertical:8,borderRadius:11,borderWidth:1,borderColor:C.border,backgroundColor:C.soft},
-  footerLinkText:{fontSize:10,color:C.cream,fontWeight:'700'},
-  footerStep:{color:C.cream,fontSize:11,lineHeight:19,marginTop:4},
+  footerLinkText:{fontSize:11,color:C.cream,fontWeight:'700'},
+  footerStepRow:{flexDirection:'row',alignItems:'center',gap:8,marginVertical:3},
+  footerStepBadge:{width:20,height:20,borderRadius:10,backgroundColor:C.bg===themeTokens.dark.colors.bg?'rgba(246,200,76,.18)':'#F5EFEB',alignItems:'center',justifyContent:'center',borderWidth:1,borderColor:C.border},
+  footerStepBadgeText:{fontSize:10,fontWeight:'900',color:C.gold},
+  footerStepText:{fontSize:12,color:C.cream,flex:1,lineHeight:18},
   footerBottom:{flexDirection:'row',alignItems:'center',justifyContent:'space-between',flexWrap:'wrap',gap:7,marginTop:12},
   footerCopyright:{color:C.muted,fontSize:9},
   footerBadge:{color:C.gold,fontSize:9,fontWeight:'700',borderRadius:9,borderWidth:1,borderColor:'rgba(246,200,76,.25)',paddingHorizontal:8,paddingVertical:5},
+  emptyStateBox:{padding:24,borderRadius:18,backgroundColor:C.panel,borderWidth:1,borderColor:C.border,alignItems:'center',justifyContent:'center',marginVertical:10,shadowColor:'#000000',shadowOpacity:C.bg===themeTokens.dark.colors.bg?.2:.05,shadowRadius:8,shadowOffset:{width:0,height:3},elevation:2},
+  emptyStateIconWrap:{width:48,height:48,borderRadius:24,backgroundColor:C.bg===themeTokens.dark.colors.bg?'rgba(246,200,76,.12)':'#F5EFEB',alignItems:'center',justifyContent:'center',marginBottom:12},
+  emptyStateText:{fontSize:13.5,color:C.cream,textAlign:'center',lineHeight:20,maxWidth:290,marginBottom:8},
   // Status Pill Badge
   statusPill:{flexDirection:'row',alignItems:'center',gap:6,paddingHorizontal:10,paddingVertical:5,borderRadius:20,alignSelf:'flex-start'},
   statusDot:{width:6,height:6,borderRadius:3},

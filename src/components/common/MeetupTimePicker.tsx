@@ -196,8 +196,8 @@ export function MeetupTimePicker({
           >
             <Pressable style={styles.iosModalSheet} onPress={(e) => e.stopPropagation()}>
               <View style={styles.modalHeader}>
-                <Text style={styles.modalTitle}>Choose Meetup Schedule</Text>
-                <Text style={styles.modalSubtitle}>Philippine Standard Time (PHT)</Text>
+                <Text style={styles.modalTitle}>Choose meetup schedule</Text>
+                <Text style={styles.modalSubtitle}>Philippine Standard Time (PST)</Text>
               </View>
 
               <DateTimePicker
