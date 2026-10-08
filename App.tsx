@@ -2413,11 +2413,12 @@ function NotificationsScreen({ navigation }: any) {
 
 function MessagesScreen({ navigation }: any) {
   const { user } = useAuth();
+  const isAdmin = user?.role === 'admin';
   const isDark = C.bg === themeTokens.dark.colors.bg;
   const [rows, setRows] = useState<Conversation[]>([]);
   const [err, setErr] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
-  const [filter, setFilter] = useState<'all' | 'meetups' | 'buying' | 'selling'>('all');
+  const [filter, setFilter] = useState<'all' | 'reports' | 'exchanges' | 'meetups' | 'buying' | 'selling'>('all');
   const [showSafeBanner, setShowSafeBanner] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
@@ -2448,13 +2449,19 @@ function MessagesScreen({ navigation }: any) {
 
   // Counts
   const unreadTotal = rows.filter(c => !c.latest_message?.read_at && c.latest_message?.sender_id !== user?.id).length;
+  const reportsCount = rows.filter(c => !c.item_id).length;
+  const exchangeCount = rows.filter(c => !!c.item_id).length;
   const meetupsCount = rows.filter(c => c.latest_message?.type === 'meetup_proposal' || !!c.latest_message?.meetup_location).length;
   const buyingCount = rows.filter(c => c.item?.seller_id !== user?.id).length;
   const sellingCount = rows.filter(c => c.item?.seller_id === user?.id).length;
 
   // Filter & Search
   const filteredRows = rows.filter(c => {
-    if (filter === 'meetups') {
+    if (filter === 'reports') {
+      if (c.item_id) return false;
+    } else if (filter === 'exchanges') {
+      if (!c.item_id) return false;
+    } else if (filter === 'meetups') {
       const hasMeetup = c.latest_message?.type === 'meetup_proposal' || !!c.latest_message?.meetup_location;
       if (!hasMeetup) return false;
     } else if (filter === 'buying') {
@@ -2668,96 +2675,162 @@ function MessagesScreen({ navigation }: any) {
           </View>
         </Pressable>
 
-        <Pressable
-          onPress={() => setFilter('meetups')}
-          style={{
-            backgroundColor: filter === 'meetups' ? (isDark ? '#2D2310' : '#FEF3C7') : (isDark ? C.panel : '#FFFFFF'),
-            borderRadius: 20,
-            paddingHorizontal: 14,
-            paddingVertical: 7,
-            flexDirection: 'row',
-            alignItems: 'center',
-            gap: 6,
-            borderWidth: 1,
-            borderColor: filter === 'meetups' ? (isDark ? '#78350F' : '#FDE68A') : (isDark ? C.border : '#E5E7EB'),
-          }}
-        >
-          <Ionicons name="pricetag-outline" size={13} color={isDark ? '#FCD34D' : '#92400E'} />
-          <Text style={{ fontSize: 12.5, fontWeight: '700', color: isDark ? '#FCD34D' : '#92400E' }}>
-            Active Meetups
-          </Text>
-          <View style={{
-            backgroundColor: isDark ? '#451A03' : '#FDE68A',
-            paddingHorizontal: 6,
-            paddingVertical: 1,
-            borderRadius: 8,
-          }}>
-            <Text style={{ fontSize: 10.5, fontWeight: '800', color: isDark ? '#FCD34D' : '#92400E' }}>
-              {meetupsCount}
-            </Text>
-          </View>
-        </Pressable>
+        {isAdmin ? (
+          <>
+            <Pressable
+              onPress={() => setFilter('reports')}
+              style={{
+                backgroundColor: filter === 'reports' ? (isDark ? '#3B1313' : '#FEE2E2') : (isDark ? C.panel : '#FFFFFF'),
+                borderRadius: 20,
+                paddingHorizontal: 14,
+                paddingVertical: 7,
+                flexDirection: 'row',
+                alignItems: 'center',
+                gap: 6,
+                borderWidth: 1,
+                borderColor: filter === 'reports' ? C.red : (isDark ? C.border : '#E5E7EB'),
+              }}
+            >
+              <Ionicons name="chatbubbles-outline" size={13} color={C.red} />
+              <Text style={{ fontSize: 12.5, fontWeight: '700', color: filter === 'reports' ? C.red : (isDark ? C.cream : '#4B5563') }}>
+                Student Reports
+              </Text>
+              <View style={{
+                backgroundColor: isDark ? '#551515' : '#FCA5A5',
+                paddingHorizontal: 6,
+                paddingVertical: 1,
+                borderRadius: 8,
+              }}>
+                <Text style={{ fontSize: 10.5, fontWeight: '800', color: isDark ? '#FFFFFF' : '#7F1D1D' }}>
+                  {reportsCount}
+                </Text>
+              </View>
+            </Pressable>
 
-        <Pressable
-          onPress={() => setFilter('buying')}
-          style={{
-            backgroundColor: filter === 'buying' ? '#8B0000' : (isDark ? C.panel : '#FFFFFF'),
-            borderRadius: 20,
-            paddingHorizontal: 14,
-            paddingVertical: 7,
-            flexDirection: 'row',
-            alignItems: 'center',
-            gap: 6,
-            borderWidth: 1,
-            borderColor: filter === 'buying' ? '#8B0000' : (isDark ? C.border : '#E5E7EB'),
-          }}
-        >
-          <Text style={{ fontSize: 12.5, fontWeight: '700', color: filter === 'buying' ? '#FFFFFF' : C.muted }}>
-            Buying
-          </Text>
-          <View style={{
-            backgroundColor: filter === 'buying' ? '#6B0000' : (isDark ? C.soft : '#E5E7EB'),
-            paddingHorizontal: 6,
-            paddingVertical: 1,
-            borderRadius: 8,
-          }}>
-            <Text style={{ fontSize: 10.5, fontWeight: '800', color: filter === 'buying' ? '#FFFFFF' : C.muted }}>
-              {buyingCount}
-            </Text>
-          </View>
-        </Pressable>
+            <Pressable
+              onPress={() => setFilter('exchanges')}
+              style={{
+                backgroundColor: filter === 'exchanges' ? '#8B0000' : (isDark ? C.panel : '#FFFFFF'),
+                borderRadius: 20,
+                paddingHorizontal: 14,
+                paddingVertical: 7,
+                flexDirection: 'row',
+                alignItems: 'center',
+                gap: 6,
+                borderWidth: 1,
+                borderColor: filter === 'exchanges' ? '#8B0000' : (isDark ? C.border : '#E5E7EB'),
+              }}
+            >
+              <Ionicons name="cube-outline" size={13} color={filter === 'exchanges' ? '#FFFFFF' : C.muted} />
+              <Text style={{ fontSize: 12.5, fontWeight: '700', color: filter === 'exchanges' ? '#FFFFFF' : C.muted }}>
+                Peer Exchanges
+              </Text>
+              <View style={{
+                backgroundColor: filter === 'exchanges' ? '#6B0000' : (isDark ? C.soft : '#E5E7EB'),
+                paddingHorizontal: 6,
+                paddingVertical: 1,
+                borderRadius: 8,
+              }}>
+                <Text style={{ fontSize: 10.5, fontWeight: '800', color: filter === 'exchanges' ? '#FFFFFF' : C.muted }}>
+                  {exchangeCount}
+                </Text>
+              </View>
+            </Pressable>
+          </>
+        ) : (
+          <>
+            <Pressable
+              onPress={() => setFilter('meetups')}
+              style={{
+                backgroundColor: filter === 'meetups' ? (isDark ? '#2D2310' : '#FEF3C7') : (isDark ? C.panel : '#FFFFFF'),
+                borderRadius: 20,
+                paddingHorizontal: 14,
+                paddingVertical: 7,
+                flexDirection: 'row',
+                alignItems: 'center',
+                gap: 6,
+                borderWidth: 1,
+                borderColor: filter === 'meetups' ? (isDark ? '#78350F' : '#FDE68A') : (isDark ? C.border : '#E5E7EB'),
+              }}
+            >
+              <Ionicons name="pricetag-outline" size={13} color={isDark ? '#FCD34D' : '#92400E'} />
+              <Text style={{ fontSize: 12.5, fontWeight: '700', color: isDark ? '#FCD34D' : '#92400E' }}>
+                Active Meetups
+              </Text>
+              <View style={{
+                backgroundColor: isDark ? '#451A03' : '#FDE68A',
+                paddingHorizontal: 6,
+                paddingVertical: 1,
+                borderRadius: 8,
+              }}>
+                <Text style={{ fontSize: 10.5, fontWeight: '800', color: isDark ? '#FCD34D' : '#92400E' }}>
+                  {meetupsCount}
+                </Text>
+              </View>
+            </Pressable>
 
-        <Pressable
-          onPress={() => setFilter('selling')}
-          style={{
-            backgroundColor: filter === 'selling' ? '#8B0000' : (isDark ? C.panel : '#FFFFFF'),
-            borderRadius: 20,
-            paddingHorizontal: 14,
-            paddingVertical: 7,
-            flexDirection: 'row',
-            alignItems: 'center',
-            gap: 6,
-            borderWidth: 1,
-            borderColor: filter === 'selling' ? '#8B0000' : (isDark ? C.border : '#E5E7EB'),
-          }}
-        >
-          <Text style={{ fontSize: 12.5, fontWeight: '700', color: filter === 'selling' ? '#FFFFFF' : C.muted }}>
-            Selling
-          </Text>
-          <View style={{
-            backgroundColor: filter === 'selling' ? '#6B0000' : (isDark ? C.soft : '#E5E7EB'),
-            paddingHorizontal: 6,
-            paddingVertical: 1,
-            borderRadius: 8,
-          }}>
-            <Text style={{ fontSize: 10.5, fontWeight: '800', color: filter === 'selling' ? '#FFFFFF' : C.muted }}>
-              {sellingCount}
-            </Text>
-          </View>
-        </Pressable>
+            <Pressable
+              onPress={() => setFilter('buying')}
+              style={{
+                backgroundColor: filter === 'buying' ? '#8B0000' : (isDark ? C.panel : '#FFFFFF'),
+                borderRadius: 20,
+                paddingHorizontal: 14,
+                paddingVertical: 7,
+                flexDirection: 'row',
+                alignItems: 'center',
+                gap: 6,
+                borderWidth: 1,
+                borderColor: filter === 'buying' ? '#8B0000' : (isDark ? C.border : '#E5E7EB'),
+              }}
+            >
+              <Text style={{ fontSize: 12.5, fontWeight: '700', color: filter === 'buying' ? '#FFFFFF' : C.muted }}>
+                Buying
+              </Text>
+              <View style={{
+                backgroundColor: filter === 'buying' ? '#6B0000' : (isDark ? C.soft : '#E5E7EB'),
+                paddingHorizontal: 6,
+                paddingVertical: 1,
+                borderRadius: 8,
+              }}>
+                <Text style={{ fontSize: 10.5, fontWeight: '800', color: filter === 'buying' ? '#FFFFFF' : C.muted }}>
+                  {buyingCount}
+                </Text>
+              </View>
+            </Pressable>
+
+            <Pressable
+              onPress={() => setFilter('selling')}
+              style={{
+                backgroundColor: filter === 'selling' ? '#8B0000' : (isDark ? C.panel : '#FFFFFF'),
+                borderRadius: 20,
+                paddingHorizontal: 14,
+                paddingVertical: 7,
+                flexDirection: 'row',
+                alignItems: 'center',
+                gap: 6,
+                borderWidth: 1,
+                borderColor: filter === 'selling' ? '#8B0000' : (isDark ? C.border : '#E5E7EB'),
+              }}
+            >
+              <Text style={{ fontSize: 12.5, fontWeight: '700', color: filter === 'selling' ? '#FFFFFF' : C.muted }}>
+                Selling
+              </Text>
+              <View style={{
+                backgroundColor: filter === 'selling' ? '#6B0000' : (isDark ? C.soft : '#E5E7EB'),
+                paddingHorizontal: 6,
+                paddingVertical: 1,
+                borderRadius: 8,
+              }}>
+                <Text style={{ fontSize: 10.5, fontWeight: '800', color: filter === 'selling' ? '#FFFFFF' : C.muted }}>
+                  {sellingCount}
+                </Text>
+              </View>
+            </Pressable>
+          </>
+        )}
       </ScrollView>
 
-      {/* UM Campus Safe Exchange Banner */}
+      {/* Campus Safe Exchange / Admin Desk Banner */}
       {showSafeBanner && (
         <View style={{
           backgroundColor: isDark ? 'rgba(183, 2, 1, 0.15)' : '#FFF5F5',
@@ -2783,7 +2856,7 @@ function MessagesScreen({ navigation }: any) {
           </View>
           <View style={{ flex: 1 }}>
             <Text style={{ fontSize: 13, fontWeight: '800', color: isDark ? '#FCA5A5' : '#8B0000' }}>
-              UMTC Campus Safe Exchange
+              {isAdmin ? 'Campus Moderation & Student Helpdesk' : 'UMTC Campus Safe Exchange'}
             </Text>
             <Text style={{
               fontSize: 11.5,
@@ -2791,7 +2864,9 @@ function MessagesScreen({ navigation }: any) {
               lineHeight: 16,
               marginTop: 2,
             }}>
-              Coordinate transactions only within designated UM Tagum College Safe Zones (Main Library, Visayan IT Labs, Canteens, Gym). Keep all chats inside UM-Pasa for student safety.
+              {isAdmin
+                ? 'Address student inquiry tickets, resolve incident reports, and monitor safe exchange guidelines across UM Tagum College.'
+                : 'Coordinate transactions only within designated UM Tagum College Safe Zones (Main Library, Visayan IT Labs, Canteens, Gym). Keep all chats inside UM-Pasa for student safety.'}
             </Text>
           </View>
           <Pressable onPress={() => setShowSafeBanner(false)} hitSlop={8}>
@@ -2827,7 +2902,7 @@ function MessagesScreen({ navigation }: any) {
           const person = c.starter_id === user?.id ? c.recipient : c.starter;
           const partnerName = person?.name || 'UM Student';
           const initials = partnerName.split(' ').map((n: string) => n[0]).join('').slice(0, 2).toUpperCase() || 'UM';
-          const programLabel = c.item?.program ? `(${c.item.program})` : (c.item?.department ? `(${c.item.department})` : '(Student)');
+          const programLabel = c.item?.program ? `(${c.item.program})` : (c.item?.department ? `(${c.item.department})` : (person?.role === 'admin' ? '(Admin Moderator)' : (!c.item ? '(Support Ticket)' : '(Student)')));
           const isUnread = !c.latest_message?.read_at && c.latest_message?.sender_id !== user?.id;
           const hasMeetup = c.latest_message?.type === 'meetup_proposal' || !!c.latest_message?.meetup_location;
           const meetupConfirmed = c.latest_message?.proposal_status === 'accepted';
@@ -2901,8 +2976,8 @@ function MessagesScreen({ navigation }: any) {
                     </Text>
                   </View>
 
-                  {/* Item tag pill */}
-                  {c.item && (
+                  {/* Item tag pill or Support Ticket badge */}
+                  {c.item ? (
                     <View style={{
                       backgroundColor: isDark ? C.soft : '#F3F4F6',
                       borderRadius: 6,
@@ -2921,6 +2996,24 @@ function MessagesScreen({ navigation }: any) {
                       </Text>
                       <Text style={{ fontSize: 11.5, fontWeight: '900', color: isDark ? '#FCA5A5' : '#8B0000' }}>
                         {c.item.listing_type === 'rent' ? `₱${c.item.price}/day` : `₱${c.item.price}`}
+                      </Text>
+                    </View>
+                  ) : (
+                    <View style={{
+                      backgroundColor: isDark ? 'rgba(183, 2, 1, 0.18)' : '#FEE2E2',
+                      borderRadius: 6,
+                      paddingHorizontal: 8,
+                      paddingVertical: 3,
+                      flexDirection: 'row',
+                      alignItems: 'center',
+                      gap: 5,
+                      alignSelf: 'flex-start',
+                      marginTop: 4,
+                      marginBottom: 5,
+                    }}>
+                      <Ionicons name="shield-checkmark" size={13} color={isDark ? '#FCA5A5' : '#8B0000'} />
+                      <Text numberOfLines={1} style={{ fontSize: 11.5, fontWeight: '800', color: isDark ? '#FCA5A5' : '#8B0000' }}>
+                        Student Support & Incident Inquiry
                       </Text>
                     </View>
                   )}
@@ -2969,6 +3062,13 @@ function MessagesScreen({ navigation }: any) {
                           </Text>
                         </View>
                       )
+                    ) : !c.item ? (
+                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                        <Ionicons name="chatbubbles-outline" size={12} color={isDark ? '#F87171' : '#8B0000'} />
+                        <Text style={{ fontSize: 11, fontWeight: '700', color: isDark ? '#F87171' : '#8B0000' }}>
+                          Direct Moderation Assistance
+                        </Text>
+                      </View>
                     ) : (
                       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
                         <Ionicons name="location-outline" size={12} color={C.muted} />
@@ -3000,8 +3100,60 @@ function MessagesScreen({ navigation }: any) {
     </Page>
   );
 }
+const ADMIN_TEMPLATES = [
+  {
+    label: '🛡️ Greeting',
+    title: 'Moderation Greeting',
+    text: 'Hello! This is UM-Pasa Campus Moderation. How can we assist you with your inquiry or transaction today?',
+  },
+  {
+    label: '⚖️ Acknowledge Report',
+    title: 'Report Received & Reviewing',
+    text: 'We have received your report and our moderation team is reviewing the submitted details. We will follow up with you shortly.',
+  },
+  {
+    label: '📍 Safe Zone Notice',
+    title: 'UMTC Safe Exchange Notice',
+    text: 'Reminder: For student safety, please conduct all exchanges strictly within designated UM Tagum College Safe Zones (Main Library, Visayan IT Labs, Canteens, or Gym).',
+  },
+  {
+    label: '✅ Issue Resolved',
+    title: 'Report Resolved',
+    text: 'The reported concern has been addressed and resolved by the UM-Pasa administration. Thank you for helping keep our campus marketplace safe!',
+  },
+  {
+    label: '📜 Policy Reminder',
+    title: 'UMTC Marketplace Guidelines',
+    text: 'Notice: All listings and peer interactions must comply with UM Tagum College student handbook policies and UM-Pasa guidelines. Prohibited items or harassment will result in account suspension.',
+  },
+];
+
+const STUDENT_TEMPLATES = [
+  {
+    label: '💬 Check Availability',
+    title: 'Item Availability',
+    text: 'Hi! Is this still available for meetup on campus?',
+  },
+  {
+    label: '🕒 Propose Meetup',
+    title: 'Meetup Invitation',
+    text: 'Are you available to meet up at the Main Campus Library or Canteen today?',
+  },
+  {
+    label: '🚨 Report Concern',
+    title: 'Contact Admin Support',
+    text: 'Hi Admin, I would like to report an issue regarding a campus transaction or user on UM-Pasa.',
+  },
+  {
+    label: '🤝 Handover Complete',
+    title: 'Item & Payment Handover',
+    text: 'Item and payment received during our campus meetup. Deal completed safely, thank you!',
+  },
+];
+
 function ConversationScreen({ route, navigation }: any) {
   const { user } = useAuth();
+  const isAdmin = user?.role === 'admin';
   const headerHeight = useHeaderHeight();
   const insets = useSafeAreaInsets();
   const isDark = C.bg === themeTokens.dark.colors.bg;
@@ -3170,8 +3322,8 @@ function ConversationScreen({ route, navigation }: any) {
               </View>
             </Pressable>
 
-            {/* Pinned Item Chip (Right side) */}
-            {c?.item && (
+            {/* Pinned Item Chip or Student Helpdesk Badge (Right side) */}
+            {c?.item ? (
               <Pressable
                 accessibilityRole="button"
                 accessibilityLabel={`View listing ${c.item.title}`}
@@ -3206,6 +3358,31 @@ function ConversationScreen({ route, navigation }: any) {
                 </View>
                 <Ionicons name="chevron-forward" size={13} color={C.muted} />
               </Pressable>
+            ) : (
+              <View
+                style={{
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  gap: 6,
+                  backgroundColor: isDark ? 'rgba(183, 2, 1, 0.2)' : '#FEE2E2',
+                  paddingHorizontal: 9,
+                  paddingVertical: 5,
+                  borderRadius: 10,
+                  borderWidth: 1,
+                  borderColor: isDark ? '#7F1D1D' : '#FECACA',
+                  maxWidth: 155,
+                }}
+              >
+                <Ionicons name="shield-checkmark" size={15} color={isDark ? '#FCA5A5' : '#8B0000'} />
+                <View style={{ flexShrink: 1 }}>
+                  <Text numberOfLines={1} style={{ fontSize: 11, fontWeight: '800', color: isDark ? '#FCA5A5' : '#8B0000' }}>
+                    Student Helpdesk
+                  </Text>
+                  <Text numberOfLines={1} style={{ fontSize: 10, color: isDark ? '#E5E7EB' : '#4B5563' }}>
+                    Direct Moderation
+                  </Text>
+                </View>
+              </View>
             )}
           </View>
 
@@ -3574,6 +3751,65 @@ function ConversationScreen({ route, navigation }: any) {
             contentContainerStyle={{ paddingHorizontal: 12, gap: 8, flexDirection: 'row', alignItems: 'center' }}
             style={{ flexGrow: 0, height: 46 }}
           >
+            {/* Template picker button */}
+            <Pressable
+              accessibilityRole="button"
+              onPress={() => {
+                const activeTemplates = isAdmin ? ADMIN_TEMPLATES : STUDENT_TEMPLATES;
+                Alert.alert(
+                  isAdmin ? 'Admin Response Templates' : 'Quick Message Templates',
+                  'Select a pre-written template to insert into your message:',
+                  [
+                    ...activeTemplates.map(t => ({
+                      text: t.title,
+                      onPress: () => setBody(t.text),
+                    })),
+                    { text: 'Cancel', style: 'cancel' as const },
+                  ]
+                );
+              }}
+              style={{
+                flexDirection: 'row',
+                alignItems: 'center',
+                gap: 5,
+                paddingHorizontal: 11,
+                paddingVertical: 6,
+                borderRadius: 14,
+                backgroundColor: isDark ? '#3A1414' : '#FEE2E2',
+                borderWidth: 1,
+                borderColor: isDark ? '#EF4444' : '#8B0000',
+              }}
+            >
+              <Ionicons name="documents-outline" size={13} color={isDark ? '#FCA5A5' : '#8B0000'} />
+              <Text style={{ fontSize: 12, fontWeight: '800', color: isDark ? '#FCA5A5' : '#8B0000' }}>
+                📋 Templates ▾
+              </Text>
+            </Pressable>
+
+            {/* Quick Template Chips */}
+            {(isAdmin ? ADMIN_TEMPLATES : STUDENT_TEMPLATES).map((tmpl, idx) => (
+              <Pressable
+                key={idx}
+                accessibilityRole="button"
+                onPress={() => setBody(tmpl.text)}
+                style={{
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  gap: 5,
+                  paddingHorizontal: 11,
+                  paddingVertical: 6,
+                  borderRadius: 14,
+                  backgroundColor: C.panel2,
+                  borderWidth: 1,
+                  borderColor: C.border,
+                }}
+              >
+                <Text style={{ fontSize: 12, fontWeight: '700', color: C.white }}>
+                  {tmpl.label}
+                </Text>
+              </Pressable>
+            ))}
+
             <Pressable
               accessibilityRole="button"
               onPress={() => setShowPropose(prev => !prev)}
@@ -3680,7 +3916,7 @@ function ConversationScreen({ route, navigation }: any) {
             <TextInput
               value={body}
               onChangeText={setBody}
-              placeholder="Type a message or propose a meetup…"
+              placeholder={isAdmin ? "Type moderation reply or use template…" : "Type a message or propose a meetup…"}
               placeholderTextColor={C.muted}
               multiline
               onFocus={() => {
