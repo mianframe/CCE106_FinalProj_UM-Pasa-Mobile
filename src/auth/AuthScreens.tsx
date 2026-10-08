@@ -87,7 +87,7 @@ function AuthLayout({
   const s = createStyles(mode);
 
   return (
-    <SafeAreaView edges={['top', 'left', 'right', 'bottom']} style={s.safe}>
+    <SafeAreaView edges={['left', 'right', 'bottom']} style={s.safe}>
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ flex: 1 }}>
         <ScrollView contentContainerStyle={s.page} keyboardShouldPersistTaps="handled" automaticallyAdjustKeyboardInsets={true}>
           <Image source={require('../../assets/UMPASALOGO.png')} style={s.logo} resizeMode="contain" />
@@ -352,8 +352,8 @@ function createStyles(mode: ThemeMode) {
 
   return StyleSheet.create({
     safe: { flex: 1, backgroundColor: C.bg },
-    page: { flexGrow: 1, justifyContent: 'center', padding: 20, paddingBottom: 36 },
-    logo: { width: 170, height: 110, alignSelf: 'center', marginBottom: 4 },
+    page: { flexGrow: 1, paddingHorizontal: 20, paddingTop: 12, paddingBottom: 36 },
+    logo: { width: 84, height: 84, alignSelf: 'center', marginBottom: 12 },
     campusBadge: {
       flexDirection: 'row',
       alignItems: 'center',
