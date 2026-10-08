@@ -4552,20 +4552,33 @@ function SupportScreen(props: any) {
 }
 function AdminScreen({ navigation }: any) {
   const isDark = C.bg === themeTokens.dark.colors.bg;
-  const [pulse, setPulse] = useState<{ users: number; active: number; pending: number; escrow: number }>({ users: 0, active: 0, pending: 0, escrow: 0 });
+  const [pulse, setPulse] = useState<{ users: number; active: number; pending: number; escrow: number; reports: number }>({
+    users: 0,
+    active: 0,
+    pending: 0,
+    escrow: 0,
+    reports: 0,
+  });
   const [loading, setLoading] = useState(true);
 
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      const [itemList, userList, txList] = await Promise.all([admin.items(), admin.users(), admin.transactions()]);
+      const [itemList, userList, txList, convList] = await Promise.all([
+        admin.items(),
+        admin.users(),
+        admin.transactions(),
+        messaging.list().catch(() => []),
+      ]);
       const pendingCount = itemList.filter(i => i.moderation_status === 'pending').length;
       const activeCount = itemList.filter(i => i.moderation_status === 'approved' && i.status === 'available').length;
+      const reportsCount = (convList || []).filter(c => !c.item_id).length;
       setPulse({
         users: userList.length,
         active: activeCount,
         pending: pendingCount,
         escrow: txList.length,
+        reports: reportsCount,
       });
     } catch {
       // Fallback silently
@@ -4624,25 +4637,31 @@ function AdminScreen({ navigation }: any) {
         </View>
 
         <View style={{ flexDirection: 'row', gap: 10 }}>
-          {/* Pending Review - Highlighted */}
+          {/* Address Student Reports - Replaced slot */}
           <Pressable
             accessibilityRole="button"
-            onPress={() => navigation.navigate('AdminItems')}
+            onPress={() => navigation.navigate('Messages')}
             style={{
               flex: 1,
               padding: 14,
               borderRadius: 14,
-              backgroundColor: isDark ? 'rgba(246,200,76,0.1)' : '#FFF9E6',
+              backgroundColor: isDark ? 'rgba(230,36,36,0.1)' : '#FFF0EE',
               borderWidth: 1.5,
-              borderColor: C.gold,
+              borderColor: C.red,
             }}
           >
             <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-              <Text style={{ fontSize: 12, color: isDark ? C.gold : '#8A6500', fontWeight: '800' }}>Pending Review</Text>
-              <Ionicons name="alert-circle" size={16} color={C.gold} />
+              <Text numberOfLines={1} style={{ fontSize: 11.5, color: C.red, fontWeight: '800', flex: 1, marginRight: 4 }}>
+                Address Reports
+              </Text>
+              <Ionicons name="chatbubbles" size={16} color={C.red} />
             </View>
-            <Text style={{ fontSize: 22, fontWeight: '900', color: isDark ? C.gold : '#8A6500', marginTop: 6 }}>{pulse.pending}</Text>
-            <Text style={{ fontSize: 11, color: isDark ? '#FF8C82' : C.red, fontWeight: '800', marginTop: 2 }}>Requires action ›</Text>
+            <Text style={{ fontSize: 22, fontWeight: '900', color: C.red, marginTop: 6 }}>
+              {pulse.reports || '0'}
+            </Text>
+            <Text style={{ fontSize: 11, color: isDark ? '#FF8C82' : C.red, fontWeight: '800', marginTop: 2 }}>
+              Student reports ›
+            </Text>
           </Pressable>
 
           {/* Total Transactions */}
@@ -4659,6 +4678,54 @@ function AdminScreen({ navigation }: any) {
             <Text style={{ fontSize: 11, color: C.cream, fontWeight: '700', marginTop: 2 }}>Escrow logs ›</Text>
           </Pressable>
         </View>
+
+        {/* Big Pending Review Action Button */}
+        <Pressable
+          accessibilityRole="button"
+          onPress={() => navigation.navigate('AdminItems')}
+          style={{
+            marginTop: 12,
+            padding: 16,
+            borderRadius: 16,
+            backgroundColor: isDark ? 'rgba(246,200,76,0.12)' : '#FFF9E6',
+            borderWidth: 1.5,
+            borderColor: C.gold,
+            flexDirection: 'row',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+          }}
+        >
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, flex: 1 }}>
+            <View style={{
+              width: 44,
+              height: 44,
+              borderRadius: 22,
+              backgroundColor: isDark ? 'rgba(246,200,76,0.22)' : '#FFF0C2',
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}>
+              <Ionicons name="alert-circle" size={24} color={C.gold} />
+            </View>
+            <View style={{ flex: 1 }}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                <Text style={{ fontSize: 16, fontWeight: '900', color: C.white }}>Pending Review</Text>
+                {pulse.pending > 0 && (
+                  <View style={{ paddingHorizontal: 7, paddingVertical: 2, borderRadius: 8, backgroundColor: C.red }}>
+                    <Text style={{ fontSize: 10.5, fontWeight: '900', color: '#FFFFFF' }}>{pulse.pending} REQUIRED</Text>
+                  </View>
+                )}
+              </View>
+              <Text style={{ fontSize: 12, color: isDark ? C.cream : '#6B7280', marginTop: 2 }}>
+                {pulse.pending > 0
+                  ? `${pulse.pending} student item${pulse.pending === 1 ? '' : 's'} awaiting moderation decision`
+                  : 'All campus listings up to date'}
+              </Text>
+            </View>
+          </View>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+            <Text style={{ fontSize: 12, fontWeight: '800', color: C.gold }}>Review ›</Text>
+          </View>
+        </Pressable>
       </View>
 
       {/* Operational Modules List (Mockup 1) */}
@@ -4695,7 +4762,38 @@ function AdminScreen({ navigation }: any) {
         <Ionicons name="chevron-forward" size={18} color={C.muted} />
       </Pressable>
 
-      {/* Module 2: Student User Directory */}
+      {/* Module 2: Address Student Reports */}
+      <Pressable
+        accessibilityRole="button"
+        onPress={() => navigation.navigate('Messages')}
+        style={{
+          flexDirection: 'row',
+          alignItems: 'center',
+          gap: 12,
+          padding: 14,
+          borderRadius: 14,
+          backgroundColor: C.panel,
+          borderWidth: 1,
+          borderColor: C.border,
+          marginBottom: 10,
+        }}
+      >
+        <View style={{ width: 42, height: 42, borderRadius: 21, backgroundColor: isDark ? 'rgba(230,36,36,0.18)' : '#FFEAE8', alignItems: 'center', justifyContent: 'center' }}>
+          <Ionicons name="chatbubbles" size={20} color={C.red} />
+        </View>
+        <View style={{ flex: 1 }}>
+          <Text style={{ fontSize: 15, fontWeight: '800', color: C.white }}>Address Student Reports</Text>
+          <Text style={{ fontSize: 12, color: C.muted }}>Respond to moderator chats, conduct reports & tickets</Text>
+        </View>
+        {pulse.reports > 0 && (
+          <View style={{ paddingHorizontal: 8, paddingVertical: 2, borderRadius: 10, backgroundColor: C.red }}>
+            <Text style={{ fontSize: 11, fontWeight: '800', color: '#FFFFFF' }}>{pulse.reports}</Text>
+          </View>
+        )}
+        <Ionicons name="chevron-forward" size={18} color={C.muted} />
+      </Pressable>
+
+      {/* Module 3: Student User Directory */}
       <Pressable
         accessibilityRole="button"
         onPress={() => navigation.navigate('AdminUsers')}
