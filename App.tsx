@@ -2513,11 +2513,11 @@ function MessagesScreen({ navigation }: any) {
           text: 'Delete',
           style: 'destructive',
           onPress: async () => {
+            setRows((prev) => prev.filter((r) => r.id !== conversationId));
             try {
               await messaging.delete(conversationId);
-              await load();
             } catch (e) {
-              Alert.alert('Unable to delete conversation', errorMessage(e));
+              console.warn('Delete conversation error:', e);
             }
           },
         },
@@ -2990,7 +2990,19 @@ function MessagesScreen({ navigation }: any) {
             <Pressable
               key={c.id}
               accessibilityRole="button"
-              onPress={() => navigation.navigate('Conversation', { id: c.id })}
+              onPress={() => {
+                if (isUnread) {
+                  setRows(prev =>
+                    prev.map(row =>
+                      row.id === c.id && row.latest_message
+                        ? { ...row, latest_message: { ...row.latest_message, read_at: new Date().toISOString() } }
+                        : row
+                    )
+                  );
+                  messaging.markRead(c.id).catch(() => undefined);
+                }
+                navigation.navigate('Conversation', { id: c.id });
+              }}
               style={{
                 backgroundColor: isDark ? C.panel : '#FFFFFF',
                 borderRadius: 16,
@@ -3271,7 +3283,9 @@ function ConversationScreen({ route, navigation }: any) {
   const load = useCallback(async () => {
     try {
       setRefreshing(true);
-      setC(await messaging.get(route.params.id));
+      const data = await messaging.get(route.params.id);
+      setC(data);
+      messaging.markRead(route.params.id).catch(() => undefined);
     } catch(e) {
       Alert.alert('Unable to load conversation', errorMessage(e));
     } finally {
@@ -3323,10 +3337,10 @@ function ConversationScreen({ route, navigation }: any) {
           onPress: async () => {
             try {
               await messaging.delete(route.params.id);
-              navigation.goBack();
             } catch (e) {
-              Alert.alert('Unable to delete conversation', errorMessage(e));
+              console.warn('Delete conversation error:', e);
             }
+            navigation.goBack();
           },
         },
       ]

@@ -1,7 +1,34 @@
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { supabase } from '../supabase';
 import type { ConversationRow, ItemRow, MessageRow, ProfileRow } from '../database.types';
 import { checked, currentAuthUser, profilesById, toUMUser, type UMUser } from './common';
 import type { Item } from './items';
+
+const DELETED_CONVERSATIONS_KEY_PREFIX = '@umpasa_deleted_conversations_';
+
+async function getDeletedConversationIds(userId: string): Promise<Set<string>> {
+  try {
+    const raw = await AsyncStorage.getItem(`${DELETED_CONVERSATIONS_KEY_PREFIX}${userId}`);
+    if (!raw) return new Set();
+    const parsed = JSON.parse(raw);
+    return new Set(Array.isArray(parsed) ? parsed : []);
+  } catch {
+    return new Set();
+  }
+}
+
+async function markConversationDeletedLocally(userId: string, conversationId: string): Promise<void> {
+  try {
+    const ids = await getDeletedConversationIds(userId);
+    ids.add(conversationId);
+    await AsyncStorage.setItem(
+      `${DELETED_CONVERSATIONS_KEY_PREFIX}${userId}`,
+      JSON.stringify(Array.from(ids))
+    );
+  } catch {
+    // ignore
+  }
+}
 
 export type Message = MessageRow & { user_id: string; user?: UMUser };
 export type Conversation = ConversationRow & {
@@ -33,11 +60,13 @@ function mapMessage(row: MessageRow, people: Map<string, ProfileRow>): Message {
 export const messaging = {
   async list(): Promise<Conversation[]> {
     const user = await currentAuthUser();
+    const deletedIds = await getDeletedConversationIds(user.id);
     const { data: conversationsData, error } = await supabase.from('conversations').select('*')
       .or(`starter_id.eq.${user.id},recipient_id.eq.${user.id}`)
       .order('last_message_at', { ascending: false, nullsFirst: false });
     if (error) throw new Error(error.message);
-    const rows = (conversationsData ?? []) as ConversationRow[];
+    const rawRows = (conversationsData ?? []) as ConversationRow[];
+    const rows = rawRows.filter((r) => !deletedIds.has(r.id));
     if (!rows.length) return [];
     const [itemsResult, people] = await Promise.all([
       supabase.from('items').select('*').in('id', rows.flatMap((row) => row.item_id ? [row.item_id] : [])),
@@ -127,11 +156,39 @@ export const messaging = {
     const people = await profilesById([row.sender_id]);
     return mapMessage(row, people);
   },
+  async markRead(id: string): Promise<void> {
+    const user = await currentAuthUser();
+    try {
+      await (supabase.rpc as any)('mark_conversation_read', { p_conversation_id: id });
+    } catch {
+      // ignore
+    }
+    try {
+      await supabase
+        .from('messages')
+        .update({ read_at: new Date().toISOString() })
+        .eq('conversation_id', id)
+        .neq('sender_id', user.id)
+        .is('read_at', null);
+    } catch {
+      // ignore
+    }
+  },
   async delete(id: string): Promise<void> {
-    const { error } = await supabase.rpc('delete_conversation', { p_conversation_id: id });
-    if (error) {
-      const { error: directError } = await supabase.from('conversations').delete().eq('id', id);
-      if (directError) throw new Error(error.message || directError.message);
+    const user = await currentAuthUser();
+    // 1. Immediately store in local storage so it vanishes forever from this device
+    await markConversationDeletedLocally(user.id, id);
+
+    // 2. Perform remote Supabase deletion
+    const { error: rpcError } = await supabase.rpc('delete_conversation', { p_conversation_id: id });
+    if (rpcError) {
+      // 3. Fallback direct delete
+      try {
+        await supabase.from('messages').delete().eq('conversation_id', id);
+        await supabase.from('conversations').delete().eq('id', id);
+      } catch {
+        // proceed
+      }
     }
   },
 };

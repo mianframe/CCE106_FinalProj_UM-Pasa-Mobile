@@ -75,6 +75,33 @@ $$;
 revoke all on function public.mark_listing_sold(uuid) from public, anon, authenticated;
 grant execute on function public.mark_listing_sold(uuid) to authenticated;
 
+-- Mark Conversation Read RPC
+create or replace function public.mark_conversation_read(p_conversation_id uuid)
+returns boolean
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_uid uuid := (select auth.uid());
+begin
+  if v_uid is null then
+    return false;
+  end if;
+
+  update public.messages
+  set read_at = now()
+  where conversation_id = p_conversation_id
+    and sender_id <> v_uid
+    and read_at is null;
+
+  return true;
+end;
+$$;
+
+revoke all on function public.mark_conversation_read(uuid) from public, anon, authenticated;
+grant execute on function public.mark_conversation_read(uuid) to authenticated;
+
 -- Conversation deletion RPC
 create or replace function public.delete_conversation(p_conversation_id uuid)
 returns boolean
@@ -104,13 +131,38 @@ begin
     raise exception 'You do not have permission to delete this conversation' using errcode = '42501';
   end if;
 
+  -- 1. Remove linked notifications
+  delete from public.notifications where related_type = 'conversation' and related_id = p_conversation_id::text;
+  -- 2. Remove all conversation messages
+  delete from public.messages where conversation_id = p_conversation_id;
+  -- 3. Remove the conversation
   delete from public.conversations where id = p_conversation_id;
+
   return true;
 end;
 $$;
 
 revoke all on function public.delete_conversation(uuid) from public, anon, authenticated;
 grant execute on function public.delete_conversation(uuid) to authenticated;
+
+-- Ensure foreign key cascade is in place
+alter table if exists public.messages
+  drop constraint if exists messages_conversation_id_fkey,
+  add constraint messages_conversation_id_fkey foreign key (conversation_id) references public.conversations(id) on delete cascade;
+
+-- RLS DELETE policy on messages
+drop policy if exists "participants and admin can delete messages" on public.messages;
+create policy "participants and admin can delete messages"
+on public.messages for delete to authenticated
+using (
+  sender_id = (select auth.uid())
+  or exists (
+    select 1 from public.conversations c
+    where c.id = messages.conversation_id
+      and (c.starter_id = (select auth.uid()) or c.recipient_id = (select auth.uid()))
+  )
+  or exists (select 1 from public.profiles where id = (select auth.uid()) and role = 'admin')
+);
 
 -- RLS DELETE policy on conversations
 drop policy if exists "participants and admin can delete conversations" on public.conversations;
