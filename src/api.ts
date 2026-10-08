@@ -12,4 +12,5 @@ export type { Conversation, Message } from './services/messaging';
 export { notifications } from './services/notifications';
 export type { Notice } from './services/notifications';
 export { admin } from './services/admin';
+export type { AdminUser } from './services/admin';
 export { uploadItemImage, uploadPaymentProof, getPaymentProofSignedUrl } from './services/storage';

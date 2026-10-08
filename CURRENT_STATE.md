@@ -189,3 +189,11 @@ Items that cannot be statically validated in code and require verification on ph
    - **Proposal Card Status:** Pending status badge now clearly reads `"Waiting for <name> to accept"` for the sender, and `"Awaiting your response"` for the recipient.
    - **Transaction Screen Pending Proposal Tracking:** Added `pendingProposal` query and card to `TransactionScreen`, showing `"Waiting for <name> to accept"` during active proposal review before acceptance.
 
+7. **End-to-End Copywriting, System Text & Information Refinement:**
+   - **BrowseScreen:** Replaced generic promotional slogans with campus-aligned guidance (`CAMPUS ACADEMIC EXCHANGE`, `PASS IT FORWARD`, `MONITORED SAFE ZONES`), enriched search placeholder with course codes (`(e.g. IT 106, ENG 101)`), and clarified category chips.
+   - **ListingScreen:** Overhauled status banners and notices; replaced generic rejection alerts with actionable guidance; refined sold and reserved banners for both participants and third-party browsers.
+   - **ListingFormScreen:** Sharpened field titles, hints, and placeholders (including pricing rules, daily rental rates, physical condition descriptions, and payment options).
+   - **DashboardScreen & MyListingsScreen:** Updated stat tiles (`Active listings`, `Pending review`, `Active requests`, `Completed trades`) and prominent CTAs (`＋ Post academic item`).
+   - **AboutScreen & HelpScreen:** Replaced one-line placeholders with multi-card structured institutional guides covering campus sustainability, four trust pillars, academic credits (DCE - BSIT, UM Tagum College), buyer/seller step-by-step guides, and detailed campus safe zone lists (Mabini Main & Visayan campuses).
+   - **ProfileReviewsScreen:** Made department and degree program dynamic; purged historical "CCE Atrium" references in favor of UM Tagum College's Main Library, Visayan IT Labs, and campus canteens.
+   - **Admin Sub-Screens (`AdminUsersScreen`, `AdminTransactionsScreen`, `AdminReportScreen`):** Added searchable student directory, upgraded exchange logs with full metadata summaries, and polished platform analytics metrics and status labels.

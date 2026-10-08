@@ -9,7 +9,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import { supabase } from './src/supabase';
-import { account, admin, Conversation, errorMessage, getPaymentProofSignedUrl, Item, marketplace, messaging, Notice, Transaction, transactions, uploadItemImage, uploadPaymentProof, User } from './src/api';
+import { account, admin, AdminUser, Conversation, errorMessage, getPaymentProofSignedUrl, Item, marketplace, messaging, Notice, Transaction, transactions, uploadItemImage, uploadPaymentProof, User } from './src/api';
 import { AuthProvider, useAuth } from './src/auth/AuthContext';
 import { LoginScreen, RegisterScreen } from './src/auth/AuthScreens';
 import { ThemeProvider, useTheme, type ThemeMode } from './src/theme/ThemeContext';
@@ -204,9 +204,9 @@ function BrowseScreen({ navigation }: any) {
           style={[s.heroCarousel, { width: bannerWidth }]}
         >
           {[
-            {icon:'bag-handle-outline',kicker:'UM TAGUM MARKETPLACE',title:'Find what you need for campus.',copy:'Browse textbooks, uniforms, engineering kits, and calculators across Mabini and Visayan.'},
-            {icon:'repeat-outline',kicker:'SELL OR RENT',title:'Give useful items another semester.',copy:'List what you no longer need and set your own terms with verified classmates.'},
-            {icon:'shield-checkmark-outline',kicker:'TAGUM SAFE ZONES',title:'Trade safely at campus landmarks.',copy:'Handoffs at Main Canteen, Gym, Visayan Labs, and Libraries with zero platform fees.'},
+            {icon:'bag-handle-outline',kicker:'CAMPUS ACADEMIC EXCHANGE',title:'Essential resources for every semester.',copy:'Browse textbooks, uniforms, engineering kits, drafting tools, and calculators across Mabini and Visayan.'},
+            {icon:'repeat-outline',kicker:'PASS IT FORWARD',title:'Give academic items another semester.',copy:'Pass on completed course materials to lower years at fair student prices or rent items per semester.'},
+            {icon:'shield-checkmark-outline',kicker:'MONITORED SAFE ZONES',title:'Trade safely at campus landmarks.',copy:'Handoffs at Main Library, Visayan IT Labs, Canteen, and Gym with zero platform fees.'},
           ].map((slide,index)=><View key={slide.kicker} style={[s.carouselSlide,{width:bannerWidth}]}><Ionicons name={slide.icon as any} size={23} color="#ffc270"/><Text style={s.heroKicker}>{slide.kicker}</Text><Text style={s.heroTitle}>{slide.title}</Text><Text style={s.heroDescription}>{slide.copy}</Text><Pressable onPress={()=>navigation.navigate(index===2?'Help':'Browse')}><Text style={s.heroLink}>{index===2?'How it works  ›':'Explore marketplace  ›'}</Text></Pressable></View>)}
         </ScrollView>
         <View style={s.carouselDots}>{[0,1,2].map((dot)=><View key={dot} style={[s.carouselDot,dot===carouselIndex&&s.carouselDotActive]}/>)}</View>
@@ -216,7 +216,7 @@ function BrowseScreen({ navigation }: any) {
     </View>
 
     <Card style={s.searchPanel}>
-      <Text style={s.searchLabel}>WHAT ARE YOU LOOKING FOR?</Text>
+      <Text style={s.searchLabel}>SEARCH ACADEMIC RESOURCES</Text>
       <View style={s.searchRow}>
         <View style={s.searchInputWrap}>
           <Ionicons name="search-outline" size={18} color={C.muted} style={{ marginLeft: 12 }} />
@@ -225,7 +225,7 @@ function BrowseScreen({ navigation }: any) {
             onChangeText={setQ}
             onSubmitEditing={load}
             returnKeyType="search"
-            placeholder="Search items or course code"
+            placeholder="Search items, categories, or course code (e.g. IT 106)"
             placeholderTextColor={C.muted}
             style={s.searchInput}
           />
@@ -241,10 +241,10 @@ function BrowseScreen({ navigation }: any) {
           </LinearGradient>
         </Pressable>
       </View>
-      <Text style={s.searchHint}>Try “Calculators”, “Books” or a course code.</Text>
+      <Text style={s.searchHint}>Try “Calculators”, “Uniforms”, “Drafting”, or course codes like “IT 101” or “ACT 211”.</Text>
     </Card>
 
-    <View style={s.sectionTop}><View><Text style={s.sectionKicker}>DISCOVER</Text><Text style={s.sectionTitle}>Browse resources</Text></View><Text style={s.resultCount}>{items.length} found</Text></View>
+    <View style={s.sectionTop}><View><Text style={s.sectionKicker}>CAMPUS FEED</Text><Text style={s.sectionTitle}>Available resources</Text></View><Text style={s.resultCount}>{items.length} found</Text></View>
     <Text style={s.filterLabel}>LISTING TYPE</Text>
     <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.chipStrip}>
       {[['All types', undefined, 'layers-outline'], ['For sale', 'sell', 'pricetag-outline'], ['For rent', 'rent', 'repeat-outline']].map(([label, value, icon]: any) => <Choice key={label} label={label} icon={icon} selected={filters.listing_type === value} onPress={() => setFilter('listing_type', value)}/>)}
@@ -263,7 +263,7 @@ function BrowseScreen({ navigation }: any) {
       {programsForDepartment.length > 0 && <><Text style={s.filterLabel}>PROGRAM</Text><View style={s.rowWrap}><Choice label="All programs" selected={!filters.program} onPress={()=>setFilter('program',undefined)}/>{programsForDepartment.map(v=><Choice key={v} label={v} selected={filters.program===v} onPress={()=>toggle('program',v)}/>)}</View></>}
       <Field label="Course code" value={filters.course_code||''} onChangeText={(v:string)=>setFilter('course_code',v||undefined)} autoCapitalize="characters" onSubmitEditing={load}/>
     </Card>}
-    {error ? <Status state={error} retry={load}/> : loading && !items.length ? <View style={s.loadingBlock}><ActivityIndicator color={C.red}/><Text style={s.muted}>Finding campus listings…</Text></View> : !items.length ? <Status state="No approved listings match your search yet." retry={load}/> : <View style={s.listingGrid}>{items.map(item=><Pressable key={item.id} style={[s.gridItem,{width:(width-43)/2}]} onPress={()=>navigation.navigate('Listing',{id:item.id})}><ItemCard item={item} compact/></Pressable>)}</View>}
+    {error ? <Status state={error} retry={load}/> : loading && !items.length ? <View style={s.loadingBlock}><ActivityIndicator color={C.red}/><Text style={s.muted}>Finding campus listings…</Text></View> : !items.length ? <Status state="No approved listings match your search yet. Try adjusting your filters or keywords." retry={load}/> : <View style={s.listingGrid}>{items.map(item=><Pressable key={item.id} style={[s.gridItem,{width:(width-43)/2}]} onPress={()=>navigation.navigate('Listing',{id:item.id})}><ItemCard item={item} compact/></Pressable>)}</View>}
   </Page>;
 }
 async function openNotification(n:Notice,navigation:any,isAdmin:boolean) { try { if(!n.is_read) await account.markNotificationRead(n.id); } catch(e) { Alert.alert('Unable to update notification',errorMessage(e));return; } if(n.related_type==='transaction'&&n.related_id)navigation.navigate('Transaction',{id:n.related_id});else if(n.related_type==='conversation'&&n.related_id)navigation.navigate('Conversation',{id:n.related_id});else if(n.related_type==='item'&&n.related_id)navigation.navigate(isAdmin&&n.type==='listing_review'?'AdminItems':'Listing',isAdmin&&n.type==='listing_review'?{itemId:n.related_id}:{id:n.related_id});else Alert.alert('Activity update',n.message); }
@@ -450,13 +450,13 @@ function ListingScreen({ route, navigation }: any) {
         }}>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 4 }}>
             <Ionicons name="alert-circle" size={18} color={C.red} />
-            <Text style={{ fontSize: 14, fontWeight: '800', color: C.red }}>Listing Rejected by Campus Admin</Text>
+            <Text style={{ fontSize: 14, fontWeight: '800', color: C.red }}>Listing Not Approved by Campus Admin</Text>
           </View>
           <Text style={{ fontSize: 13, color: C.white, lineHeight: 19 }}>
-            Reason: {item.rejection_reason || 'This listing does not meet UM-Pasa campus guidelines or required details.'}
+            Reason: {item.rejection_reason || 'This listing requires corrections to meet UM-Pasa academic marketplace guidelines.'}
           </Text>
           <Text style={{ fontSize: 11, color: C.muted, marginTop: 6 }}>
-            You can edit or delete this listing to comply with UM Tagum College marketplace policies.
+            You can edit this listing below to resolve the issue and resubmit it for campus moderation.
           </Text>
         </View>
       )}
@@ -471,10 +471,10 @@ function ListingScreen({ route, navigation }: any) {
         }}>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 4 }}>
             <Ionicons name="checkmark-done-circle" size={18} color={C.red} />
-            <Text style={{ fontSize: 14, fontWeight: '800', color: C.red }}>This Item is Sold</Text>
+            <Text style={{ fontSize: 14, fontWeight: '800', color: C.red }}>Item Completed / Sold</Text>
           </View>
           <Text style={{ fontSize: 13, color: C.white, lineHeight: 19 }}>
-            This listing has been completed or marked sold and is no longer available on the campus marketplace.
+            This listing has been completed or marked as sold and is no longer available on the active campus marketplace feed.
           </Text>
         </View>
       )}
@@ -492,7 +492,7 @@ function ListingScreen({ route, navigation }: any) {
             <Text style={{ fontSize: 14, fontWeight: '800', color: C.gold }}>Listing Reserved (Active Exchange)</Text>
           </View>
           <Text style={{ fontSize: 13, color: C.white, lineHeight: 19 }}>
-            A student has requested this listing and an exchange is in progress. The item stays visible on the marketplace as “Reserved” until completed or cancelled.
+            A student has requested this listing and a campus exchange is currently in progress. The item stays reserved on the marketplace until completed or cancelled.
           </Text>
           <Pressable
             onPress={() => {
@@ -535,8 +535,8 @@ function ListingScreen({ route, navigation }: any) {
           </View>
           <Text style={{ fontSize: 13, color: C.white, lineHeight: 19 }}>
             {myActiveTx.status === 'approved'
-              ? 'Your request was approved! Meetup details are scheduled.'
-              : 'Your transaction request is awaiting seller approval and meetup scheduling.'}
+              ? 'Your request was approved! Meetup details are scheduled. Check Transactions for details.'
+              : 'Your transaction request is awaiting seller approval and campus meetup scheduling.'}
           </Text>
           <Pressable
             onPress={() => navigation.navigate('Transaction', { id: myActiveTx.id })}
@@ -573,10 +573,10 @@ function ListingScreen({ route, navigation }: any) {
             <Text style={{ fontSize: 14, fontWeight: '800', color: C.gold }}>Item Currently Reserved</Text>
           </View>
           <Text style={{ fontSize: 13, color: C.white, lineHeight: 19 }}>
-            Another student has requested this item and a campus exchange is currently in progress. If the transaction is rejected or canceled, this listing will become available again.
+            Another student has requested this item and a campus exchange is currently in progress. If the transaction is declined or cancelled, this listing will become available again.
           </Text>
           <Text style={{ fontSize: 11.5, color: C.muted, marginTop: 6 }}>
-            You can still message the seller below to inquire about queueing or being next in line.
+            You can still message the seller below to inquire about queueing or future availability.
           </Text>
         </View>
       )}
@@ -681,8 +681,8 @@ function ListingScreen({ route, navigation }: any) {
           title="Mark as sold"
           secondary
           onPress={() => Alert.alert(
-            'Mark this listing sold?',
-            `${item.title} will be removed from the available marketplace.`,
+            'Mark listing as sold?',
+            `"${item.title}" will be marked as sold and removed from active marketplace listings.`,
             [
               { text: 'Cancel', style: 'cancel' },
               {
@@ -706,7 +706,7 @@ function ListingScreen({ route, navigation }: any) {
           danger
           onPress={() => Alert.alert(
             'Archive listing?',
-            'Transaction history, if any, will be retained.',
+            'This listing will be archived from the marketplace. Completed transaction records, if any, will be retained.',
             [
               { text: 'Cancel', style: 'cancel' },
               {
@@ -862,7 +862,12 @@ function ListingFormScreen({ route, navigation }: any) {
         imagePath = await uploadItemImage(imageUri);
       }
       await marketplace.save({ ...f, image_path: imagePath }, edit?.id);
-      Alert.alert('Listing saved', edit ? 'Your changes were submitted for review.' : 'Your listing was submitted for review.');
+      Alert.alert(
+        'Listing submitted',
+        edit
+          ? 'Your changes have been saved and resubmitted for admin review.'
+          : 'Your listing has been submitted for campus moderator review. You will be notified once approved.'
+      );
       navigation.goBack();
     } catch (e) {
       Alert.alert('Unable to save listing', errorMessage(e));
@@ -871,7 +876,182 @@ function ListingFormScreen({ route, navigation }: any) {
     }
   };
   const pay = ['gcash','maya','bank_transfer','cash_on_pickup','other'];
-  return <Page bottomSafe><Heading title={edit ? 'Edit listing' : 'Add a listing'} subtitle="Listings from students are reviewed before appearing in the marketplace." /><Field label="Title" value={f.title || ''} onChangeText={(v: string) => set('title', v)} /><Text style={s.label}>Category</Text><View style={s.rowWrap}>{categories.map(v => <Choice key={v} label={v} selected={f.category === v && !f.custom_category} onPress={() => {set('category', v);set('custom_category','');}} />)}<Choice label="Other / custom" selected={!!f.custom_category} onPress={() => set('category','__custom')} /></View>{f.category==='__custom'&&<Field label="Custom category" value={f.custom_category||''} onChangeText={(v:string)=>set('custom_category',v)}/>}<Field label="Description (at least 10 characters)" value={f.description || ''} onChangeText={(v: string) => set('description', v)} multiline /><Text style={s.label}>Listing type</Text><View style={s.row}><Choice label="For sale" selected={f.listing_type === 'sell'} onPress={() => set('listing_type', 'sell')} /><Choice label="For rent" selected={f.listing_type === 'rent'} onPress={() => set('listing_type', 'rent')} /></View>{f.listing_type === 'sell' ? <Field label="Price (₱)" value={String(f.price || '')} onChangeText={(v: string) => set('price', v)} keyboardType="decimal-pad" /> : <><Field label="Daily rental rate (₱)" value={String(f.daily_rental_rate || '')} onChangeText={(v: string) => set('daily_rental_rate', v)} keyboardType="decimal-pad" /><View style={s.row}><View style={{ flex: 1 }}><Field label="Minimum days" value={String(f.minimum_rental_days || '')} onChangeText={(v: string) => set('minimum_rental_days', v)} keyboardType="number-pad" /></View><View style={{ flex: 1 }}><Field label="Maximum days" value={String(f.maximum_rental_days || '')} onChangeText={(v: string) => set('maximum_rental_days', v)} keyboardType="number-pad" /></View></View></>}<Text style={s.label}>Condition</Text><View style={s.row}>{['new','like_new','good','fair','poor'].map(v => <Choice key={v} label={v.replace('_',' ')} selected={f.condition === v} onPress={() => set('condition', v)} />)}</View><Text style={s.label}>Accepted payment methods</Text><View style={s.rowWrap}>{pay.map(v => <Choice key={v} label={v.replaceAll('_',' ')} selected={f.accepted_payment_methods?.includes(v)} onPress={() => set('accepted_payment_methods', f.accepted_payment_methods?.includes(v) ? f.accepted_payment_methods.filter((x: string) => x !== v) : [...(f.accepted_payment_methods || []), v])} />)}</View><Text style={s.label}>Department</Text><View style={s.rowWrap}>{departments.map(v => <Choice key={v} label={v.replace('Department of ','')} selected={f.department === v} onPress={() => {set('department',v);set('program','');}} />)}</View>{(programs[f.department] || []).length>0&&<><Text style={s.label}>Program</Text><View style={s.rowWrap}>{programs[f.department].map(v=><Choice key={v} label={v} selected={f.program===v} onPress={()=>set('program',v)}/>)}</View></>}<Field label="Course code" value={f.course_code || ''} onChangeText={(v: string) => set('course_code', v.toUpperCase())} autoCapitalize="characters" /><Text style={s.label}>Listing photo (optional)</Text>{imageUri ? <View style={{ marginBottom: 14 }}><Image source={{ uri: imageUri }} style={{ width: '100%', height: 180, borderRadius: 10, marginBottom: 8 }} resizeMode="cover" /><View style={s.row}><Button title="Change photo" secondary onPress={pickImage} /><Button title="Remove" danger onPress={() => { setImageUri(null); set('image_path', null); }} /></View></View> : <View style={{ marginBottom: 14 }}><Button title="📷 Select photo from library" secondary onPress={pickImage} /></View>}<Button title={busy ? 'Saving…' : 'Save listing'} disabled={busy} onPress={save} /></Page>;
+  return (
+    <Page bottomSafe>
+      <Heading
+        title={edit ? 'Edit Listing' : 'Post Academic Item'}
+        subtitle="Student listings are reviewed by campus moderators before being published."
+      />
+      <Field
+        label="Item title (e.g. Casio FX-991CW, Type B Uniform)"
+        value={f.title || ''}
+        onChangeText={(v: string) => set('title', v)}
+      />
+      <Text style={s.label}>Category</Text>
+      <View style={s.rowWrap}>
+        {categories.map(v => (
+          <Choice
+            key={v}
+            label={v}
+            selected={f.category === v && !f.custom_category}
+            onPress={() => { set('category', v); set('custom_category', ''); }}
+          />
+        ))}
+        <Choice
+          label="Other / custom"
+          selected={!!f.custom_category}
+          onPress={() => set('category', '__custom')}
+        />
+      </View>
+      {f.category === '__custom' && (
+        <Field
+          label="Custom category"
+          value={f.custom_category || ''}
+          onChangeText={(v: string) => set('custom_category', v)}
+        />
+      )}
+      <Field
+        label="Item description (condition, inclusions, semester used)"
+        value={f.description || ''}
+        onChangeText={(v: string) => set('description', v)}
+        multiline
+      />
+      <Text style={s.label}>Exchange type</Text>
+      <View style={s.row}>
+        <Choice
+          label="For sale (permanent)"
+          selected={f.listing_type === 'sell'}
+          onPress={() => set('listing_type', 'sell')}
+        />
+        <Choice
+          label="For rent (temporary lending)"
+          selected={f.listing_type === 'rent'}
+          onPress={() => set('listing_type', 'rent')}
+        />
+      </View>
+      {f.listing_type === 'sell' ? (
+        <Field
+          label="Selling price (₱)"
+          value={String(f.price || '')}
+          onChangeText={(v: string) => set('price', v)}
+          keyboardType="decimal-pad"
+        />
+      ) : (
+        <>
+          <Field
+            label="Daily rental rate (₱ / day)"
+            value={String(f.daily_rental_rate || '')}
+            onChangeText={(v: string) => set('daily_rental_rate', v)}
+            keyboardType="decimal-pad"
+          />
+          <View style={s.row}>
+            <View style={{ flex: 1 }}>
+              <Field
+                label="Minimum rental days"
+                value={String(f.minimum_rental_days || '')}
+                onChangeText={(v: string) => set('minimum_rental_days', v)}
+                keyboardType="number-pad"
+              />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Field
+                label="Maximum rental days"
+                value={String(f.maximum_rental_days || '')}
+                onChangeText={(v: string) => set('maximum_rental_days', v)}
+                keyboardType="number-pad"
+              />
+            </View>
+          </View>
+        </>
+      )}
+      <Text style={s.label}>Item physical condition</Text>
+      <View style={s.row}>
+        {['new', 'like_new', 'good', 'fair', 'poor'].map(v => (
+          <Choice
+            key={v}
+            label={v.replace('_', ' ')}
+            selected={f.condition === v}
+            onPress={() => set('condition', v)}
+          />
+        ))}
+      </View>
+      <Text style={s.label}>Accepted payment options</Text>
+      <View style={s.rowWrap}>
+        {pay.map(v => (
+          <Choice
+            key={v}
+            label={v.replaceAll('_', ' ')}
+            selected={f.accepted_payment_methods?.includes(v)}
+            onPress={() => set(
+              'accepted_payment_methods',
+              f.accepted_payment_methods?.includes(v)
+                ? f.accepted_payment_methods.filter((x: string) => x !== v)
+                : [...(f.accepted_payment_methods || []), v]
+            )}
+          />
+        ))}
+      </View>
+      <Text style={s.label}>Academic department</Text>
+      <View style={s.rowWrap}>
+        {departments.map(v => (
+          <Choice
+            key={v}
+            label={v.replace('Department of ', '')}
+            selected={f.department === v}
+            onPress={() => { set('department', v); set('program', ''); }}
+          />
+        ))}
+      </View>
+      {(programs[f.department] || []).length > 0 && (
+        <>
+          <Text style={s.label}>Degree program</Text>
+          <View style={s.rowWrap}>
+            {programs[f.department].map(v => (
+              <Choice
+                key={v}
+                label={v}
+                selected={f.program === v}
+                onPress={() => set('program', v)}
+              />
+            ))}
+          </View>
+        </>
+      )}
+      <Field
+        label="Course code (optional, e.g. IT 106, ACT 211)"
+        value={f.course_code || ''}
+        onChangeText={(v: string) => set('course_code', v.toUpperCase())}
+        autoCapitalize="characters"
+      />
+      <Text style={s.label}>Item photo (recommended)</Text>
+      {imageUri ? (
+        <View style={{ marginBottom: 14 }}>
+          <Image
+            source={{ uri: imageUri }}
+            style={{ width: '100%', height: 180, borderRadius: 10, marginBottom: 8 }}
+            resizeMode="cover"
+          />
+          <View style={s.row}>
+            <Button title="Change photo" secondary onPress={pickImage} />
+            <Button
+              title="Remove"
+              danger
+              onPress={() => { setImageUri(null); set('image_path', null); }}
+            />
+          </View>
+        </View>
+      ) : (
+        <View style={{ marginBottom: 14 }}>
+          <Button title="📷 Select photo from library" secondary onPress={pickImage} />
+        </View>
+      )}
+      <Button
+        title={busy ? 'Submitting…' : edit ? 'Save changes' : 'Submit listing for review'}
+        disabled={busy}
+        onPress={save}
+      />
+    </Page>
+  );
 }
 
 function DashboardScreen({ navigation }: any) {
@@ -951,13 +1131,13 @@ function DashboardScreen({ navigation }: any) {
   if (err) return <Page><Status state={err} retry={load} /></Page>;
   if (!data) return <Page><ActivityIndicator color={C.gold} /></Page>;
   const stats = data.stats || {};
-  const dashboardTiles = user?.role==='admin' ? [['Users',stats.users],['Students',stats.students],['Items',stats.items],['Pending review',stats.pendingItems],['Transactions',stats.transactions],['Completed',stats.completed]] : [['Listings',stats.total_items],['Pending',stats.pending_listings],['Requests',stats.pending_requests],['Completed',stats.completed_transactions]];
+  const dashboardTiles = user?.role==='admin' ? [['Users',stats.users],['Students',stats.students],['Items',stats.items],['Pending review',stats.pendingItems],['Transactions',stats.transactions],['Completed',stats.completed]] : [['Active listings',stats.total_items],['Pending review',stats.pending_listings],['Active requests',stats.pending_requests],['Completed trades',stats.completed_transactions]];
   return (
     <Page topSafe onRefresh={load}>
       <View style={{ flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 18 }}>
         <View style={{ flex: 1, paddingRight: 12 }}>
           <Text style={s.heading}>{`Hello, ${user?.name?.split(' ')[0] || 'there'}`}</Text>
-          <Text style={s.subheading}>{user?.role === 'admin' ? 'UM-Pasa administration' : 'Your campus marketplace at a glance.'}</Text>
+          <Text style={s.subheading}>{user?.role === 'admin' ? 'UM-Pasa campus administration & moderation' : 'UM Tagum College student marketplace'}</Text>
         </View>
         <Pressable
           accessibilityRole="button"
@@ -1003,7 +1183,7 @@ function DashboardScreen({ navigation }: any) {
       {user?.role === 'admin' ? (
         <Button title={`Review listings${stats.pendingItems ? ` · ${stats.pendingItems}` : ''}`} onPress={() => navigation.navigate('AdminItems')} />
       ) : (
-        <Button title="＋  Add a listing" onPress={() => navigation.navigate('ListingForm')} />
+        <Button title="＋  Post academic item" onPress={() => navigation.navigate('ListingForm')} />
       )}
       <View style={s.stats}>
         {dashboardTiles.map(([n, v]) => (
@@ -1041,7 +1221,7 @@ function DashboardScreen({ navigation }: any) {
             </Pressable>
             <Pressable accessibilityRole="button" onPress={() => navigation.navigate('Transactions')} style={s.quickActionCard}>
               <View style={s.quickActionIcon}><Ionicons name="swap-horizontal-outline" size={17} color="#4ADE80" /></View>
-              <Text numberOfLines={1} style={s.quickActionText}>Requests</Text>
+              <Text numberOfLines={1} style={s.quickActionText}>Transactions</Text>
             </Pressable>
             <Pressable accessibilityRole="button" onPress={() => navigation.navigate('Reports')} style={s.quickActionCard}>
               <View style={s.quickActionIcon}><Ionicons name="stats-chart-outline" size={17} color="#38BDF8" /></View>
@@ -1084,14 +1264,14 @@ function TransactionsScreen({ navigation }: any) {
 
   return (
     <Page topSafe refreshing={busy} onRefresh={load}>
-      <Heading title="Transactions" subtitle="Requests, sales, rentals, and completed exchanges." />
+      <Heading title="Transactions" subtitle="Track item requests, scheduled campus meetups, and completed handovers." />
 
       {/* Filter Tabs */}
       <View style={[s.rowWrap, { marginBottom: 14 }]}>
         {[
           ['all', 'All'],
-          ['pending', 'Pending'],
-          ['approved', 'Approved'],
+          ['pending', 'Pending Approval'],
+          ['approved', 'Approved / Scheduled'],
           ['completed', 'Completed'],
         ].map(([key, label]) => (
           <Choice
@@ -1106,7 +1286,7 @@ function TransactionsScreen({ navigation }: any) {
       {err ? (
         <Status state={err} retry={load} />
       ) : !filtered.length && !busy ? (
-        <Status state={filter === 'all' ? 'No transactions yet.' : `No ${filter} transactions found.`} />
+        <Status state={filter === 'all' ? 'No transactions yet. Browse listings to request an item.' : `No ${filter} transactions found.`} />
       ) : (
         filtered.map(t => {
           const isSeller = user?.id === t.seller_id;
@@ -1257,14 +1437,14 @@ function TransactionScreen({ route, navigation }: any) {
   if (!t) return <Page><Status state={err || 'Loading transaction…'} retry={load} /></Page>;
   const isSeller = user?.id === t.seller_id;
   const isBuyer = user?.id === t.buyer_id;
-  const run = (title: string, action: () => Promise<any>) => Alert.alert(title, 'Continue with this transaction action?', [{ text: 'Cancel', style: 'cancel' }, { text: 'Continue', onPress: async () => { try { await action(); await load(); } catch(e) { Alert.alert('Action failed', errorMessage(e)); } } }]);
+  const run = (title: string, action: () => Promise<any>) => Alert.alert(title, 'Confirm this action for this campus transaction?', [{ text: 'Cancel', style: 'cancel' }, { text: 'Confirm', onPress: async () => { try { await action(); await load(); } catch(e) { Alert.alert('Action failed', errorMessage(e)); } } }]);
   const approve = async () => {
     if (!meetup.trim()) {
-      Alert.alert('Missing meetup location', 'Please enter a meetup place before approving.');
+      Alert.alert('Missing meetup location', 'Please enter a campus safe meetup spot before approving.');
       return;
     }
     if (!meetupDate) {
-      Alert.alert('Missing meetup schedule', 'Please select a meetup date and time.');
+      Alert.alert('Missing meetup schedule', 'Please select a future meetup date and time.');
       return;
     }
     if (meetupDate.getTime() <= Date.now()) {
@@ -1276,7 +1456,7 @@ function TransactionScreen({ route, navigation }: any) {
     try {
       await transactions.approve(t.id, meetup.trim(), meetupDate.toISOString());
       await load();
-      Alert.alert('Request approved','The buyer was notified.');
+      Alert.alert('Request approved','The buyer was notified of your proposed meetup details.');
     } catch(e) {
       Alert.alert('Approval failed', errorMessage(e));
     } finally {
@@ -1300,7 +1480,7 @@ function TransactionScreen({ route, navigation }: any) {
         setUploadingProof(true);
         await uploadPaymentProof(t.id, asset.uri);
         await load();
-        Alert.alert('Payment proof uploaded', 'The seller can now view and verify your payment proof.');
+        Alert.alert('Payment proof uploaded', 'The seller has been notified to verify your payment receipt.');
       }
     } catch (err) {
       Alert.alert('Unable to upload proof', errorMessage(err));
@@ -1309,7 +1489,7 @@ function TransactionScreen({ route, navigation }: any) {
     }
   };
 
-  return <Page bottomSafe><Heading title={t.item?.title || 'Transaction'} subtitle={`Transaction #${t.id}`} /><Card><Text style={[s.badge,{color:statusColor(t.status)}]}>{t.status?.toUpperCase()}</Text><Text style={s.price}>{money(t.item?.price)}</Text><Text style={s.body}>Buyer: {t.buyer?.name}</Text><Text style={s.body}>Seller: {t.seller?.name}</Text><Text style={s.body}>Payment: {t.payment_method?.replaceAll('_',' ')}{t.other_payment_method?` · ${t.other_payment_method}`:''}</Text>{t.rental_duration_days?<Text style={s.body}>Rental duration: {t.rental_duration_days} day(s) · Due {formatPhilippineDate(t.rental_due_date, 'to be confirmed')}</Text>:null}{t.meetup_location ? <Text style={s.body}>Meetup: {t.meetup_location} · {formatPhilippineDateTime(t.meetup_time)}</Text> : null}{pendingProposal ? <View style={{ marginTop: 8, padding: 10, borderRadius: 8, backgroundColor: isDark ? 'rgba(246,200,76,0.12)' : '#FFF9E6', borderWidth: 1, borderColor: isDark ? 'rgba(246,200,76,0.25)' : '#FFE082' }}><View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 2 }}><Ionicons name="time-outline" size={15} color={C.gold} /><Text style={{ fontSize: 12, fontWeight: '800', color: isDark ? C.gold : '#B78103' }}>Pending Meetup Proposal</Text></View><Text style={{ fontSize: 13, color: C.white, fontWeight: '600' }}>{pendingProposal.meetup_location} · {formatPhilippineDateTime(pendingProposal.meetup_time)}</Text><Text style={{ fontSize: 12, color: C.cream, marginTop: 2 }}>{pendingProposal.sender_id === user?.id ? `Waiting for ${user?.id === t.buyer_id ? t.seller?.name : t.buyer?.name} to accept` : `Proposed by ${pendingProposal.sender_id === t.buyer_id ? t.buyer?.name : t.seller?.name} (review in chat to accept)`}</Text></View> : null}<Text style={s.muted}>Payment proof: {t.payment_proof?`Uploaded ${formatPhilippineDateTime(t.payment_proof_uploaded_at, '')}`:'Not uploaded'}</Text>{proofUrl && <View style={{ marginTop: 10 }}><Text style={s.label}>Payment Proof Receipt:</Text><Image source={{ uri: proofUrl }} style={{ width: '100%', height: 220, borderRadius: 10, marginTop: 6 }} resizeMode="contain" /></View>}</Card>{isBuyer && ['pending','approved'].includes(t.status) && <View style={{ marginVertical: 6 }}><Button title={uploadingProof ? 'Uploading proof…' : t.payment_proof ? '📷 Replace payment proof' : '📷 Upload payment proof'} secondary disabled={uploadingProof} onPress={pickProof} /></View>}{isSeller && t.status === 'pending' && <><Field label="Meetup location" value={meetup} onChangeText={setMeetup} placeholder="e.g. Student Union Building / Library"/><MeetupTimePicker label="Meetup date & time" value={meetupDate} onChange={setMeetupDate}/><Button title={approving ? 'Approving request…' : 'Approve request'} disabled={approving || !meetup.trim() || !meetupDate} onPress={approve} /><Button title="Reject request" danger onPress={() => run('Reject request', () => transactions.reject(t.id))} /></>}{isSeller && t.status === 'approved' && <Button title="Mark as completed" onPress={() => run('Complete exchange', () => transactions.complete(t.id))} />}{t.status === 'completed' && !t.ratings?.some((r: any) => r.reviewer_id === user?.id) && <><Text style={s.muted}>Both the buyer and seller can leave a review after completion.</Text><RatingForm id={t.id} onDone={load} /></>}{t.item && <Button title="Message participant" secondary onPress={async()=>{try{const recipient_id=user?.id===t.buyer_id?t.seller_id:t.buyer_id;const m=await messaging.send({recipient_id,item_id:t.item_id,body:`Hi, I want to coordinate about ${t.item?.title}.`});navigation.navigate('Conversation',{id:m.conversation_id});}catch(e){Alert.alert('Unable to message participant',errorMessage(e))}}}/>}</Page>;
+  return <Page bottomSafe><Heading title={t.item?.title || 'Transaction'} subtitle={`Transaction #${t.id}`} /><Card><Text style={[s.badge,{color:statusColor(t.status)}]}>{t.status?.toUpperCase()}</Text><Text style={s.price}>{money(t.item?.price)}</Text><Text style={s.body}>Buyer: {t.buyer?.name}</Text><Text style={s.body}>Seller: {t.seller?.name}</Text><Text style={s.body}>Payment: {t.payment_method?.replaceAll('_',' ')}{t.other_payment_method?` · ${t.other_payment_method}`:''}</Text>{t.rental_duration_days?<Text style={s.body}>Rental duration: {t.rental_duration_days} day(s) · Due {formatPhilippineDate(t.rental_due_date, 'to be confirmed')}</Text>:null}{t.meetup_location ? <Text style={s.body}>Meetup: {t.meetup_location} · {formatPhilippineDateTime(t.meetup_time)}</Text> : null}{pendingProposal ? <View style={{ marginTop: 8, padding: 10, borderRadius: 8, backgroundColor: isDark ? 'rgba(246,200,76,0.12)' : '#FFF9E6', borderWidth: 1, borderColor: isDark ? 'rgba(246,200,76,0.25)' : '#FFE082' }}><View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 2 }}><Ionicons name="time-outline" size={15} color={C.gold} /><Text style={{ fontSize: 12, fontWeight: '800', color: isDark ? C.gold : '#B78103' }}>Pending Meetup Proposal</Text></View><Text style={{ fontSize: 13, color: C.white, fontWeight: '600' }}>{pendingProposal.meetup_location} · {formatPhilippineDateTime(pendingProposal.meetup_time)}</Text><Text style={{ fontSize: 12, color: C.cream, marginTop: 2 }}>{pendingProposal.sender_id === user?.id ? `Waiting for ${user?.id === t.buyer_id ? t.seller?.name : t.buyer?.name} to accept` : `Proposed by ${pendingProposal.sender_id === t.buyer_id ? t.buyer?.name : t.seller?.name} (review in chat to accept)`}</Text></View> : null}<Text style={s.muted}>Payment proof: {t.payment_proof?`Uploaded ${formatPhilippineDateTime(t.payment_proof_uploaded_at, '')}`:'Not uploaded'}</Text>{proofUrl && <View style={{ marginTop: 10 }}><Text style={s.label}>Payment Proof Receipt:</Text><Image source={{ uri: proofUrl }} style={{ width: '100%', height: 220, borderRadius: 10, marginTop: 6 }} resizeMode="contain" /></View>}</Card>{isBuyer && ['pending','approved'].includes(t.status) && <View style={{ marginVertical: 6 }}><Button title={uploadingProof ? 'Uploading proof…' : t.payment_proof ? '📷 Replace payment proof' : '📷 Upload payment proof'} secondary disabled={uploadingProof} onPress={pickProof} /></View>}{isSeller && t.status === 'pending' && <><Field label="Meetup location" value={meetup} onChangeText={setMeetup} placeholder="e.g. Main Library (Mabini) or Visayan IT Labs Lobby"/><MeetupTimePicker label="Meetup date & time" value={meetupDate} onChange={setMeetupDate}/><Button title={approving ? 'Approving request…' : 'Approve request'} disabled={approving || !meetup.trim() || !meetupDate} onPress={approve} /><Button title="Reject request" danger onPress={() => run('Reject request', () => transactions.reject(t.id))} /></>}{isSeller && t.status === 'approved' && <Button title="Mark as completed" onPress={() => run('Complete exchange', () => transactions.complete(t.id))} />}{t.status === 'completed' && !t.ratings?.some((r: any) => r.reviewer_id === user?.id) && <><Text style={s.muted}>Both the buyer and seller can leave a review after completion.</Text><RatingForm id={t.id} onDone={load} /></>}{t.item && <Button title="Message participant" secondary onPress={async()=>{try{const recipient_id=user?.id===t.buyer_id?t.seller_id:t.buyer_id;const m=await messaging.send({recipient_id,item_id:t.item_id,body:`Hi, I want to coordinate about ${t.item?.title}.`});navigation.navigate('Conversation',{id:m.conversation_id});}catch(e){Alert.alert('Unable to message participant',errorMessage(e))}}}/>}</Page>;
 }
 function RatingForm({ id, onDone }: any) {
   const [rating, setRating] = useState(5);
@@ -1337,14 +1517,14 @@ function MyListingsScreen({ navigation }: any) {
   const [items, setItems] = useState<Item[]>([]); const [err, setErr] = useState('');
   const load = useCallback(async () => { try { const report=await account.report(); setItems(report.items || []); } catch(e) { setErr(errorMessage(e)); } }, []);
   useFocusEffect(useCallback(() => { load(); }, [load]));
-  const markSold = (item: Item) => Alert.alert('Mark this listing sold?', `${item.title} will be removed from the available marketplace.`, [
+  const markSold = (item: Item) => Alert.alert('Mark listing as sold?', `"${item.title}" will be marked as sold and removed from active marketplace listings.`, [
     {text:'Cancel',style:'cancel'}, {text:'Mark sold',onPress:async()=>{try{await marketplace.markSold(item.id);await load();}catch(e){Alert.alert('Unable to mark sold',errorMessage(e));}}},
   ]);
   return (
     <Page onRefresh={load}>
-      <Heading title="My listings" subtitle="Manage review status and availability."/>
-      <Button title="+ Add listing" onPress={() => navigation.navigate('ListingForm', {})} />
-      {err ? <Status state={err} retry={load} /> : !items.length ? <Status state="You do not have listings yet." /> : (
+      <Heading title="My listings" subtitle="Manage your listed items, review status, and marketplace availability."/>
+      <Button title="+ Post academic item" onPress={() => navigation.navigate('ListingForm', {})} />
+      {err ? <Status state={err} retry={load} /> : !items.length ? <Status state="You do not have any listings yet. Tap above to share academic resources with fellow students!" /> : (
         <View style={s.listingGrid}>
           {items.map(i => (
             <View key={i.id} style={{ width: (width - 43) / 2 }}>
@@ -1645,7 +1825,7 @@ function ProfileScreen({ navigation }: any) {
           <View style={s.profileMenuIconBox}>
             <Ionicons name="stats-chart-outline" size={18} color={C.gold} />
           </View>
-          <Text style={s.profileMenuLabel}>My Reports</Text>
+          <Text style={s.profileMenuLabel}>My Campus Report</Text>
           <Ionicons name="chevron-forward" size={18} color={C.muted} />
         </Pressable>
 
@@ -1655,14 +1835,14 @@ function ProfileScreen({ navigation }: any) {
           <View style={s.profileMenuIconBox}>
             <Ionicons name="settings-outline" size={18} color={C.gold} />
           </View>
-          <Text style={s.profileMenuLabel}>Settings / Account Details</Text>
+          <Text style={s.profileMenuLabel}>Edit Profile & Academic Info</Text>
           <Ionicons name="chevron-forward" size={18} color={C.muted} />
         </Pressable>
       </View>
 
       <View style={s.profileMenuCard}>
         <View style={s.profileAppearanceHeader}>
-          <Text style={s.profileAppearanceTitle}>Appearance</Text>
+          <Text style={s.profileAppearanceTitle}>Theme Appearance</Text>
           <View style={s.segmentedPillContainer}>
             <Pressable
               onPress={() => setMode('light')}
@@ -1702,7 +1882,7 @@ function ProfileScreen({ navigation }: any) {
               <View style={s.profileMenuIconBox}>
                 <Ionicons name="trash-outline" size={18} color={C.red} />
               </View>
-              <Text style={[s.profileMenuLabel, { color: C.red }]}>Account Deletion</Text>
+              <Text style={[s.profileMenuLabel, { color: C.red }]}>Deactivate Account</Text>
               <Ionicons name="chevron-forward" size={18} color={C.red} />
             </Pressable>
           </>
@@ -1739,7 +1919,7 @@ function ProfileScreen({ navigation }: any) {
                       <Text style={{ fontSize: 11, color: C.muted, fontWeight: '600' }}>Verified</Text>
                     </View>
                   </View>
-                  <Text style={[s.muted, { marginTop: 4, fontSize: 11 }]}>Student ID is permanently verified and locked.</Text>
+                  <Text style={[s.muted, { marginTop: 4, fontSize: 11 }]}>Student ID number is verified and permanently linked to your institutional account.</Text>
                 </View>
               ) : (
                 <Field label="Student ID number" value={studentNumber} onChangeText={setStudentNumber} autoCapitalize="characters" />
@@ -2572,7 +2752,7 @@ function MessagesScreen({ navigation }: any) {
           </View>
           <View style={{ flex: 1 }}>
             <Text style={{ fontSize: 13, fontWeight: '800', color: isDark ? '#FCA5A5' : '#8B0000' }}>
-              UM Campus Safe Exchange
+              UMTC Campus Safe Exchange
             </Text>
             <Text style={{
               fontSize: 11.5,
@@ -2580,7 +2760,7 @@ function MessagesScreen({ navigation }: any) {
               lineHeight: 16,
               marginTop: 2,
             }}>
-              Coordinate transactions only within designated University of Mindanao Safe Zones (e.g. CCE Atrium, Library). Keep all chats and meetups inside UM-Pasa.
+              Coordinate transactions only within designated UM Tagum College Safe Zones (Main Library, Visayan IT Labs, Canteens, Gym). Keep all chats inside UM-Pasa for student safety.
             </Text>
           </View>
           <Pressable onPress={() => setShowSafeBanner(false)} hitSlop={8}>
@@ -2610,7 +2790,7 @@ function MessagesScreen({ navigation }: any) {
       {err ? (
         <Status state={err} retry={load} />
       ) : !filteredRows.length ? (
-        <Status state="No conversations found. Browse the marketplace to message a seller." />
+        <Status state="No conversations yet. Browse the campus marketplace to message a student seller." />
       ) : (
         filteredRows.map(c => {
           const person = c.starter_id === user?.id ? c.recipient : c.starter;
@@ -3469,7 +3649,7 @@ function ConversationScreen({ route, navigation }: any) {
             <TextInput
               value={body}
               onChangeText={setBody}
-              placeholder="Type a message…"
+              placeholder="Type a message or propose a meetup…"
               placeholderTextColor={C.muted}
               multiline
               onFocus={() => {
@@ -3532,12 +3712,276 @@ function ReportsScreen() {
   items=[...items].sort((a,b)=>sort==='oldest'?byDate(a,b):sort==='title'?a.title.localeCompare(b.title):sort==='status'?a.status.localeCompare(b.status):byDate(b,a));
   txs=[...txs].sort((a,b)=>sort==='oldest'?byDate(a,b):sort==='status'?a.status.localeCompare(b.status):byDate(b,a));
   const categoryNames=Array.from(new Set([...(d.items||[]).map((i:Item)=>i.category),...(d.transactions||[]).map((t:Transaction)=>t.item?.category)].filter(Boolean)));
-  const studentSummary={listed:items.length,approved_listings:items.filter(i=>i.moderation_status==='approved').length,transactions:txs.length,completed:txs.filter(t=>t.status==='completed').length,earned:txs.filter(t=>t.seller_id===user?.id&&t.status==='completed').reduce((sum,t)=>sum+Number(t.item?.price||0),0)};
-  return <Page onRefresh={load}><Heading title="My report" subtitle="Listings and transactions linked to your account."/><View style={s.stats}>{Object.entries(studentSummary).map(([k,v])=><Card key={k} style={s.stat}><Text style={s.statNum}>{k === 'earned' ? money(Number(v)) : String(v)}</Text><Text style={s.muted}>{k.replaceAll('_',' ')}</Text></Card>)}</View><Text style={s.label}>Transaction status</Text><View style={s.rowWrap}><Choice label="All statuses" selected={!status} onPress={()=>setStatus('')}/>{['pending','approved','rejected','completed'].map(v=><Choice key={v} label={v} selected={status===v} onPress={()=>setStatus(status===v?'':v)}/>)}</View><Text style={s.label}>Listing type</Text><View style={s.row}><Choice label="Sales and rentals" selected={!type} onPress={()=>setType('')}/><Choice label="Sale" selected={type==='sell'} onPress={()=>setType(type==='sell'?'':'sell')}/><Choice label="Rental" selected={type==='rent'} onPress={()=>setType(type==='rent'?'':'rent')}/></View><Text style={s.label}>Category</Text><View style={s.rowWrap}><Choice label="All categories" selected={!category} onPress={()=>setCategory('')}/>{categoryNames.map(v=><Choice key={v} label={v} selected={category===v} onPress={()=>setCategory(category===v?'':(v||''))}/>)}</View><Text style={s.label}>Sort</Text><View style={s.rowWrap}>{['newest','oldest','title','status'].map(v=><Choice key={v} label={v} selected={sort===v} onPress={()=>setSort(v)}/>)}</View><Heading title="Listings"/>{items.length?items.map(i=><Card key={i.id}><Text style={s.cardTitle}>{i.title}</Text><Text style={s.muted}>{i.category} · {i.listing_type} · {i.status} / {i.moderation_status}{i.created_at ? ` · ${formatPhilippineDate(i.created_at)}` : ''}</Text><Text style={s.price}>{money(i.price)}</Text></Card>):<Status state="No listings match these report filters."/>}<Heading title="Transactions"/>{txs.length?txs.map(t=><Card key={t.id}><Text style={s.cardTitle}>{t.item?.title||'Transaction'}</Text><Text style={s.muted}>{t.status} · {t.buyer?.name} / {t.seller?.name}{t.created_at ? ` · ${formatPhilippineDate(t.created_at)}` : ''}</Text></Card>):<Status state="No transactions match these report filters."/>}</Page>;
+  const studentSummary: Record<string, number>={
+    listed: items.length,
+    approved: items.filter(i=>i.moderation_status==='approved').length,
+    transactions: txs.length,
+    completed: txs.filter(t=>t.status==='completed').length,
+    earned: txs.filter(t=>t.seller_id===user?.id&&t.status==='completed').reduce((sum,t)=>sum+Number(t.item?.price||0),0)
+  };
+  const statLabels: Record<string, string>={
+    listed: 'Posted Items',
+    approved: 'Live / Approved',
+    transactions: 'Total Requests',
+    completed: 'Completed Deals',
+    earned: 'Verified Earnings'
+  };
+  return (
+    <Page onRefresh={load}>
+      <Heading title="My Campus Report" subtitle="Academic listings, exchange velocity, and verified student earnings."/>
+      <View style={s.stats}>
+        {Object.entries(studentSummary).map(([k,v])=>(
+          <Card key={k} style={s.stat}>
+            <Text style={s.statNum}>{k === 'earned' ? money(Number(v)) : String(v)}</Text>
+            <Text style={s.muted}>{statLabels[k] || k}</Text>
+          </Card>
+        ))}
+      </View>
+      <Text style={s.label}>Transaction status</Text>
+      <View style={s.rowWrap}>
+        <Choice label="All statuses" selected={!status} onPress={()=>setStatus('')}/>
+        <Choice label="Pending Approval" selected={status==='pending'} onPress={()=>setStatus(status==='pending'?'':'pending')}/>
+        <Choice label="Approved / Active" selected={status==='approved'} onPress={()=>setStatus(status==='approved'?'':'approved')}/>
+        <Choice label="Declined" selected={status==='rejected'} onPress={()=>setStatus(status==='rejected'?'':'rejected')}/>
+        <Choice label="Completed" selected={status==='completed'} onPress={()=>setStatus(status==='completed'?'':'completed')}/>
+      </View>
+      <Text style={s.label}>Listing type</Text>
+      <View style={s.row}>
+        <Choice label="Sales and rentals" selected={!type} onPress={()=>setType('')}/>
+        <Choice label="For Sale" selected={type==='sell'} onPress={()=>setType(type==='sell'?'':'sell')}/>
+        <Choice label="For Rent" selected={type==='rent'} onPress={()=>setType(type==='rent'?'':'rent')}/>
+      </View>
+      <Text style={s.label}>Resource category</Text>
+      <View style={s.rowWrap}>
+        <Choice label="All categories" selected={!category} onPress={()=>setCategory('')}/>
+        {categoryNames.map(v=><Choice key={v} label={v} selected={category===v} onPress={()=>setCategory(category===v?'':(v||''))}/>)}
+      </View>
+      <Text style={s.label}>Sort by</Text>
+      <View style={s.rowWrap}>
+        <Choice label="Newest first" selected={sort==='newest'} onPress={()=>setSort('newest')}/>
+        <Choice label="Oldest first" selected={sort==='oldest'} onPress={()=>setSort('oldest')}/>
+        <Choice label="Item title" selected={sort==='title'} onPress={()=>setSort('title')}/>
+        <Choice label="Status" selected={sort==='status'} onPress={()=>setSort('status')}/>
+      </View>
+      <Heading title="My Academic Listings"/>
+      {items.length ? items.map(i=>(
+        <Card key={i.id}>
+          <Text style={s.cardTitle}>{i.title}</Text>
+          <Text style={s.muted}>{i.category} · {i.listing_type === 'rent' ? 'For Rent' : 'For Sale'} · {i.status?.toUpperCase()} / Moderation: {i.moderation_status?.toUpperCase()}{i.created_at ? ` · ${formatPhilippineDate(i.created_at)}` : ''}</Text>
+          <Text style={s.price}>{money(i.price)}{i.listing_type === 'rent' ? ' / day' : ''}</Text>
+        </Card>
+      )) : <Status state="No academic listings match your current filters."/>}
+      <Heading title="Transaction History"/>
+      {txs.length ? txs.map(t=>(
+        <Card key={t.id}>
+          <Text style={s.cardTitle}>{t.item?.title||'Transaction'}</Text>
+          <Text style={s.muted}>{t.status?.toUpperCase()} · Buyer: {t.buyer?.name} / Seller: {t.seller?.name}{t.created_at ? ` · ${formatPhilippineDate(t.created_at)}` : ''}</Text>
+        </Card>
+      )) : <Status state="No transaction records match your current filters."/>}
+    </Page>
+  );
 }
 
-function AboutScreen() { return <Page><Heading title="About UM-Pasa" subtitle="Academic resource marketplace"/><Card><Text style={s.section}>System purpose</Text><Text style={s.body}>UM-Pasa helps UM students list academic items, request sale or rental transactions, coordinate safely through messages, upload payment proof, and track transactions from request to completion.</Text></Card><Card><Text style={s.section}>Project information</Text><Text style={s.body}>PASA Development Team</Text><Text style={s.muted}>Student developers and system publishers of UM-Pasa.</Text><Text style={s.body}>Institution</Text><Text style={s.muted}>Department of Computing Education · Information Technology Program · UM Tagum College - Visayan Campus</Text></Card><Card><Text style={s.section}>Marketplace principles</Text><Text style={s.body}>Student-centered listings · Traceable transactions · Admin moderated resources · Sale and rental support</Text></Card></Page>; }
-function HelpScreen() { return <Page><Heading title="How UM-Pasa works" subtitle="A simple guide for buyers and sellers."/><Card><Text style={s.section}>For sellers</Text><Text style={s.body}>1. Create a sale or rental listing and choose payment methods.</Text><Text style={s.body}>2. Wait for an administrator to review the listing.</Text><Text style={s.body}>3. Respond to buyer requests. Approve with a meetup place and time, or reject the request.</Text><Text style={s.body}>4. After an approved exchange, mark the transaction completed. For a sale with no open request, mark the approved listing sold from My Listings.</Text><Text style={s.body}>5. Leave a review for the buyer after the exchange is complete.</Text></Card><Card><Text style={s.section}>For buyers</Text><Text style={s.body}>1. Browse the two-column marketplace, search, or use filters.</Text><Text style={s.body}>2. Open a listing and request it using a payment option accepted by the seller.</Text><Text style={s.body}>3. Coordinate the campus meetup in Messages and upload payment proof when applicable.</Text><Text style={s.body}>4. Confirm completion and review the seller.</Text></Card><Card><Text style={s.section}>Listings and safety</Text><Text style={s.body}>Listings need administrator approval before they appear in Browse. Coordinate a safe university meetup. Sale listings with an open transaction must resolve it before they can be manually marked sold.</Text></Card></Page>; }
+function AboutScreen() {
+  const isDark = C.bg === themeTokens.dark.colors.bg;
+  return (
+    <Page>
+      <Heading
+        title="About UM-Pasa"
+        subtitle="Official Peer-to-Peer Academic Resource Marketplace · University of Mindanao Tagum College"
+      />
+
+      <Card style={{ marginBottom: 12 }}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 8 }}>
+          <View style={{ width: 32, height: 32, borderRadius: 16, backgroundColor: isDark ? 'rgba(230,36,36,0.18)' : '#FFEAE8', alignItems: 'center', justifyContent: 'center' }}>
+            <Ionicons name="repeat" size={18} color={C.red} />
+          </View>
+          <View style={{ flex: 1 }}>
+            <Text style={s.eyebrow}>ACADEMIC SUSTAINABILITY</Text>
+            <Text style={s.cardTitle}>Student Resource Circulation</Text>
+          </View>
+        </View>
+        <Text style={s.body}>
+          UM-Pasa empowers students at University of Mindanao Tagum College to buy, sell, and rent course books, engineering instruments, lab uniforms, drafting tools, and tech accessories safely within our campus community.
+        </Text>
+        <Text style={[s.body, { color: C.muted, fontSize: 13, marginTop: 4 }]}>
+          By passing academic materials forward to junior cohorts, students significantly reduce term textbook expenses while promoting zero-waste campus practices.
+        </Text>
+      </Card>
+
+      <Card style={{ marginBottom: 12 }}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 10 }}>
+          <View style={{ width: 32, height: 32, borderRadius: 16, backgroundColor: isDark ? 'rgba(246,200,76,0.18)' : '#FFF3D6', alignItems: 'center', justifyContent: 'center' }}>
+            <Ionicons name="shield-checkmark" size={18} color={C.gold} />
+          </View>
+          <View style={{ flex: 1 }}>
+            <Text style={s.eyebrow}>CAMPUS TRUST PILLARS</Text>
+            <Text style={s.cardTitle}>Four Foundations of Safety</Text>
+          </View>
+        </View>
+        <View style={{ gap: 10 }}>
+          <View style={{ flexDirection: 'row', gap: 10 }}>
+            <Ionicons name="school-outline" size={18} color={C.gold} style={{ marginTop: 2 }} />
+            <View style={{ flex: 1 }}>
+              <Text style={{ fontSize: 13, fontWeight: '800', color: C.white }}>Verified Institutional Identity</Text>
+              <Text style={{ fontSize: 12, color: C.muted, lineHeight: 17 }}>Access is strictly restricted to verified @umindanao.edu.ph accounts and active student numbers.</Text>
+            </View>
+          </View>
+          <View style={{ flexDirection: 'row', gap: 10 }}>
+            <Ionicons name="pricetag-outline" size={18} color={C.gold} style={{ marginTop: 2 }} />
+            <View style={{ flex: 1 }}>
+              <Text style={{ fontSize: 13, fontWeight: '800', color: C.white }}>Zero Middleman Fees</Text>
+              <Text style={{ fontSize: 12, color: C.muted, lineHeight: 17 }}>Direct peer-to-peer exchanges without platform commissions or hidden service charges.</Text>
+            </View>
+          </View>
+          <View style={{ flexDirection: 'row', gap: 10 }}>
+            <Ionicons name="location-outline" size={18} color={C.gold} style={{ marginTop: 2 }} />
+            <View style={{ flex: 1 }}>
+              <Text style={{ fontSize: 13, fontWeight: '800', color: C.white }}>Designated Campus Safe Zones</Text>
+              <Text style={{ fontSize: 12, color: C.muted, lineHeight: 17 }}>Handoffs take place inside monitored college hubs: Mabini Main Library, Visayan IT Labs, and student canteens.</Text>
+            </View>
+          </View>
+          <View style={{ flexDirection: 'row', gap: 10 }}>
+            <Ionicons name="eye-outline" size={18} color={C.gold} style={{ marginTop: 2 }} />
+            <View style={{ flex: 1 }}>
+              <Text style={{ fontSize: 13, fontWeight: '800', color: C.white }}>Moderation Oversight</Text>
+              <Text style={{ fontSize: 12, color: C.muted, lineHeight: 17 }}>Every listing is verified by campus administrators before publishing to prevent non-academic contraband.</Text>
+            </View>
+          </View>
+        </View>
+      </Card>
+
+      <Card style={{ marginBottom: 12 }}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 8 }}>
+          <View style={{ width: 32, height: 32, borderRadius: 16, backgroundColor: isDark ? 'rgba(46,125,50,0.18)' : '#E8F5E9', alignItems: 'center', justifyContent: 'center' }}>
+            <Ionicons name="code-slash" size={18} color="#2E7D32" />
+          </View>
+          <View style={{ flex: 1 }}>
+            <Text style={s.eyebrow}>PROJECT AFFILIATION</Text>
+            <Text style={s.cardTitle}>Academic Project & Credits</Text>
+          </View>
+        </View>
+        <View style={{ gap: 6 }}>
+          <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+            <Text style={{ fontSize: 12.5, fontWeight: '700', color: C.muted }}>Development Team:</Text>
+            <Text style={{ fontSize: 12.5, fontWeight: '800', color: C.white }}>PASA Core Developers</Text>
+          </View>
+          <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+            <Text style={{ fontSize: 12.5, fontWeight: '700', color: C.muted }}>Department:</Text>
+            <Text style={{ fontSize: 12.5, fontWeight: '800', color: C.white }}>Dept. of Computing Education (DCE)</Text>
+          </View>
+          <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+            <Text style={{ fontSize: 12.5, fontWeight: '700', color: C.muted }}>Degree Program:</Text>
+            <Text style={{ fontSize: 12.5, fontWeight: '800', color: C.white }}>BS in Information Technology (BSIT)</Text>
+          </View>
+          <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+            <Text style={{ fontSize: 12.5, fontWeight: '700', color: C.muted }}>Institution:</Text>
+            <Text style={{ fontSize: 12.5, fontWeight: '800', color: C.white }}>University of Mindanao - Tagum College</Text>
+          </View>
+          <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+            <Text style={{ fontSize: 12.5, fontWeight: '700', color: C.muted }}>Campus Scope:</Text>
+            <Text style={{ fontSize: 12.5, fontWeight: '800', color: C.white }}>Mabini Main & Visayan Campuses</Text>
+          </View>
+        </View>
+      </Card>
+
+      <Card style={{ marginBottom: 12 }}>
+        <Text style={s.section}>Campus Honor Code</Text>
+        <Text style={s.body}>
+          All participating students agree to accurate item condition descriptions, respectful in-app correspondence, prompt attendance at scheduled meetups, and honest transaction reviews. Violations of platform guidelines or university policies result in immediate account suspension.
+        </Text>
+      </Card>
+    </Page>
+  );
+}
+
+function HelpScreen() {
+  const isDark = C.bg === themeTokens.dark.colors.bg;
+  return (
+    <Page>
+      <Heading
+        title="How UM-Pasa Works"
+        subtitle="Complete campus guide for buyers, sellers, and safe handoffs at UM Tagum College."
+      />
+
+      <Card style={{ marginBottom: 12 }}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 8 }}>
+          <View style={{ width: 32, height: 32, borderRadius: 16, backgroundColor: isDark ? 'rgba(246,200,76,0.18)' : '#FFF3D6', alignItems: 'center', justifyContent: 'center' }}>
+            <Ionicons name="cart" size={18} color={C.gold} />
+          </View>
+          <View style={{ flex: 1 }}>
+            <Text style={s.eyebrow}>STEP-BY-STEP WORKFLOW</Text>
+            <Text style={s.cardTitle}>Guide for Buyers & Renters</Text>
+          </View>
+        </View>
+        <View style={{ gap: 8 }}>
+          <Text style={s.body}><Text style={{ fontWeight: '800', color: C.gold }}>1. Search & Filter: </Text>Find resources by department, course code (e.g., IT 106), condition, or price.</Text>
+          <Text style={s.body}><Text style={{ fontWeight: '800', color: C.gold }}>2. Send Request: </Text>Choose Cash on Meetup or GCash / Digital Bank Transfer, and submit your request.</Text>
+          <Text style={s.body}><Text style={{ fontWeight: '800', color: C.gold }}>3. Coordinate in Messages: </Text>Agree on a specific campus meetup day, time, and safe zone with the seller.</Text>
+          <Text style={s.body}><Text style={{ fontWeight: '800', color: C.gold }}>4. Inspect & Handover: </Text>Meet in person, inspect the item thoroughly before paying, and finalize the exchange.</Text>
+          <Text style={s.body}><Text style={{ fontWeight: '800', color: C.gold }}>5. Submit Review: </Text>Rate your experience to build verified peer reputation across the campus.</Text>
+        </View>
+      </Card>
+
+      <Card style={{ marginBottom: 12 }}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 8 }}>
+          <View style={{ width: 32, height: 32, borderRadius: 16, backgroundColor: isDark ? 'rgba(230,36,36,0.18)' : '#FFEAE8', alignItems: 'center', justifyContent: 'center' }}>
+            <Ionicons name="pricetag" size={18} color={C.red} />
+          </View>
+          <View style={{ flex: 1 }}>
+            <Text style={s.eyebrow}>POSTING & FULFILLMENT</Text>
+            <Text style={s.cardTitle}>Guide for Sellers & Lenders</Text>
+          </View>
+        </View>
+        <View style={{ gap: 8 }}>
+          <Text style={s.body}><Text style={{ fontWeight: '800', color: C.red }}>1. Post Listing: </Text>Upload clear photos, accurate condition ratings, fair student pricing, and accepted payment options.</Text>
+          <Text style={s.body}><Text style={{ fontWeight: '800', color: C.red }}>2. Campus Review: </Text>Wait for moderator approval (usually under 24 hours) before your item appears in Browse.</Text>
+          <Text style={s.body}><Text style={{ fontWeight: '800', color: C.red }}>3. Review Requests: </Text>Approve buyer requests with designated meetup details, or decline if unavailable.</Text>
+          <Text style={s.body}><Text style={{ fontWeight: '800', color: C.red }}>4. Physical Exchange: </Text>Meet at the agreed campus location. If paid digitally, confirm payment receipt before handoff.</Text>
+          <Text style={s.body}><Text style={{ fontWeight: '800', color: C.red }}>5. Mark Completed: </Text>Confirm the transaction as completed to update your verified sales record.</Text>
+        </View>
+      </Card>
+
+      <Card style={{ marginBottom: 12 }}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 8 }}>
+          <View style={{ width: 32, height: 32, borderRadius: 16, backgroundColor: isDark ? 'rgba(46,125,50,0.18)' : '#E8F5E9', alignItems: 'center', justifyContent: 'center' }}>
+            <Ionicons name="location" size={18} color="#2E7D32" />
+          </View>
+          <View style={{ flex: 1 }}>
+            <Text style={s.eyebrow}>OFFICIAL HANDOFF POINTS</Text>
+            <Text style={s.cardTitle}>Designated Campus Safe Zones</Text>
+          </View>
+        </View>
+        <Text style={[s.body, { marginBottom: 8 }]}>
+          For student security, all item handoffs and currency exchanges should occur at designated campus safe zones during active operating hours:
+        </Text>
+        <View style={{ gap: 8 }}>
+          <View style={{ padding: 10, borderRadius: 10, backgroundColor: isDark ? C.panel2 : '#FAF7F5', borderWidth: 1, borderColor: C.border }}>
+            <Text style={{ fontSize: 13, fontWeight: '800', color: C.white, marginBottom: 3 }}>📍 Mabini Main Campus</Text>
+            <Text style={{ fontSize: 12, color: C.muted, lineHeight: 17 }}>• Main Library Ground Floor Lobby (Primary indoor meeting point)</Text>
+            <Text style={{ fontSize: 12, color: C.muted, lineHeight: 17 }}>• College Canteen & Student Pavilion (High foot traffic)</Text>
+            <Text style={{ fontSize: 12, color: C.muted, lineHeight: 17 }}>• Gymnasium / Admin Building Main Entrance</Text>
+          </View>
+          <View style={{ padding: 10, borderRadius: 10, backgroundColor: isDark ? C.panel2 : '#FAF7F5', borderWidth: 1, borderColor: C.border }}>
+            <Text style={{ fontSize: 13, fontWeight: '800', color: C.white, marginBottom: 3 }}>📍 Visayan Campus</Text>
+            <Text style={{ fontSize: 12, color: C.muted, lineHeight: 17 }}>• IT Computer Labs Lobby (2nd & 3rd Floor corridors)</Text>
+            <Text style={{ fontSize: 12, color: C.muted, lineHeight: 17 }}>• Visayan Library Reading & Study Area</Text>
+            <Text style={{ fontSize: 12, color: C.muted, lineHeight: 17 }}>• Campus Canteen & Central Gazebo</Text>
+          </View>
+        </View>
+      </Card>
+
+      <Card style={{ marginBottom: 12 }}>
+        <Text style={s.section}>Important Safety Guidelines</Text>
+        <View style={{ gap: 6 }}>
+          <Text style={s.body}>• <Text style={{ fontWeight: '700', color: C.white }}>Inspect First:</Text> Always inspect book editions, calculator functions, or uniform sizing before paying.</Text>
+          <Text style={s.body}>• <Text style={{ fontWeight: '700', color: C.white }}>Keep Chat In-App:</Text> Retain all scheduling messages within UM-Pasa for verifiable moderation records.</Text>
+          <Text style={s.body}>• <Text style={{ fontWeight: '700', color: C.white }}>No Cash Advances:</Text> Never wire funds before meeting. Verify GCash reference numbers together at the meetup.</Text>
+        </View>
+      </Card>
+    </Page>
+  );
+}
 function AdminScreen({ navigation }: any) {
   const isDark = C.bg === themeTokens.dark.colors.bg;
   const [pulse, setPulse] = useState<{ users: number; active: number; pending: number; escrow: number }>({ users: 0, active: 0, pending: 0, escrow: 0 });
@@ -3764,7 +4208,7 @@ function AdminScreen({ navigation }: any) {
   );
 }
 function ProfileReviewsScreen({ route, navigation }: any) {
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
   const isDark = C.bg === themeTokens.dark.colors.bg;
   const [reviews, setReviews] = useState<any[]>([]);
   const [error, setError] = useState('');
@@ -3784,8 +4228,10 @@ function ProfileReviewsScreen({ route, navigation }: any) {
 
   useEffect(() => { load(); }, [load]);
 
-  const targetName = route.params.name || 'UM-Pasa Student';
-  const targetRole = route.params.role === 'admin' ? 'Campus Admin' : 'Student';
+  const targetName = route.params.name || (route.params.id === user?.id ? user?.name : 'UM-Pasa Student');
+  const targetRole = route.params.role === 'admin' || (route.params.id === user?.id && user?.role === 'admin') ? 'Campus Admin' : 'Student';
+  const targetDept = route.params.department || (route.params.id === user?.id ? profile?.department : '') || 'Dept. of Computing Education';
+  const targetProg = route.params.program || (route.params.id === user?.id ? profile?.program : '') || 'BS Information Technology';
   const initials = targetName.split(' ').map((n: string) => n[0]).join('').slice(0, 2).toUpperCase() || 'UM';
   
   const count = reviews.length;
@@ -3876,7 +4322,7 @@ function ProfileReviewsScreen({ route, navigation }: any) {
               </View>
             </View>
             <Text style={{ fontSize: 12, color: C.muted, marginTop: 2 }}>
-              Dept. of Computing Education (BSCS)
+              {targetDept}{targetProg ? ` · ${targetProg}` : ''}
             </Text>
             <Text style={{ fontSize: 11, color: C.muted, marginTop: 1 }}>
               📍 UM Tagum Main & Visayan Campus
@@ -4102,7 +4548,7 @@ function ProfileReviewsScreen({ route, navigation }: any) {
                   </View>
                   <View style={{ backgroundColor: isDark ? C.panel2 : '#F5EFEA', paddingHorizontal: 7, paddingVertical: 2, borderRadius: 6 }}>
                     <Text style={{ fontSize: 10, fontWeight: '700', color: C.muted }}>
-                      📍 CCE Atrium / Library
+                      📍 Main Library / Visayan IT Labs
                     </Text>
                   </View>
                 </View>
@@ -4130,7 +4576,7 @@ function ProfileReviewsScreen({ route, navigation }: any) {
           </Text>
         </View>
         <Text style={{ fontSize: 11.5, color: C.muted, lineHeight: 17 }}>
-          Only students with confirmed physical handoffs at designated campus safe zones (CCE Atrium, Gym, Library) can submit reviews. Fake or coerced ratings lead to immediate UM-Pasa account suspension.
+          Only students with confirmed physical handoffs at designated campus safe zones (Main Library, Visayan IT Labs, Canteen, Gym) can submit reviews. Fake or coerced ratings lead to immediate UM-Pasa account suspension.
         </Text>
       </View>
 
@@ -4285,17 +4731,225 @@ function AdminItemsScreen({route}:any) {
     </>}
   </Card>)}</Page>;
 }
-function AdminUsersScreen() { const [rows,setRows]=useState<User[]>([]); const [err,setErr]=useState(''); const [busy,setBusy]=useState(true); const load=useCallback(async()=>{setBusy(true);try{setRows(await admin.users());setErr('')}catch(e){setErr(errorMessage(e))}finally{setBusy(false)}},[]);useEffect(()=>{load()},[load]); return <Page onRefresh={load} refreshing={busy}><Heading title="Users"/>{err?<Status state={err} retry={load}/>:busy?<ActivityIndicator color={C.gold}/>:rows.map(u=><Card key={u.id}><Text style={s.cardTitle}>{u.name}</Text><Text style={s.muted}>{u.email} · {u.role}</Text></Card>)}</Page>; }
-function TransactionSummary({t}: {t:Transaction}) { return <View style={s.adminDetails}><Text style={s.adminDetail}>Buyer: {t.buyer?.name||'—'}</Text><Text style={s.adminDetail}>Seller: {t.seller?.name||'—'}</Text><Text style={s.adminDetail}>Listing: {t.item?.title||'—'} · {t.item?.category||'—'} · {t.item?.listing_type||'—'}</Text><Text style={s.adminDetail}>Payment: {t.payment_method?.replaceAll('_',' ')||'—'}{t.other_payment_method?` (${t.other_payment_method})`:''}</Text><Text style={s.adminDetail}>Rental duration: {t.rental_duration_days?`${t.rental_duration_days} days`:'Not applicable'}</Text><Text style={s.adminDetail}>Rental due: {formatPhilippineDate(t.rental_due_date, 'Not set')}</Text><Text style={s.adminDetail}>Meetup place: {t.meetup_location||'Not scheduled'}</Text><Text style={s.adminDetail}>Meetup time: {formatPhilippineDateTime(t.meetup_time, 'Not scheduled')}</Text><Text style={s.adminDetail}>Payment proof: {t.payment_proof_uploaded_at?`Uploaded ${formatPhilippineDateTime(t.payment_proof_uploaded_at)}`:'Not uploaded'}</Text><Text style={s.adminDetail}>Created: {formatPhilippineDateTime(t.created_at, '—')}</Text></View>; }
-function AdminTransactionsScreen() { const [rows,setRows]=useState<Transaction[]>([]); const [err,setErr]=useState(''); const [busy,setBusy]=useState(true);const [expandedId,setExpandedId]=useState<string|null>(null); const load=useCallback(async()=>{setBusy(true);try{setRows(await admin.transactions());setErr('')}catch(e){setErr(errorMessage(e))}finally{setBusy(false)}},[]);useEffect(()=>{load()},[load]); return <Page onRefresh={load} refreshing={busy}><Heading title="All transactions" subtitle="Tap a transaction to see its complete report."/>{err?<Status state={err} retry={load}/>:busy?<ActivityIndicator color={C.gold}/>:rows.map(t=><Card key={t.id}><Pressable accessibilityRole="button" onPress={()=>setExpandedId(expandedId===t.id?null:t.id)}><View style={s.rowBetween}><Text style={[s.cardTitle,{flex:1}]}>{t.item?.title||'Transaction'}</Text><Ionicons name={expandedId===t.id?'chevron-up':'chevron-down'} size={18} color={C.muted}/></View><Text style={s.muted}>{t.status} · {t.buyer?.name} / {t.seller?.name}</Text></Pressable>{expandedId===t.id&&<TransactionSummary t={t}/>}</Card>)}</Page>; }
+function AdminUsersScreen() {
+  const isDark = C.bg === themeTokens.dark.colors.bg;
+  const [rows, setRows] = useState<AdminUser[]>([]);
+  const [err, setErr] = useState('');
+  const [busy, setBusy] = useState(true);
+  const [query, setQuery] = useState('');
+
+  const load = useCallback(async () => {
+    setBusy(true);
+    try {
+      setRows(await admin.users());
+      setErr('');
+    } catch (e) {
+      setErr(errorMessage(e));
+    } finally {
+      setBusy(false);
+    }
+  }, []);
+
+  useEffect(() => { load(); }, [load]);
+
+  const filtered = rows.filter(u => {
+    if (!query.trim()) return true;
+    const q = query.toLowerCase();
+    return (
+      (u.name || '').toLowerCase().includes(q) ||
+      (u.email || '').toLowerCase().includes(q) ||
+      (u.student_number || '').toLowerCase().includes(q)
+    );
+  });
+
+  return (
+    <Page onRefresh={load} refreshing={busy}>
+      <Heading
+        title="Student User Directory"
+        subtitle={`${rows.length} verified account${rows.length === 1 ? '' : 's'} across UM Tagum College.`}
+      />
+      <Field
+        label="Search student directory"
+        value={query}
+        onChangeText={setQuery}
+        placeholder="Filter by name, email, student ID..."
+      />
+      {err ? (
+        <Status state={err} retry={load} />
+      ) : busy ? (
+        <ActivityIndicator color={C.gold} />
+      ) : !filtered.length ? (
+        <Status state="No student accounts match your search." />
+      ) : (
+        filtered.map(u => (
+          <Card key={u.id}>
+            <View style={s.rowBetween}>
+              <View style={{ flex: 1 }}>
+                <Text style={s.cardTitle}>{u.name || 'UM Student'}</Text>
+                <Text style={s.muted}>{u.email}</Text>
+                {u.student_number ? (
+                  <Text style={{ fontSize: 11, color: C.gold, fontWeight: '700', marginTop: 2 }}>
+                    Student ID: {u.student_number}
+                  </Text>
+                ) : null}
+              </View>
+              <View style={{
+                paddingHorizontal: 8,
+                paddingVertical: 3,
+                borderRadius: 8,
+                backgroundColor: u.role === 'admin' ? (isDark ? 'rgba(230,36,36,0.18)' : '#FFEAE8') : (isDark ? 'rgba(246,200,76,0.18)' : '#FFF3D6'),
+                borderWidth: 1,
+                borderColor: u.role === 'admin' ? C.red : C.gold,
+              }}>
+                <Text style={{ fontSize: 10.5, fontWeight: '800', color: u.role === 'admin' ? C.red : (isDark ? C.gold : '#8A6500') }}>
+                  {u.role === 'admin' ? 'ADMIN' : 'STUDENT'}
+                </Text>
+              </View>
+            </View>
+          </Card>
+        ))
+      )}
+    </Page>
+  );
+}
+
+function TransactionSummary({t}: {t:Transaction}) {
+  return (
+    <View style={s.adminDetails}>
+      <Text style={s.adminDetail}>Buyer: {t.buyer?.name||'—'}</Text>
+      <Text style={s.adminDetail}>Seller: {t.seller?.name||'—'}</Text>
+      <Text style={s.adminDetail}>Listing: {t.item?.title||'—'} · {t.item?.category||'—'} · {t.item?.listing_type==='rent'?'For Rent':'For Sale'}</Text>
+      <Text style={s.adminDetail}>Payment Method: {t.payment_method?.replaceAll('_',' ')||'—'}{t.other_payment_method?` (${t.other_payment_method})`:''}</Text>
+      <Text style={s.adminDetail}>Rental duration: {t.rental_duration_days?`${t.rental_duration_days} days`:'Not applicable'}</Text>
+      <Text style={s.adminDetail}>Rental due: {formatPhilippineDate(t.rental_due_date, 'Not set')}</Text>
+      <Text style={s.adminDetail}>Meetup location: {t.meetup_location||'Not scheduled'}</Text>
+      <Text style={s.adminDetail}>Meetup time: {formatPhilippineDateTime(t.meetup_time, 'Not scheduled')}</Text>
+      <Text style={s.adminDetail}>Payment proof: {t.payment_proof_uploaded_at?`Uploaded ${formatPhilippineDateTime(t.payment_proof_uploaded_at)}`:'Not uploaded'}</Text>
+      <Text style={s.adminDetail}>Created: {formatPhilippineDateTime(t.created_at, '—')}</Text>
+    </View>
+  );
+}
+
+function AdminTransactionsScreen() {
+  const [rows, setRows] = useState<Transaction[]>([]);
+  const [err, setErr] = useState('');
+  const [busy, setBusy] = useState(true);
+  const [expandedId, setExpandedId] = useState<string|null>(null);
+  const load = useCallback(async () => {
+    setBusy(true);
+    try {
+      setRows(await admin.transactions());
+      setErr('');
+    } catch (e) {
+      setErr(errorMessage(e));
+    } finally {
+      setBusy(false);
+    }
+  }, []);
+  useEffect(() => { load(); }, [load]);
+  return (
+    <Page onRefresh={load} refreshing={busy}>
+      <Heading title="Campus Exchange Records" subtitle="Monitor active requests, safe meetup locations, and digital payment receipts."/>
+      {err ? <Status state={err} retry={load}/> : busy ? <ActivityIndicator color={C.gold}/> : !rows.length ? <Status state="No transaction records logged yet."/> : rows.map(t=>(
+        <Card key={t.id}>
+          <Pressable accessibilityRole="button" onPress={()=>setExpandedId(expandedId===t.id?null:t.id)}>
+            <View style={s.rowBetween}>
+              <Text style={[s.cardTitle,{flex:1}]}>{t.item?.title||'Transaction'}</Text>
+              <Ionicons name={expandedId===t.id?'chevron-up':'chevron-down'} size={18} color={C.muted}/>
+            </View>
+            <Text style={s.muted}>{t.status?.toUpperCase()} · Buyer: {t.buyer?.name} / Seller: {t.seller?.name}{t.created_at ? ` · ${formatPhilippineDate(t.created_at)}` : ''}</Text>
+          </Pressable>
+          {expandedId===t.id&&<TransactionSummary t={t}/>}
+        </Card>
+      ))}
+    </Page>
+  );
+}
+
 function AdminReportScreen() {
   const [items,setItems]=useState<Item[]>([]);const [txs,setTxs]=useState<Transaction[]>([]);const [err,setErr]=useState('');const [busy,setBusy]=useState(true);const [status,setStatus]=useState('');const [type,setType]=useState('');const [category,setCategory]=useState('');const [sort,setSort]=useState('newest');const [expandedTxId,setExpandedTxId]=useState<string|null>(null);
   const load=useCallback(async()=>{setBusy(true);try{const [i,t]=await Promise.all([admin.items(),admin.transactions()]);setItems(i);setTxs(t);setErr('')}catch(e){setErr(errorMessage(e))}finally{setBusy(false)}},[]);useEffect(()=>{load()},[load]);
   const reportItems=[...items.filter(i=>!type||i.listing_type===type).filter(i=>!category||i.category===category).filter(i=>!status||(status==='completed'?i.status==='sold':status==='pending'?i.status==='pending':true))].sort((a,b)=>sort==='oldest'?String(a.created_at||'').localeCompare(String(b.created_at||'')):sort==='title'?a.title.localeCompare(b.title):sort==='status'?a.status.localeCompare(b.status):String(b.created_at||'').localeCompare(String(a.created_at||'')));
   const reportTxs=[...txs.filter(t=>!status||t.status===status).filter(t=>!type||t.item?.listing_type===type).filter(t=>!category||t.item?.category===category)].sort((a,b)=>sort==='oldest'?String(a.created_at||'').localeCompare(String(b.created_at||'')):sort==='status'?a.status.localeCompare(b.status):String(b.created_at||'').localeCompare(String(a.created_at||'')));
   const categories=Array.from(new Set([...items.map(i=>i.category),...txs.map(t=>t.item?.category)].filter(Boolean)));
-  const summary={items:reportItems.length,pendingListings:reportItems.filter(i=>i.moderation_status==='pending').length,approvedListings:reportItems.filter(i=>i.moderation_status==='approved').length,transactions:reportTxs.length,completed:reportTxs.filter(t=>t.status==='completed').length,gcash:reportTxs.filter(t=>t.payment_method==='gcash').length};
-  return <Page refreshing={busy} onRefresh={load}><Heading title="Platform report" subtitle="Filter and review platform listings and transactions."/>{err?<Status state={err} retry={load}/>:busy?<ActivityIndicator color={C.gold}/>:<><View style={s.stats}>{Object.entries(summary).map(([k,v])=><Card key={k} style={s.stat}><Text style={s.statNum}>{String(v)}</Text><Text style={s.muted}>{k.replaceAll(/[A-Z]/g,m=>` ${m.toLowerCase()}`)}</Text></Card>)}</View><Text style={s.label}>Status</Text><View style={s.rowWrap}><Choice label="All statuses" selected={!status} onPress={()=>setStatus('')}/>{['pending','approved','rejected','completed'].map(v=><Choice key={v} label={v} selected={status===v} onPress={()=>setStatus(status===v?'':v)}/>)}</View><Text style={s.label}>Type</Text><View style={s.row}><Choice label="Sales and rentals" selected={!type} onPress={()=>setType('')}/><Choice label="Sales" selected={type==='sell'} onPress={()=>setType(type==='sell'?'':'sell')}/><Choice label="Rentals" selected={type==='rent'} onPress={()=>setType(type==='rent'?'':'rent')}/></View><Text style={s.label}>Category</Text><View style={s.rowWrap}><Choice label="All categories" selected={!category} onPress={()=>setCategory('')}/>{categories.map(v=><Choice key={v} label={v} selected={category===v} onPress={()=>setCategory(category===v?'':(v||''))}/>)}</View><Text style={s.label}>Sort</Text><View style={s.rowWrap}>{['newest','oldest','title','status'].map(v=><Choice key={v} label={v} selected={sort===v} onPress={()=>setSort(v)}/>)}</View><Heading title="Listings"/>{reportItems.length?reportItems.map(i=><Card key={i.id}><Text style={s.cardTitle}>{i.title}</Text><Text style={s.muted}>{i.user?.name} · {i.category} · {i.listing_type} · {i.status}/{i.moderation_status}{i.created_at ? ` · ${formatPhilippineDate(i.created_at)}` : ''}</Text><Text style={s.price}>{money(i.price)}</Text></Card>):<Status state="No listings match these report filters."/>}<Heading title="Transactions"/>{reportTxs.length?reportTxs.map(t=><Card key={t.id}><Pressable accessibilityRole="button" onPress={()=>setExpandedTxId(expandedTxId===t.id?null:t.id)}><View style={s.rowBetween}><Text style={[s.cardTitle,{flex:1}]}>{t.item?.title||'Transaction'}</Text><Ionicons name={expandedTxId===t.id?'chevron-up':'chevron-down'} size={18} color={C.muted}/></View><Text style={s.muted}>{t.status} · {t.buyer?.name} / {t.seller?.name}{t.created_at ? ` · ${formatPhilippineDate(t.created_at)}` : ''}</Text></Pressable>{expandedTxId===t.id&&<TransactionSummary t={t}/>}</Card>):<Status state="No transactions match these report filters."/>}</>}</Page>;
+  const summary: Record<string, number>={
+    items: reportItems.length,
+    pendingListings: reportItems.filter(i=>i.moderation_status==='pending').length,
+    approvedListings: reportItems.filter(i=>i.moderation_status==='approved').length,
+    transactions: reportTxs.length,
+    completed: reportTxs.filter(t=>t.status==='completed').length,
+    gcash: reportTxs.filter(t=>t.payment_method==='gcash').length
+  };
+  const statLabels: Record<string, string>={
+    items: 'Total Items',
+    pendingListings: 'Awaiting Review',
+    approvedListings: 'Live On Campus',
+    transactions: 'Total Exchanges',
+    completed: 'Completed Deals',
+    gcash: 'GCash Payments'
+  };
+  return (
+    <Page refreshing={busy} onRefresh={load}>
+      <Heading title="Campus Platform Report" subtitle="System-wide analytics, exchange velocity, and category distribution."/>
+      {err?<Status state={err} retry={load}/>:busy?<ActivityIndicator color={C.gold}/>:<>
+        <View style={s.stats}>
+          {Object.entries(summary).map(([k,v])=>(
+            <Card key={k} style={s.stat}>
+              <Text style={s.statNum}>{String(v)}</Text>
+              <Text style={s.muted}>{statLabels[k] || k}</Text>
+            </Card>
+          ))}
+        </View>
+        <Text style={s.label}>Exchange Status</Text>
+        <View style={s.rowWrap}>
+          <Choice label="All statuses" selected={!status} onPress={()=>setStatus('')}/>
+          <Choice label="Pending Approval" selected={status==='pending'} onPress={()=>setStatus(status==='pending'?'':'pending')}/>
+          <Choice label="Approved / Active" selected={status==='approved'} onPress={()=>setStatus(status==='approved'?'':'approved')}/>
+          <Choice label="Declined" selected={status==='rejected'} onPress={()=>setStatus(status==='rejected'?'':'rejected')}/>
+          <Choice label="Completed" selected={status==='completed'} onPress={()=>setStatus(status==='completed'?'':'completed')}/>
+        </View>
+        <Text style={s.label}>Listing Type</Text>
+        <View style={s.row}>
+          <Choice label="Sales and rentals" selected={!type} onPress={()=>setType('')}/>
+          <Choice label="For Sale" selected={type==='sell'} onPress={()=>setType(type==='sell'?'':'sell')}/>
+          <Choice label="For Rent" selected={type==='rent'} onPress={()=>setType(type==='rent'?'':'rent')}/>
+        </View>
+        <Text style={s.label}>Academic Category</Text>
+        <View style={s.rowWrap}>
+          <Choice label="All categories" selected={!category} onPress={()=>setCategory('')}/>
+          {categories.map(v=><Choice key={v} label={v} selected={category===v} onPress={()=>setCategory(category===v?'':(v||''))}/>)}
+        </View>
+        <Text style={s.label}>Sort by</Text>
+        <View style={s.rowWrap}>
+          <Choice label="Newest first" selected={sort==='newest'} onPress={()=>setSort('newest')}/>
+          <Choice label="Oldest first" selected={sort==='oldest'} onPress={()=>setSort('oldest')}/>
+          <Choice label="Item title" selected={sort==='title'} onPress={()=>setSort('title')}/>
+          <Choice label="Status" selected={sort==='status'} onPress={()=>setSort('status')}/>
+        </View>
+        <Heading title="Campus Listings"/>
+        {reportItems.length?reportItems.map(i=>(
+          <Card key={i.id}>
+            <Text style={s.cardTitle}>{i.title}</Text>
+            <Text style={s.muted}>{i.user?.name} · {i.category} · {i.listing_type === 'rent' ? 'For Rent' : 'For Sale'} · {i.status?.toUpperCase()} / Moderation: {i.moderation_status?.toUpperCase()}{i.created_at ? ` · ${formatPhilippineDate(i.created_at)}` : ''}</Text>
+            <Text style={s.price}>{money(i.price)}{i.listing_type === 'rent' ? ' / day' : ''}</Text>
+          </Card>
+        )):<Status state="No listings match these report filters."/>}
+        <Heading title="Campus Transactions"/>
+        {reportTxs.length?reportTxs.map(t=>(
+          <Card key={t.id}>
+            <Pressable accessibilityRole="button" onPress={()=>setExpandedTxId(expandedTxId===t.id?null:t.id)}>
+              <View style={s.rowBetween}>
+                <Text style={[s.cardTitle,{flex:1}]}>{t.item?.title||'Transaction'}</Text>
+                <Ionicons name={expandedTxId===t.id?'chevron-up':'chevron-down'} size={18} color={C.muted}/>
+              </View>
+              <Text style={s.muted}>{t.status?.toUpperCase()} · Buyer: {t.buyer?.name} / Seller: {t.seller?.name}{t.created_at ? ` · ${formatPhilippineDate(t.created_at)}` : ''}</Text>
+            </Pressable>
+            {expandedTxId===t.id&&<TransactionSummary t={t}/>}
+          </Card>
+        )):<Status state="No transactions match these report filters."/>}
+      </>}
+    </Page>
+  );
 }
 
 function TabsRoot() {
