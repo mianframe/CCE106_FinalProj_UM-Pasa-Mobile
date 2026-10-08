@@ -274,34 +274,36 @@ function BrowseScreen({ navigation }: any) {
       <View style={s.heroGlow}/>
     </View>
 
-    <Card style={s.searchPanel}>
+    <View style={s.searchPanel}>
       <Text style={s.searchLabel}>Search campus resources</Text>
       <View style={s.searchRow}>
         <View style={s.searchInputWrap}>
-          <Ionicons name="search-outline" size={18} color={C.muted} style={{ marginLeft: 12 }} />
+          <Ionicons name="search-outline" size={19} color={isDark ? C.gold : '#8A6500'} style={{ marginLeft: 14, marginRight: 6 }} />
           <TextInput
             value={q}
             onChangeText={setQ}
             onSubmitEditing={load}
             returnKeyType="search"
-            placeholder="Search items, categories, or course code (e.g. IT 106)"
+            placeholder="Search items, categories, or course code…"
             placeholderTextColor={C.muted}
+            selectionColor={C.gold}
+            cursorColor={C.gold}
             style={s.searchInput}
           />
           {q ? (
-            <Pressable onPress={() => setQ('')} hitSlop={8} style={{ paddingRight: 12 }}>
-              <Ionicons name="close-circle" size={17} color={C.muted} />
+            <Pressable onPress={() => setQ('')} hitSlop={8} style={{ paddingHorizontal: 6 }}>
+              <Ionicons name="close-circle" size={18} color={C.muted} />
             </Pressable>
           ) : null}
+          <Pressable accessibilityRole="button" accessibilityLabel="Search" onPress={load} style={s.searchInlineButton}>
+            <LinearGradient colors={['#BA1B1B', '#990000', '#770000']} style={s.searchInlineButtonGradient}>
+              <Ionicons name="arrow-forward" size={17} color="#FFFFFF" />
+            </LinearGradient>
+          </Pressable>
         </View>
-        <Pressable accessibilityRole="button" onPress={load} style={s.searchButton}>
-          <LinearGradient colors={['#BA1B1B', '#990000', '#770000']} style={s.searchButtonGradient}>
-            <Ionicons name="search" size={18} color="#FFFFFF" />
-          </LinearGradient>
-        </Pressable>
       </View>
       <Text style={s.searchHint}>Try “Calculators”, “Uniforms”, “Drafting”, or course codes like “IT 101” or “ACT 211”.</Text>
-    </Card>
+    </View>
 
     <View style={s.sectionTop}><View><Text style={s.sectionKicker}>Campus feed</Text><Text style={s.sectionTitle}>Available resources</Text></View><Text style={s.resultCount}>{items.length} found</Text></View>
     <Text style={s.filterLabel}>Listing type</Text>
@@ -3379,14 +3381,24 @@ function ConversationScreen({ route, navigation }: any) {
   const [keyboardVisible, setKeyboardVisible] = useState(false);
   const scrollRef = useRef<ScrollView>(null);
 
+  const scrollToBottom = useCallback((animated = true) => {
+    setTimeout(() => scrollRef.current?.scrollToEnd({ animated }), 50);
+    setTimeout(() => scrollRef.current?.scrollToEnd({ animated }), 260);
+  }, []);
+
   useEffect(() => {
-    const showSub = Keyboard.addListener(Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow', () => setKeyboardVisible(true));
-    const hideSub = Keyboard.addListener(Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide', () => setKeyboardVisible(false));
+    const showSub = Keyboard.addListener(Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow', () => {
+      setKeyboardVisible(true);
+      scrollToBottom();
+    });
+    const hideSub = Keyboard.addListener(Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide', () => {
+      setKeyboardVisible(false);
+    });
     return () => {
       showSub.remove();
       hideSub.remove();
     };
-  }, []);
+  }, [scrollToBottom]);
 
   const load = useCallback(async () => {
     try {
@@ -3524,7 +3536,7 @@ function ConversationScreen({ route, navigation }: any) {
   const person = c ? (c.starter_id === user?.id ? c.recipient : c.starter) : undefined;
 
   return (
-    <SafeAreaView edges={['left', 'right', 'bottom']} style={{ flex: 1, backgroundColor: C.bg }}>
+    <SafeAreaView edges={['left', 'right']} style={{ flex: 1, backgroundColor: C.bg }}>
       <KeyboardAvoidingView
         style={{ flex: 1 }}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
@@ -3988,61 +4000,38 @@ function ConversationScreen({ route, navigation }: any) {
           )}
         </ScrollView>
 
-        {/* Quick action chips (Fixed height, prevents 50% screen flex expansion) */}
-        <View style={{
-          height: 46,
-          backgroundColor: C.panel,
-          borderTopWidth: 1,
-          borderTopColor: C.border,
-          justifyContent: 'center',
-        }}>
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={{ paddingHorizontal: 12, gap: 8, flexDirection: 'row', alignItems: 'center' }}
-            style={{ flexGrow: 0, height: 46 }}
-          >
-            {/* Template picker button */}
-            <Pressable
-              accessibilityRole="button"
-              onPress={() => {
-                const activeTemplates = isAdmin ? ADMIN_TEMPLATES : STUDENT_TEMPLATES;
-                Alert.alert(
-                  isAdmin ? 'Admin Response Templates' : 'Quick Message Templates',
-                  'Select a pre-written template to insert into your message:',
-                  [
-                    ...activeTemplates.map(t => ({
-                      text: t.title,
-                      onPress: () => setBody(t.text),
-                    })),
-                    { text: 'Cancel', style: 'cancel' as const },
-                  ]
-                );
-              }}
-              style={{
-                flexDirection: 'row',
-                alignItems: 'center',
-                gap: 5,
-                paddingHorizontal: 11,
-                paddingVertical: 6,
-                borderRadius: 14,
-                backgroundColor: isDark ? '#3A1414' : '#FEE2E2',
-                borderWidth: 1,
-                borderColor: isDark ? '#EF4444' : '#8B0000',
-              }}
+        {/* Quick action chips (Hidden when keyboard is open to maximize message reading area) */}
+        {!keyboardVisible && (
+          <View style={{
+            height: 46,
+            backgroundColor: C.panel,
+            borderTopWidth: 1,
+            borderTopColor: C.border,
+            justifyContent: 'center',
+          }}>
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={{ paddingHorizontal: 12, gap: 8, flexDirection: 'row', alignItems: 'center' }}
+              style={{ flexGrow: 0, height: 46 }}
             >
-              <Ionicons name="documents-outline" size={13} color={isDark ? '#FCA5A5' : '#8B0000'} />
-              <Text style={{ fontSize: 12, fontWeight: '800', color: isDark ? '#FCA5A5' : '#8B0000' }}>
-                Templates ▾
-              </Text>
-            </Pressable>
-
-            {/* Quick Template Chips */}
-            {(isAdmin ? ADMIN_TEMPLATES : STUDENT_TEMPLATES).map((tmpl, idx) => (
+              {/* Template picker button */}
               <Pressable
-                key={idx}
                 accessibilityRole="button"
-                onPress={() => setBody(tmpl.text)}
+                onPress={() => {
+                  const activeTemplates = isAdmin ? ADMIN_TEMPLATES : STUDENT_TEMPLATES;
+                  Alert.alert(
+                    isAdmin ? 'Admin Response Templates' : 'Quick Message Templates',
+                    'Select a pre-written template to insert into your message:',
+                    [
+                      ...activeTemplates.map(t => ({
+                        text: t.title,
+                        onPress: () => setBody(t.text),
+                      })),
+                      { text: 'Cancel', style: 'cancel' as const },
+                    ]
+                  );
+                }}
                 style={{
                   flexDirection: 'row',
                   alignItems: 'center',
@@ -4050,73 +4039,44 @@ function ConversationScreen({ route, navigation }: any) {
                   paddingHorizontal: 11,
                   paddingVertical: 6,
                   borderRadius: 14,
-                  backgroundColor: C.panel2,
+                  backgroundColor: isDark ? '#3A1414' : '#FEE2E2',
                   borderWidth: 1,
-                  borderColor: C.border,
+                  borderColor: isDark ? '#EF4444' : '#8B0000',
                 }}
               >
-                <Text style={{ fontSize: 12, fontWeight: '700', color: C.white }}>
-                  {tmpl.label}
+                <Ionicons name="documents-outline" size={13} color={isDark ? '#FCA5A5' : '#8B0000'} />
+                <Text style={{ fontSize: 12, fontWeight: '800', color: isDark ? '#FCA5A5' : '#8B0000' }}>
+                  Templates ▾
                 </Text>
               </Pressable>
-            ))}
 
-            <Pressable
-              accessibilityRole="button"
-              onPress={() => setShowPropose(prev => !prev)}
-              style={{
-                flexDirection: 'row',
-                alignItems: 'center',
-                gap: 5,
-                paddingHorizontal: 11,
-                paddingVertical: 6,
-                borderRadius: 14,
-                backgroundColor: C.panel2,
-                borderWidth: 1,
-                borderColor: C.border,
-              }}
-            >
-              <Ionicons name="calendar-outline" size={13} color={C.gold} />
-              <Text style={{ fontSize: 12, fontWeight: '700', color: C.white }}>Propose new time</Text>
-            </Pressable>
+              {/* Quick Template Chips */}
+              {(isAdmin ? ADMIN_TEMPLATES : STUDENT_TEMPLATES).map((tmpl, idx) => (
+                <Pressable
+                  key={idx}
+                  accessibilityRole="button"
+                  onPress={() => setBody(tmpl.text)}
+                  style={{
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    gap: 5,
+                    paddingHorizontal: 11,
+                    paddingVertical: 6,
+                    borderRadius: 14,
+                    backgroundColor: C.panel2,
+                    borderWidth: 1,
+                    borderColor: C.border,
+                  }}
+                >
+                  <Text style={{ fontSize: 12, fontWeight: '700', color: C.white }}>
+                    {tmpl.label}
+                  </Text>
+                </Pressable>
+              ))}
 
-            <Pressable
-              accessibilityRole="button"
-              onPress={() => {
-                Alert.alert(
-                  'UM Tagum College Safe Spots',
-                  'Choose a monitored campus exchange location at UMTC:',
-                  [
-                    { text: '[Main] Library & Learning Center', onPress: () => { setLocation('Main Campus Library & Learning Center'); setShowPropose(true); } },
-                    { text: '[Main] Canteen (Mabini)', onPress: () => { setLocation('Main Campus Canteen (Mabini)'); setShowPropose(true); } },
-                    { text: '[Main] Gym & Registrar Lobby', onPress: () => { setLocation('Main Gym / Admin & Registrar Lobby'); setShowPropose(true); } },
-                    { text: '[Visayan] IT Labs Lobby', onPress: () => { setLocation('Engineering & IT Labs Bldg Lobby (Visayan)'); setShowPropose(true); } },
-                    { text: '[Visayan] Library Study Zone', onPress: () => { setLocation('Visayan Campus Library Study Zone'); setShowPropose(true); } },
-                    { text: '[Visayan] Canteen & Gazebo', onPress: () => { setLocation('Visayan Campus Canteen & Gazebo'); setShowPropose(true); } },
-                    { text: 'Cancel', style: 'cancel' },
-                  ]
-                );
-              }}
-              style={{
-                flexDirection: 'row',
-                alignItems: 'center',
-                gap: 5,
-                paddingHorizontal: 11,
-                paddingVertical: 6,
-                borderRadius: 14,
-                backgroundColor: C.panel2,
-                borderWidth: 1,
-                borderColor: C.border,
-              }}
-            >
-              <Ionicons name="location-outline" size={13} color={C.red} />
-              <Text style={{ fontSize: 12, fontWeight: '700', color: C.white }}>Share campus spot</Text>
-            </Pressable>
-
-            {c?.item && (
               <Pressable
                 accessibilityRole="button"
-                onPress={() => setBody(`Hi! Is the ${c.item?.title} still available for campus meetup?`)}
+                onPress={() => setShowPropose(prev => !prev)}
                 style={{
                   flexDirection: 'row',
                   alignItems: 'center',
@@ -4129,12 +4089,66 @@ function ConversationScreen({ route, navigation }: any) {
                   borderColor: C.border,
                 }}
               >
-                <Ionicons name="chatbubble-outline" size={13} color={C.cream} />
-                <Text style={{ fontSize: 12, fontWeight: '700', color: C.cream }}>Ask availability</Text>
+                <Ionicons name="calendar-outline" size={13} color={C.gold} />
+                <Text style={{ fontSize: 12, fontWeight: '700', color: C.white }}>Propose new time</Text>
               </Pressable>
-            )}
-          </ScrollView>
-        </View>
+
+              <Pressable
+                accessibilityRole="button"
+                onPress={() => {
+                  Alert.alert(
+                    'UM Tagum College Safe Spots',
+                    'Choose a monitored campus exchange location at UMTC:',
+                    [
+                      { text: '[Main] Library & Learning Center', onPress: () => { setLocation('Main Campus Library & Learning Center'); setShowPropose(true); } },
+                      { text: '[Main] Canteen (Mabini)', onPress: () => { setLocation('Main Campus Canteen (Mabini)'); setShowPropose(true); } },
+                      { text: '[Main] Gym & Registrar Lobby', onPress: () => { setLocation('Main Gym / Admin & Registrar Lobby'); setShowPropose(true); } },
+                      { text: '[Visayan] IT Labs Lobby', onPress: () => { setLocation('Engineering & IT Labs Bldg Lobby (Visayan)'); setShowPropose(true); } },
+                      { text: '[Visayan] Library Study Zone', onPress: () => { setLocation('Visayan Campus Library Study Zone'); setShowPropose(true); } },
+                      { text: '[Visayan] Canteen & Gazebo', onPress: () => { setLocation('Visayan Campus Canteen & Gazebo'); setShowPropose(true); } },
+                      { text: 'Cancel', style: 'cancel' },
+                    ]
+                  );
+                }}
+                style={{
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  gap: 5,
+                  paddingHorizontal: 11,
+                  paddingVertical: 6,
+                  borderRadius: 14,
+                  backgroundColor: C.panel2,
+                  borderWidth: 1,
+                  borderColor: C.border,
+                }}
+              >
+                <Ionicons name="location-outline" size={13} color={C.red} />
+                <Text style={{ fontSize: 12, fontWeight: '700', color: C.white }}>Share campus spot</Text>
+              </Pressable>
+
+              {c?.item && (
+                <Pressable
+                  accessibilityRole="button"
+                  onPress={() => setBody(`Hi! Is the ${c.item?.title} still available for campus meetup?`)}
+                  style={{
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    gap: 5,
+                    paddingHorizontal: 11,
+                    paddingVertical: 6,
+                    borderRadius: 14,
+                    backgroundColor: C.panel2,
+                    borderWidth: 1,
+                    borderColor: C.border,
+                  }}
+                >
+                  <Ionicons name="chatbubble-outline" size={13} color={C.cream} />
+                  <Text style={{ fontSize: 12, fontWeight: '700', color: C.cream }}>Ask availability</Text>
+                </Pressable>
+              )}
+            </ScrollView>
+          </View>
+        )}
 
         {/* Pinned modern composer */}
         <View
@@ -4171,8 +4185,10 @@ function ConversationScreen({ route, navigation }: any) {
               placeholderTextColor={C.muted}
               multiline
               onFocus={() => {
-                setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 150);
+                scrollToBottom();
               }}
+              selectionColor={C.gold}
+              cursorColor={C.gold}
               style={{
                 flex: 1,
                 minHeight: 44,
@@ -6338,14 +6354,14 @@ function createStyles(_tokens?: ThemeTokens) { return StyleSheet.create({
   heroActions:{flexDirection:'row',alignItems:'center',gap:12,marginTop:17},
   heroLink:{fontSize:11,color:'#f5d99e',fontWeight:'700'},
   heroDivider:{height:14,width:1,backgroundColor:'rgba(255,255,255,.25)'},
-  searchPanel:{padding:14,marginBottom:22,borderRadius:19},
-  searchLabel:{fontSize:9,color:C.muted,fontWeight:'900',letterSpacing:1.25,marginBottom:8},
-  searchRow:{flexDirection:'row',alignItems:'center',gap:8},
-  searchInput:{flex:1,minWidth:0,color:C.white,backgroundColor:C.input,borderWidth:1,borderColor:C.border,borderRadius:11,paddingHorizontal:12,paddingVertical:10,fontSize:14,minHeight:44},
-  searchButton:{width:48,height:48,borderRadius:13,overflow:'hidden'},
-  searchButtonGradient:{flex:1,alignItems:'center',justifyContent:'center'},
-  searchButtonText:{fontSize:11,color:'#ffffff',fontWeight:'900',letterSpacing:.8},
-  searchHint:{color:C.muted,fontSize:11,marginTop:8},
+  searchPanel:{marginBottom:18,marginTop:4},
+  searchLabel:{fontSize:11,color:C.muted,fontWeight:'700',marginBottom:8},
+  searchRow:{flexDirection:'row',alignItems:'center'},
+  searchInputWrap:{flex:1,flexDirection:'row',alignItems:'center',backgroundColor:C.panel,borderWidth:1.5,borderColor:C.border,borderRadius:16,paddingVertical:4,paddingRight:6,minHeight:50},
+  searchInput:{flex:1,minWidth:0,color:C.white,backgroundColor:'transparent',borderWidth:0,paddingHorizontal:8,paddingVertical:8,fontSize:14.5},
+  searchInlineButton:{width:38,height:38,borderRadius:12,overflow:'hidden'},
+  searchInlineButtonGradient:{flex:1,alignItems:'center',justifyContent:'center'},
+  searchHint:{color:C.muted,fontSize:11.5,marginTop:8,paddingHorizontal:2},
   sectionTop:{flexDirection:'row',alignItems:'flex-end',justifyContent:'space-between',marginBottom:12},
   sectionKicker:{fontSize:9,color:C.gold,fontWeight:'900',letterSpacing:1.8,marginBottom:3},
   sectionTitle:{fontSize:20,color:C.white,fontWeight:'900',letterSpacing:-.3},
@@ -6443,8 +6459,6 @@ function createStyles(_tokens?: ThemeTokens) { return StyleSheet.create({
   txParticipant:{fontSize:12,color:C.white,fontWeight:'600'},
   txMethod:{fontSize:11,color:C.muted,fontWeight:'700'},
   txMeetupSchedule:{fontSize:11,color:C.gold,fontWeight:'700'},
-  // Search Bar
-  searchInputWrap:{flex:1,flexDirection:'row',alignItems:'center',backgroundColor:C.input,borderWidth:1,borderColor:C.border,borderRadius:12},
   // Notifications Screen
   noticeCard:{marginBottom:10,padding:12},
   noticeCardUnread:{borderColor:C.gold,backgroundColor:C.bg===themeTokens.dark.colors.bg?'rgba(246,200,76,.06)':'#FFFDF7'},

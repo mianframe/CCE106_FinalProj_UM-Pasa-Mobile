@@ -32,21 +32,43 @@ function AuthField({
   const { mode } = useTheme();
   const C = themeTokens[mode].colors;
   const s = createStyles(mode);
+  const isDark = mode === 'dark';
+  const isPassword = secureTextEntry !== undefined || label.toLowerCase().includes('password');
+  const [showPassword, setShowPassword] = useState(false);
 
   return (
     <View style={s.fieldWrap}>
       <Text style={s.label}>{label}</Text>
-      <TextInput
-        value={value}
-        onChangeText={onChangeText}
-        placeholder={label}
-        placeholderTextColor={C.muted}
-        secureTextEntry={secureTextEntry}
-        keyboardType={keyboardType}
-        autoCapitalize={autoCapitalize}
-        autoCorrect={false}
-        style={s.field}
-      />
+      <View style={s.inputContainer}>
+        <TextInput
+          value={value}
+          onChangeText={onChangeText}
+          placeholder={label}
+          placeholderTextColor={C.muted}
+          secureTextEntry={isPassword ? !showPassword : secureTextEntry}
+          keyboardType={keyboardType}
+          autoCapitalize={autoCapitalize}
+          autoCorrect={false}
+          style={s.field}
+          selectionColor={C.gold}
+          cursorColor={C.gold}
+        />
+        {isPassword && (
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={showPassword ? 'Hide password' : 'Show password'}
+            onPress={() => setShowPassword(!showPassword)}
+            hitSlop={12}
+            style={s.eyeButton}
+          >
+            <Ionicons
+              name={showPassword ? 'eye-outline' : 'eye-off-outline'}
+              size={20}
+              color={isDark ? C.gold : '#8A6500'}
+            />
+          </Pressable>
+        )}
+      </View>
     </View>
   );
 }
@@ -67,7 +89,7 @@ function AuthLayout({
   return (
     <SafeAreaView edges={['top', 'left', 'right', 'bottom']} style={s.safe}>
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ flex: 1 }}>
-        <ScrollView contentContainerStyle={s.page} keyboardShouldPersistTaps="handled">
+        <ScrollView contentContainerStyle={s.page} keyboardShouldPersistTaps="handled" automaticallyAdjustKeyboardInsets={true}>
           <Image source={require('../../assets/UMPASALOGO.png')} style={s.logo} resizeMode="contain" />
           <View style={s.campusBadge}>
             <Ionicons name="school-outline" size={13} color={C.gold} />
@@ -353,18 +375,30 @@ function createStyles(mode: ThemeMode) {
     },
     title: { fontSize: 24, fontWeight: '900', color: C.white, marginBottom: 5, letterSpacing: -0.3 },
     subtitle: { fontSize: 13, color: C.cream, lineHeight: 19, marginBottom: 16 },
-    fieldWrap: { marginBottom: 12 },
+    fieldWrap: { marginBottom: 14 },
     label: { color: C.cream, fontWeight: '700', fontSize: 13, marginBottom: 6 },
-    field: {
-      color: C.white,
+    inputContainer: {
+      flexDirection: 'row',
+      alignItems: 'center',
       backgroundColor: C.input,
-      borderColor: C.border,
-      borderWidth: 1,
-      borderRadius: 11,
+      borderColor: isDark ? 'rgba(255,255,255,0.18)' : '#D0C3BC',
+      borderWidth: 1.5,
+      borderRadius: 12,
       paddingHorizontal: 12,
+      minHeight: 48,
+    },
+    field: {
+      flex: 1,
+      color: isDark ? '#FFFFFF' : '#181314',
+      backgroundColor: 'transparent',
+      fontSize: 15,
       paddingVertical: 10,
-      fontSize: 14,
       minHeight: 44,
+    },
+    eyeButton: {
+      padding: 6,
+      justifyContent: 'center',
+      alignItems: 'center',
     },
     buttonShell: {
       borderRadius: 14,
