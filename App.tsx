@@ -354,7 +354,7 @@ function BrowseScreen({ navigation }: any) {
     {error ? <Status state={error} icon="alert-circle-outline" retry={load}/> : loading && !items.length ? <View style={s.loadingBlock}><ActivityIndicator color={C.red}/><Text style={s.muted}>Finding campus listings…</Text></View> : !items.length ? <Status state="No approved listings match your search yet. Try adjusting your filters or keywords." icon="search-outline" retry={load}/> : <View style={s.listingGrid}>{items.map(item=><Pressable key={item.id} style={[s.gridItem,{width:(width-43)/2}]} onPress={()=>navigation.navigate('Listing',{id:item.id})}><ItemCard item={item} compact/></Pressable>)}</View>}
   </Page>;
 }
-async function openNotification(n:Notice,navigation:any,isAdmin:boolean) { try { if(!n.is_read) await account.markNotificationRead(n.id); } catch(e) { Alert.alert('Unable to update notification',errorMessage(e));return; } if(n.related_type==='transaction'&&n.related_id)navigation.navigate('Transaction',{id:n.related_id});else if(n.related_type==='conversation'&&n.related_id)navigation.navigate('Conversation',{id:n.related_id});else if(n.related_type==='item'&&n.related_id)navigation.navigate(isAdmin&&n.type==='listing_review'?'AdminItems':'Listing',isAdmin&&n.type==='listing_review'?{itemId:n.related_id}:{id:n.related_id});else Alert.alert('Activity update',n.message); }
+async function openNotification(n:Notice,navigation:any,isAdmin:boolean) { try { if(!n.is_read) await account.markNotificationRead(n.id); } catch(e) { Alert.alert('Unable to update notification',errorMessage(e));return; } if(n.related_type==='transaction'&&n.related_id)navigation.navigate('Transaction',{id:n.related_id});else if(n.related_type==='conversation'&&n.related_id)navigation.navigate('Conversation',{id:n.related_id});else if(n.related_type==='item'&&n.related_id)navigation.navigate(isAdmin?'AdminItems':'Listing',isAdmin?{itemId:n.related_id}:{id:n.related_id});else Alert.alert('Activity update',n.message); }
 function ItemCard({ item, compact = false }: { item: Item; compact?: boolean }) {
   const isRent = item.listing_type === 'rent';
   const isReserved = item.status === 'pending';
@@ -2424,8 +2424,8 @@ function NotificationsScreen({ navigation }: any) {
       navigation.navigate('Conversation', { id: n.related_id });
     } else if (n.related_type === 'item' && n.related_id) {
       navigation.navigate(
-        user?.role === 'admin' && n.type === 'listing_review' ? 'AdminItems' : 'Listing',
-        user?.role === 'admin' && n.type === 'listing_review' ? { itemId: n.related_id } : { id: n.related_id }
+        user?.role === 'admin' ? 'AdminItems' : 'Listing',
+        user?.role === 'admin' ? { itemId: n.related_id } : { id: n.related_id }
       );
     } else {
       Alert.alert('Activity update', n.message);
@@ -5405,6 +5405,12 @@ function AdminScreen({ navigation }: any) {
           </View>
         </View>
         <Heading title="Admin Overview" subtitle="Campus marketplace operations & moderation queue." />
+        <View style={{ marginTop: 8 }}>
+          <Button
+            title={pulse.pending > 0 ? `Review listings (${pulse.pending} pending)` : 'Review listings (0 pending)'}
+            onPress={() => navigation.navigate('AdminItems')}
+          />
+        </View>
       </View>
 
       {/* Platform Pulse 2x2 Grid (Mockup 1) */}
@@ -6656,8 +6662,8 @@ function AppContent() {
       navigationRef.navigate('Conversation', { id: target.related_id });
     } else if (target.related_type === 'item' && target.related_id) {
       navigationRef.navigate(
-        user?.role === 'admin' && target.type === 'listing_review' ? 'AdminItems' : 'Listing',
-        user?.role === 'admin' && target.type === 'listing_review' ? { itemId: target.related_id } : { id: target.related_id }
+        user?.role === 'admin' ? 'AdminItems' : 'Listing',
+        user?.role === 'admin' ? { itemId: target.related_id } : { id: target.related_id }
       );
     } else {
       navigationRef.navigate('Notifications');
