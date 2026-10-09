@@ -249,11 +249,44 @@ function BrowseScreen({ navigation }: any) {
   useEffect(() => { if (filtersInitialized.current) loadRef.current(); else filtersInitialized.current = true; }, [filters]);
   const programsForDepartment = filters.department ? programs[filters.department] || [] : Array.from(new Set(Object.values(programs).flat()));
   const { mode, setMode } = useTheme();
+  const isDark = mode === 'dark';
   const selectedCount = ['condition', 'department', 'program', 'course_code'].filter((key) => filters[key]).length;
   const toggle = (key: string, value: any) => setFilter(key, filters[key] === value ? undefined : value);
   const bannerWidth = width - 68;
-  const isDark = C.bg === themeTokens.dark.colors.bg;
-  return <Page refreshing={loading} onRefresh={load} footer={{navigation}} topSafe={true}>
+  return (
+    <Page
+      refreshing={loading}
+      onRefresh={load}
+      footer={{navigation}}
+      topSafe={true}
+      floatingAction={!user ? (
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Toggle light or dark theme"
+          onPress={() => setMode(mode === 'dark' ? 'light' : 'dark')}
+          style={{
+            position: 'absolute',
+            bottom: 24,
+            right: 20,
+            width: 48,
+            height: 48,
+            borderRadius: 24,
+            backgroundColor: isDark ? '#2D1616' : '#FFFFFF',
+            alignItems: 'center',
+            justifyContent: 'center',
+            borderWidth: 1.5,
+            borderColor: C.gold,
+            shadowColor: '#000',
+            shadowOffset: { width: 0, height: 3 },
+            shadowOpacity: 0.25,
+            shadowRadius: 6,
+            elevation: 6,
+          }}
+        >
+          <Ionicons name={mode === 'dark' ? 'sunny' : 'moon'} size={22} color={C.gold} />
+        </Pressable>
+      ) : undefined}
+    >
     <View style={s.marketHero}>
       <LinearGradient colors={['#4A1210', '#2B1214', '#151419']} start={{x:0,y:0}} end={{x:1,y:1}} style={s.marketHeroGradient}>
         <View style={s.brandRow}>
@@ -352,9 +385,32 @@ function BrowseScreen({ navigation }: any) {
       <Field label="Course code" value={filters.course_code||''} onChangeText={(v:string)=>setFilter('course_code',v||undefined)} autoCapitalize="characters" onSubmitEditing={load}/>
     </Card>}
     {error ? <Status state={error} icon="alert-circle-outline" retry={load}/> : loading && !items.length ? <View style={s.loadingBlock}><ActivityIndicator color={C.red}/><Text style={s.muted}>Finding campus listings…</Text></View> : !items.length ? <Status state="No approved listings match your search yet. Try adjusting your filters or keywords." icon="search-outline" retry={load}/> : <View style={s.listingGrid}>{items.map(item=><Pressable key={item.id} style={[s.gridItem,{width:(width-43)/2}]} onPress={()=>navigation.navigate('Listing',{id:item.id})}><ItemCard item={item} compact/></Pressable>)}</View>}
-  </Page>;
+  </Page>
+  );
 }
-async function openNotification(n:Notice,navigation:any,isAdmin:boolean) { try { if(!n.is_read) await account.markNotificationRead(n.id); } catch(e) { Alert.alert('Unable to update notification',errorMessage(e));return; } if(n.related_type==='transaction'&&n.related_id)navigation.navigate('Transaction',{id:n.related_id});else if(n.related_type==='conversation'&&n.related_id)navigation.navigate('Conversation',{id:n.related_id});else if(n.related_type==='item'&&n.related_id)navigation.navigate(isAdmin?'AdminItems':'Listing',isAdmin?{itemId:n.related_id}:{id:n.related_id});else Alert.alert('Activity update',n.message); }
+async function openNotification(n:Notice,navigation:any,isAdmin:boolean) {
+  try {
+    if(!n.is_read) await account.markNotificationRead(n.id);
+  } catch(e) {
+    Alert.alert('Unable to update notification', errorMessage(e));
+    return;
+  }
+  if (n.related_type === 'transaction' && n.related_id) {
+    navigation.navigate('Transaction', { id: n.related_id });
+  } else if (n.related_type === 'conversation' && n.related_id) {
+    navigation.navigate('Conversation', { id: n.related_id });
+  } else if (n.related_type === 'item' && n.related_id) {
+    navigation.navigate(isAdmin ? 'AdminItems' : 'Listing', isAdmin ? { itemId: n.related_id } : { id: n.related_id });
+  } else if (n.type === 'listing_rejected' || n.type === 'listing_approved') {
+    navigation.navigate('MyListings');
+  } else if (n.type === 'request' || n.type === 'approval' || n.type === 'completion') {
+    navigation.navigate(isAdmin ? 'AdminTransactions' : 'Transactions');
+  } else if (n.type === 'message') {
+    navigation.navigate('Messages');
+  } else {
+    Alert.alert('Campus Notification', n.message);
+  }
+}
 function ItemCard({ item, compact = false }: { item: Item; compact?: boolean }) {
   const isRent = item.listing_type === 'rent';
   const isReserved = item.status === 'pending';
@@ -2515,8 +2571,14 @@ function NotificationsScreen({ navigation }: any) {
         user?.role === 'admin' ? 'AdminItems' : 'Listing',
         user?.role === 'admin' ? { itemId: n.related_id } : { id: n.related_id }
       );
+    } else if (n.type === 'listing_rejected' || n.type === 'listing_approved') {
+      navigation.navigate('MyListings');
+    } else if (n.type === 'request' || n.type === 'approval' || n.type === 'completion') {
+      navigation.navigate(user?.role === 'admin' ? 'AdminTransactions' : 'Transactions');
+    } else if (n.type === 'message') {
+      navigation.navigate('Messages');
     } else {
-      Alert.alert('Activity update', n.message);
+      Alert.alert('Campus Notification', n.message);
     }
   };
 
