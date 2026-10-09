@@ -3521,6 +3521,7 @@ function ConversationScreen({ route, navigation }: any) {
   const insets = useSafeAreaInsets();
   const isDark = C.bg === themeTokens.dark.colors.bg;
   const [c, setC] = useState<Conversation>();
+  const [partnerRating, setPartnerRating] = useState<{ average: number | null; count: number } | null>(null);
   const [body, setBody] = useState('');
   const [location, setLocation] = useState('');
   const [meetupDate, setMeetupDate] = useState<Date | null>(null);
@@ -3685,6 +3686,22 @@ function ConversationScreen({ route, navigation }: any) {
 
   const person = c ? (c.starter_id === user?.id ? c.recipient : c.starter) : undefined;
 
+  useEffect(() => {
+    if (!person?.id) return;
+    let active = true;
+    profiles.reviews(person.id)
+      .then((revs: any[]) => {
+        if (!active) return;
+        const count = revs.length;
+        const avg = count ? revs.reduce((sum, r) => sum + Number(r.rating || 5), 0) / count : null;
+        setPartnerRating({ average: avg, count });
+      })
+      .catch(() => {
+        if (active) setPartnerRating({ average: null, count: 0 });
+      });
+    return () => { active = false; };
+  }, [person?.id]);
+
   return (
     <SafeAreaView edges={['left', 'right']} style={{ flex: 1, backgroundColor: C.bg }}>
       <KeyboardAvoidingView
@@ -3729,7 +3746,11 @@ function ConversationScreen({ route, navigation }: any) {
                   <Text numberOfLines={1} style={{ fontSize: 11.5, color: C.muted }}>
                     {person?.role === 'admin' ? 'Campus administrator' : 'UM Tagum student'}
                   </Text>
-                  <Text style={{ fontSize: 11, color: C.gold, fontWeight: '700' }}>★ 5.0</Text>
+                  <Text style={{ fontSize: 11, color: C.gold, fontWeight: '700' }}>
+                    {partnerRating && partnerRating.count > 0 && partnerRating.average !== null
+                      ? `★ ${partnerRating.average.toFixed(1)} (${partnerRating.count})`
+                      : '★ New'}
+                  </Text>
                   <Text style={{ fontSize: 11, color: C.gold, fontWeight: '700' }}>· Reviews ›</Text>
                 </View>
               </View>
@@ -5577,8 +5598,8 @@ function ProfileReviewsScreen({ route, navigation }: any) {
   const initials = targetName.split(' ').map((n: string) => n[0]).join('').slice(0, 2).toUpperCase() || 'UM';
   
   const count = reviews.length;
-  const average = count ? (reviews.reduce((sum, r) => sum + Number(r.rating || 5), 0) / count) : 5.0;
-  const displayRating = average.toFixed(1);
+  const average = count ? (reviews.reduce((sum, r) => sum + Number(r.rating || 5), 0) / count) : null;
+  const displayRating = average !== null ? average.toFixed(1) : 'No ratings yet';
 
   // Distribution percentages
   const count5 = reviews.filter(r => Number(r.rating) === 5).length;
@@ -5587,7 +5608,7 @@ function ProfileReviewsScreen({ route, navigation }: any) {
   const count2 = reviews.filter(r => Number(r.rating) === 2).length;
   const count1 = reviews.filter(r => Number(r.rating) === 1).length;
 
-  const pct5 = count ? Math.round((count5 / count) * 100) : 100;
+  const pct5 = count ? Math.round((count5 / count) * 100) : 0;
   const pct4 = count ? Math.round((count4 / count) * 100) : 0;
   const pct3 = count ? Math.round((count3 / count) * 100) : 0;
   const pct2 = count ? Math.round((count2 / count) * 100) : 0;
@@ -5699,7 +5720,7 @@ function ProfileReviewsScreen({ route, navigation }: any) {
         {/* 4 Stat Metric Cards Row */}
         <View style={{ flexDirection: 'row', gap: 8, marginTop: 12 }}>
           <View style={{ flex: 1, backgroundColor: isDark ? C.panel2 : '#FAF7F5', borderRadius: 12, paddingVertical: 10, alignItems: 'center', borderWidth: 1, borderColor: isDark ? 'rgba(255,255,255,0.06)' : '#EFE8E3' }}>
-            <Text style={{ fontSize: 15, fontWeight: '900', color: C.red }}>100%</Text>
+            <Text style={{ fontSize: 15, fontWeight: '900', color: C.red }}>{count ? '100%' : '—'}</Text>
             <Text style={{ fontSize: 10, fontWeight: '700', color: C.muted, marginTop: 2 }}>On-time</Text>
           </View>
           <View style={{ flex: 1, backgroundColor: isDark ? C.panel2 : '#FAF7F5', borderRadius: 12, paddingVertical: 10, alignItems: 'center', borderWidth: 1, borderColor: isDark ? 'rgba(255,255,255,0.06)' : '#EFE8E3' }}>
@@ -5711,7 +5732,7 @@ function ProfileReviewsScreen({ route, navigation }: any) {
             <Text style={{ fontSize: 10, fontWeight: '700', color: C.muted, marginTop: 2 }}>Canceled</Text>
           </View>
           <View style={{ flex: 1, backgroundColor: isDark ? C.panel2 : '#FAF7F5', borderRadius: 12, paddingVertical: 10, alignItems: 'center', borderWidth: 1, borderColor: isDark ? 'rgba(255,255,255,0.06)' : '#EFE8E3' }}>
-            <Text style={{ fontSize: 15, fontWeight: '900', color: C.red }}>100%</Text>
+            <Text style={{ fontSize: 15, fontWeight: '900', color: C.red }}>{count ? '100%' : '—'}</Text>
             <Text style={{ fontSize: 10, fontWeight: '700', color: C.muted, marginTop: 2 }}>Response</Text>
           </View>
         </View>
@@ -5734,28 +5755,54 @@ function ProfileReviewsScreen({ route, navigation }: any) {
         </View>
 
         {/* Large Score + Stars Box */}
-        <View style={{
-          backgroundColor: isDark ? C.panel2 : '#FAF7F5',
-          borderRadius: 16,
-          paddingVertical: 16,
-          alignItems: 'center',
-          justifyContent: 'center',
-          borderWidth: 1,
-          borderColor: isDark ? 'rgba(255,255,255,0.06)' : '#EFE8E3',
-          marginBottom: 14,
-        }}>
-          <Text style={{ fontSize: 36, fontWeight: '900', color: C.white, letterSpacing: -1 }}>
-            {displayRating}
-          </Text>
-          <View style={{ flexDirection: 'row', gap: 3, marginVertical: 4 }}>
-            {[1, 2, 3, 4, 5].map(i => (
-              <Ionicons key={i} name="star" size={18} color="#EAB308" />
-            ))}
+        {count > 0 ? (
+          <View style={{
+            backgroundColor: isDark ? C.panel2 : '#FAF7F5',
+            borderRadius: 16,
+            paddingVertical: 16,
+            alignItems: 'center',
+            justifyContent: 'center',
+            borderWidth: 1,
+            borderColor: isDark ? 'rgba(255,255,255,0.06)' : '#EFE8E3',
+            marginBottom: 14,
+          }}>
+            <Text style={{ fontSize: 36, fontWeight: '900', color: C.white, letterSpacing: -1 }}>
+              {displayRating}
+            </Text>
+            <View style={{ flexDirection: 'row', gap: 3, marginVertical: 4 }}>
+              {[1, 2, 3, 4, 5].map(i => (
+                <Ionicons
+                  key={i}
+                  name={i <= Math.round(average ?? 0) ? "star" : "star-outline"}
+                  size={18}
+                  color="#EAB308"
+                />
+              ))}
+            </View>
+            <Text style={{ fontSize: 12, color: C.muted, fontWeight: '600', marginTop: 2 }}>
+              {count} verified review{count === 1 ? '' : 's'}
+            </Text>
           </View>
-          <Text style={{ fontSize: 12, color: C.muted, fontWeight: '600', marginTop: 2 }}>
-            {count ? `${count} verified review${count === 1 ? '' : 's'}` : 'No verified reviews yet'}
-          </Text>
-        </View>
+        ) : (
+          <View style={{
+            backgroundColor: isDark ? C.panel2 : '#FAF7F5',
+            borderRadius: 16,
+            paddingVertical: 18,
+            alignItems: 'center',
+            justifyContent: 'center',
+            borderWidth: 1,
+            borderColor: isDark ? 'rgba(255,255,255,0.06)' : '#EFE8E3',
+            marginBottom: 14,
+          }}>
+            <Ionicons name="star-outline" size={30} color={C.muted} style={{ marginBottom: 4 }} />
+            <Text style={{ fontSize: 17, fontWeight: '800', color: C.white }}>
+              No ratings yet
+            </Text>
+            <Text style={{ fontSize: 12, color: C.muted, fontWeight: '600', marginTop: 2 }}>
+              No verified reviews recorded for this student yet
+            </Text>
+          </View>
+        )}
 
         {/* Breakdown Progress Bars */}
         <View style={{ gap: 6 }}>
