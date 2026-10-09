@@ -1316,17 +1316,24 @@ function ListingFormScreen({ route, navigation }: any) {
     try {
       const result = await ImagePicker.launchImageLibraryAsync({
         mediaTypes: ['images'],
-        allowsEditing: true,
-        aspect: [4, 3],
+        allowsMultipleSelection: true,
+        selectionLimit: 7,
         quality: 0.7,
       });
       if (!result.canceled && result.assets && result.assets.length > 0) {
+        if (result.assets.length > 7) {
+          Alert.alert('Upload limit', 'Maximum of 7 photos allowed per listing.');
+          return;
+        }
         const asset = result.assets[0];
         if (asset.fileSize && asset.fileSize > 5 * 1024 * 1024) {
           Alert.alert('Image too large', 'Please select a photo smaller than 5MB.');
           return;
         }
         setImageUri(asset.uri);
+        if (result.assets.length > 1) {
+          Alert.alert('Photos selected', `${result.assets.length} photos selected. The first photo will be used as the primary listing cover.`);
+        }
       }
     } catch (err) {
       Alert.alert('Unable to pick image', errorMessage(err));
@@ -1615,8 +1622,14 @@ function DashboardScreen({ navigation }: any) {
     <Page topSafe onRefresh={load}>
       <View style={{ flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 18 }}>
         <View style={{ flex: 1, paddingRight: 12 }}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 4 }}>
+            <Ionicons name={user?.role === 'admin' ? 'shield-checkmark' : 'school-outline'} size={14} color={C.gold} />
+            <Text style={{ fontSize: 11, fontWeight: '800', color: C.gold, letterSpacing: 0.3 }}>
+              {user?.role === 'admin' ? 'UM CAMPUS ADMINISTRATOR' : 'UM TAGUM COLLEGE STUDENT'}
+            </Text>
+          </View>
           <Text style={s.heading}>{`Hello, ${user?.name?.split(' ')[0] || 'there'}`}</Text>
-          <Text style={s.subheading}>{user?.role === 'admin' ? 'UM-Pasa campus administration & moderation' : 'UM Tagum College student marketplace'}</Text>
+          <Text style={s.subheading}>{user?.role === 'admin' ? 'UM-Pasa administration & moderation portal' : 'Welcome to your verified campus marketplace'}</Text>
         </View>
         <Pressable
           accessibilityRole="button"
@@ -1712,7 +1725,51 @@ function DashboardScreen({ navigation }: any) {
             </Pressable>
           </>
         )}
-      </View>{user?.role==='admin'&&<><MiniBars title="Listings by category" data={data.charts?.categories}/><MiniBars title="Listings by department" data={data.charts?.departments}/><MiniBars title="Monthly transactions" data={data.charts?.monthly}/></>}{user?.role!=='admin'&&data.notifications?.length>0&&<><Heading title="Recent activity"/>{data.notifications.map((n:Notice)=><Pressable key={n.id} accessibilityRole="button" onPress={()=>openNotification(n,navigation,user?.role==='admin')}><Card><View style={s.rowBetween}><Text style={[s.body,{color:n.is_read?C.muted:C.cream,flex:1}]}>{n.message}</Text><Ionicons name="chevron-forward" size={17} color={C.muted}/></View></Card></Pressable>)}</>}<View style={s.sectionTop}><Text style={s.sectionTitle}>Recent listings</Text><Pressable onPress={()=>navigation.navigate('Browse')}><Text style={{color:C.gold,fontWeight:'700'}}>See all ›</Text></Pressable></View><View style={s.listingGrid}>{(data.recent_items || []).map((item: Item) => <Pressable key={item.id} style={[s.gridItem,{width:(width-43)/2}]} onPress={() => navigation.navigate('Listing', { id: item.id })}><ItemCard item={item} compact/></Pressable>)}</View>
+      </View>
+      {user?.role==='admin'&&<><MiniBars title="Listings by category" data={data.charts?.categories}/><MiniBars title="Listings by department" data={data.charts?.departments}/><MiniBars title="Monthly transactions" data={data.charts?.monthly}/></>}
+      {user?.role !== 'admin' && data.notifications?.length > 0 && (
+        <Card style={{ marginBottom: 16 }}>
+          <View style={[s.rowBetween, { marginBottom: 8 }]}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+              <Ionicons name="notifications" size={15} color={C.gold} />
+              <Text style={{ fontSize: 13, fontWeight: '800', color: C.white }}>Recent activity</Text>
+            </View>
+            <Pressable onPress={() => navigation.navigate('Notifications')}>
+              <Text style={{ color: C.gold, fontSize: 11.5, fontWeight: '700' }}>
+                View all ({data.notifications.length}) ›
+              </Text>
+            </Pressable>
+          </View>
+          {data.notifications.slice(0, 2).map((n: Notice, idx: number) => (
+            <Pressable
+              key={n.id}
+              accessibilityRole="button"
+              onPress={() => openNotification(n, navigation, false)}
+              style={{
+                flexDirection: 'row',
+                alignItems: 'center',
+                paddingVertical: 7,
+                borderTopWidth: idx > 0 ? 1 : 0,
+                borderTopColor: C.border,
+              }}
+            >
+              <View style={{
+                width: 6,
+                height: 6,
+                borderRadius: 3,
+                backgroundColor: n.is_read ? 'transparent' : C.red,
+                marginRight: 8,
+              }} />
+              <Text numberOfLines={2} style={[s.body, { color: n.is_read ? C.muted : C.white, flex: 1, marginVertical: 0, fontSize: 12.5 }]}>
+                {n.message}
+              </Text>
+              <Ionicons name="chevron-forward" size={14} color={C.muted} style={{ marginLeft: 6 }} />
+            </Pressable>
+          ))}
+        </Card>
+      )}
+      <View style={s.sectionTop}><Text style={s.sectionTitle}>Recent listings</Text><Pressable onPress={()=>navigation.navigate('Browse')}><Text style={{color:C.gold,fontWeight:'700'}}>See all ›</Text></Pressable></View>
+      <View style={s.listingGrid}>{(data.recent_items || []).map((item: Item) => <Pressable key={item.id} style={[s.gridItem,{width:(width-43)/2}]} onPress={() => navigation.navigate('Listing', { id: item.id })}><ItemCard item={item} compact/></Pressable>)}</View>
     </Page>
   );
 }
