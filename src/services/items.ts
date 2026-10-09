@@ -5,6 +5,7 @@ import { checked, currentAuthUser, profilesById, toUMUser, type UMUser } from '.
 export type Item = ItemRow & {
   user_id: string;
   image: string | null;
+  images?: string[];
   user?: UMUser;
 };
 
@@ -21,15 +22,41 @@ export type ItemFilters = {
   max_price?: number | string;
 };
 
+function parseImageUrls(raw: string | null): string[] {
+  if (!raw) return [];
+  const trimmed = raw.trim();
+  let paths: string[] = [];
+  if (trimmed.startsWith('[') && trimmed.endsWith(']')) {
+    try {
+      const parsed = JSON.parse(trimmed);
+      if (Array.isArray(parsed)) {
+        paths = parsed.map(String).map((s) => s.trim()).filter(Boolean);
+      }
+    } catch {
+      paths = [trimmed];
+    }
+  } else if (trimmed.includes(',')) {
+    paths = trimmed.split(',').map((s) => s.trim()).filter(Boolean);
+  } else {
+    paths = [trimmed];
+  }
+
+  return paths.map((path) => {
+    if (path.startsWith('http')) return path;
+    return supabase.storage.from('items').getPublicUrl(path).data.publicUrl;
+  });
+}
+
 function mapItem(row: ItemRow, profiles: Map<string, ProfileRow>): Item {
   const seller = profiles.get(row.seller_id);
-  const imageUrl = row.image_path
-    ? (row.image_path.startsWith('http') ? row.image_path : supabase.storage.from('items').getPublicUrl(row.image_path).data.publicUrl)
-    : null;
+  const imageUrls = parseImageUrls(row.image_path);
+  const primaryImage = imageUrls.length > 0 ? imageUrls[0] : null;
+
   return {
     ...row,
     user_id: row.seller_id,
-    image: imageUrl,
+    image: primaryImage,
+    images: imageUrls,
     user: seller ? toUMUser(seller) : undefined,
   };
 }

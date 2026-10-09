@@ -511,8 +511,11 @@ function ItemCard({ item, compact = false }: { item: Item; compact?: boolean }) 
 
 
 function ListingScreen({ route, navigation }: any) {
+  const { width } = useWindowDimensions();
   const { user } = useAuth();
   const [item, setItem] = useState<Item | null>(null);
+  const [activeImageIdx, setActiveImageIdx] = useState(0);
+  const carouselRef = useRef<ScrollView>(null);
   const [myActiveTx, setMyActiveTx] = useState<{ id: string; status: string } | null>(null);
   const [sellerActiveTx, setSellerActiveTx] = useState<{ id: string; status: string } | null>(null);
   const [busy, setBusy] = useState(false);
@@ -763,7 +766,122 @@ function ListingScreen({ route, navigation }: any) {
           </Text>
         </View>
       )}
-      {item.image ? <Image source={{ uri: imageUrl(item.image) }} style={s.heroImage} /> : null}
+      {(() => {
+        const displayImages = (item.images && item.images.length > 0)
+          ? item.images
+          : (item.image ? [item.image] : []);
+        if (displayImages.length === 1) {
+          return (
+            <Image
+              source={{ uri: imageUrl(displayImages[0]) }}
+              style={s.heroImage}
+              resizeMode="cover"
+            />
+          );
+        }
+        if (displayImages.length > 1) {
+          return (
+            <View style={{ marginBottom: 14 }}>
+              <View style={{ position: 'relative', borderRadius: 15, overflow: 'hidden' }}>
+                <ScrollView
+                  ref={carouselRef}
+                  horizontal
+                  pagingEnabled
+                  showsHorizontalScrollIndicator={false}
+                  onMomentumScrollEnd={(e) => {
+                    const newIdx = Math.round(e.nativeEvent.contentOffset.x / (width - 28));
+                    setActiveImageIdx(newIdx);
+                  }}
+                  style={{ width: width - 28, height: 240 }}
+                >
+                  {displayImages.map((imgUri, idx) => (
+                    <View key={idx} style={{ width: width - 28, height: 240 }}>
+                      <Image
+                        source={{ uri: imageUrl(imgUri) }}
+                        style={{ width: '100%', height: '100%' }}
+                        resizeMode="cover"
+                      />
+                    </View>
+                  ))}
+                </ScrollView>
+
+                {/* Floating Image Counter Badge */}
+                <View style={{
+                  position: 'absolute',
+                  top: 10,
+                  right: 10,
+                  backgroundColor: 'rgba(0,0,0,0.72)',
+                  paddingHorizontal: 9,
+                  paddingVertical: 4,
+                  borderRadius: 12,
+                  borderWidth: 1,
+                  borderColor: 'rgba(255,255,255,0.18)',
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  gap: 4,
+                }}>
+                  <Ionicons name="images" size={13} color={C.gold} />
+                  <Text style={{ color: '#FFFFFF', fontSize: 11.5, fontWeight: '800' }}>
+                    {activeImageIdx + 1} / {displayImages.length}
+                  </Text>
+                </View>
+              </View>
+
+              {/* Dots Indicator */}
+              <View style={{
+                flexDirection: 'row',
+                justifyContent: 'center',
+                alignItems: 'center',
+                gap: 6,
+                marginTop: 8,
+              }}>
+                {displayImages.map((_, idx) => (
+                  <View
+                    key={idx}
+                    style={{
+                      width: activeImageIdx === idx ? 18 : 6,
+                      height: 6,
+                      borderRadius: 3,
+                      backgroundColor: activeImageIdx === idx ? C.gold : (isDark ? 'rgba(255,255,255,0.25)' : 'rgba(0,0,0,0.2)'),
+                    }}
+                  />
+                ))}
+              </View>
+
+              {/* Thumbnail Strip */}
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginTop: 8 }}>
+                <View style={{ flexDirection: 'row', gap: 8 }}>
+                  {displayImages.map((imgUri, idx) => (
+                    <Pressable
+                      key={idx}
+                      onPress={() => {
+                        setActiveImageIdx(idx);
+                        carouselRef.current?.scrollTo({ x: idx * (width - 28), animated: true });
+                      }}
+                      style={{
+                        width: 50,
+                        height: 50,
+                        borderRadius: 8,
+                        overflow: 'hidden',
+                        borderWidth: 2,
+                        borderColor: activeImageIdx === idx ? C.gold : 'transparent',
+                        opacity: activeImageIdx === idx ? 1 : 0.6,
+                      }}
+                    >
+                      <Image
+                        source={{ uri: imageUrl(imgUri) }}
+                        style={{ width: '100%', height: '100%' }}
+                        resizeMode="cover"
+                      />
+                    </Pressable>
+                  ))}
+                </View>
+              </ScrollView>
+            </View>
+          );
+        }
+        return null;
+      })()}
       <Card>
         <Text style={s.price}>{money(item.price)}{item.listing_type === 'rent' ? ' / day' : ''}</Text>
         <Text style={s.body}>{item.description}</Text>
@@ -1308,47 +1426,75 @@ const programs: Record<string,string[]> = {
 };
 const departments = Object.keys(programs);
 function ListingFormScreen({ route, navigation }: any) {
+  const { width } = useWindowDimensions();
+  const isDark = C.bg === themeTokens.dark.colors.bg;
   const edit = route.params?.item as Item | undefined;
   const [f, setF] = useState<any>(edit ? { ...edit, ...(categories.includes(edit.category)?{}:{category:'__custom',custom_category:edit.category}) } : { listing_type: 'sell', category: 'Books', condition: 'good', department: departments[0], accepted_payment_methods: ['cash_on_pickup'] });
   const [busy, setBusy] = useState(false);
-  const [imageUri, setImageUri] = useState<string | null>(edit?.image || null);
+  const [imageUris, setImageUris] = useState<string[]>(() => {
+    if (edit?.images && edit.images.length > 0) return edit.images;
+    if (edit?.image) return [edit.image];
+    return [];
+  });
   const set = (k: string, v: any) => setF((prev: any) => ({ ...prev, [k]: v }));
 
-  const pickImage = async () => {
+  const pickImages = async () => {
+    const remaining = 6 - imageUris.length;
+    if (remaining <= 0) {
+      Alert.alert('Upload limit reached', 'Maximum of 6 photos allowed per listing.');
+      return;
+    }
     try {
       const result = await ImagePicker.launchImageLibraryAsync({
         mediaTypes: ['images'],
         allowsMultipleSelection: true,
-        selectionLimit: 7,
+        selectionLimit: remaining,
         quality: 0.7,
       });
       if (!result.canceled && result.assets && result.assets.length > 0) {
-        if (result.assets.length > 7) {
-          Alert.alert('Upload limit', 'Maximum of 7 photos allowed per listing.');
-          return;
+        const newUris: string[] = [];
+        for (const asset of result.assets) {
+          if (asset.fileSize && asset.fileSize > 5 * 1024 * 1024) {
+            Alert.alert('Image too large', 'Please select photos smaller than 5MB.');
+            continue;
+          }
+          newUris.push(asset.uri);
         }
-        const asset = result.assets[0];
-        if (asset.fileSize && asset.fileSize > 5 * 1024 * 1024) {
-          Alert.alert('Image too large', 'Please select a photo smaller than 5MB.');
-          return;
-        }
-        setImageUri(asset.uri);
-        if (result.assets.length > 1) {
-          Alert.alert('Photos selected', `${result.assets.length} photos selected. The first photo will be used as the primary listing cover.`);
+        if (newUris.length > 0) {
+          setImageUris(prev => [...prev, ...newUris].slice(0, 6));
         }
       }
     } catch (err) {
-      Alert.alert('Unable to pick image', errorMessage(err));
+      Alert.alert('Unable to pick images', errorMessage(err));
     }
+  };
+
+  const removeImage = (idxToRemove: number) => {
+    setImageUris(prev => prev.filter((_, idx) => idx !== idxToRemove));
+  };
+
+  const setAsCover = (idxToCover: number) => {
+    if (idxToCover === 0) return;
+    setImageUris(prev => {
+      const target = prev[idxToCover];
+      const rest = prev.filter((_, idx) => idx !== idxToCover);
+      return [target, ...rest];
+    });
   };
 
   const save = async () => {
     setBusy(true);
     try {
-      let imagePath = f.image_path || (edit?.image ? edit.image : null);
-      if (imageUri && !imageUri.startsWith('http')) {
-        imagePath = await uploadItemImage(imageUri);
+      const uploadedUrls: string[] = [];
+      for (const uri of imageUris) {
+        if (uri.startsWith('http')) {
+          uploadedUrls.push(uri);
+        } else {
+          const uploaded = await uploadItemImage(uri);
+          uploadedUrls.push(uploaded);
+        }
       }
+      const imagePath = uploadedUrls.length > 0 ? JSON.stringify(uploadedUrls) : null;
       await marketplace.save({ ...f, image_path: imagePath }, edit?.id);
       Alert.alert(
         'Listing submitted',
@@ -1511,27 +1657,179 @@ function ListingFormScreen({ route, navigation }: any) {
         onChangeText={(v: string) => set('course_code', v.toUpperCase())}
         autoCapitalize="characters"
       />
-      <Text style={s.label}>Item photo (recommended)</Text>
-      {imageUri ? (
-        <View style={{ marginBottom: 14 }}>
-          <Image
-            source={{ uri: imageUri }}
-            style={{ width: '100%', height: 180, borderRadius: 10, marginBottom: 8 }}
-            resizeMode="cover"
-          />
-          <View style={s.row}>
-            <Button title="Change photo" secondary onPress={pickImage} />
-            <Button
-              title="Remove"
-              danger
-              onPress={() => { setImageUri(null); set('image_path', null); }}
+      <Text style={s.label}>Item photos ({imageUris.length}/6)</Text>
+      <Text style={[s.muted, { marginBottom: 10, fontSize: 12 }]}>
+        Upload up to 6 photos. The first photo is the main cover shown on marketplace feeds.
+      </Text>
+      {imageUris.length > 0 ? (
+        <View style={{ marginBottom: 18 }}>
+          {/* Cover Photo: Big & prominent */}
+          <View style={{
+            position: 'relative',
+            borderRadius: 14,
+            overflow: 'hidden',
+            borderWidth: 2,
+            borderColor: C.gold,
+            marginBottom: 10,
+            backgroundColor: isDark ? '#2B1214' : '#F5EFEB',
+          }}>
+            <Image
+              source={{ uri: imageUris[0] }}
+              style={{ width: '100%', height: 200 }}
+              resizeMode="cover"
             />
+            {/* Cover Badge */}
+            <View style={{
+              position: 'absolute',
+              top: 10,
+              left: 10,
+              backgroundColor: 'rgba(0,0,0,0.75)',
+              paddingHorizontal: 9,
+              paddingVertical: 4,
+              borderRadius: 8,
+              borderWidth: 1,
+              borderColor: C.gold,
+              flexDirection: 'row',
+              alignItems: 'center',
+              gap: 4,
+            }}>
+              <Ionicons name="star" size={12} color={C.gold} />
+              <Text style={{ color: C.gold, fontSize: 11, fontWeight: '800' }}>
+                COVER PHOTO
+              </Text>
+            </View>
+            {/* Remove Cover Button */}
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Remove cover photo"
+              onPress={() => removeImage(0)}
+              style={{
+                position: 'absolute',
+                top: 10,
+                right: 10,
+                width: 32,
+                height: 32,
+                borderRadius: 16,
+                backgroundColor: 'rgba(0,0,0,0.7)',
+                alignItems: 'center',
+                justifyContent: 'center',
+                borderWidth: 1,
+                borderColor: 'rgba(255,255,255,0.3)',
+              }}
+            >
+              <Ionicons name="close" size={18} color="#FFFFFF" />
+            </Pressable>
+          </View>
+
+          {/* Grid for additional photos + Add slot */}
+          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 10 }}>
+            {imageUris.slice(1).map((uri, idx) => {
+              const realIdx = idx + 1;
+              const thumbWidth = (width - 48) / 3;
+              return (
+                <View
+                  key={uri + idx}
+                  style={{
+                    width: thumbWidth,
+                    height: thumbWidth,
+                    borderRadius: 10,
+                    overflow: 'hidden',
+                    position: 'relative',
+                    borderWidth: 1,
+                    borderColor: C.border,
+                    backgroundColor: C.panel2,
+                  }}
+                >
+                  <Image source={{ uri }} style={{ width: '100%', height: '100%' }} resizeMode="cover" />
+                  {/* Remove Button */}
+                  <Pressable
+                    accessibilityRole="button"
+                    onPress={() => removeImage(realIdx)}
+                    style={{
+                      position: 'absolute',
+                      top: 4,
+                      right: 4,
+                      width: 24,
+                      height: 24,
+                      borderRadius: 12,
+                      backgroundColor: 'rgba(0,0,0,0.75)',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                    }}
+                  >
+                    <Ionicons name="close" size={14} color="#FFFFFF" />
+                  </Pressable>
+                  {/* Make Cover Button */}
+                  <Pressable
+                    onPress={() => setAsCover(realIdx)}
+                    style={{
+                      position: 'absolute',
+                      bottom: 0,
+                      left: 0,
+                      right: 0,
+                      backgroundColor: 'rgba(0,0,0,0.65)',
+                      paddingVertical: 3,
+                      alignItems: 'center',
+                    }}
+                  >
+                    <Text style={{ color: C.gold, fontSize: 9.5, fontWeight: '700' }}>Make cover</Text>
+                  </Pressable>
+                </View>
+              );
+            })}
+
+            {/* Add photo slot in grid if under 6 */}
+            {imageUris.length < 6 && (
+              <Pressable
+                accessibilityRole="button"
+                onPress={pickImages}
+                style={{
+                  width: (width - 48) / 3,
+                  height: (width - 48) / 3,
+                  borderRadius: 10,
+                  borderWidth: 1.5,
+                  borderColor: C.gold,
+                  borderStyle: 'dashed',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  backgroundColor: isDark ? 'rgba(246, 200, 76, 0.05)' : 'rgba(246, 200, 76, 0.12)',
+                }}
+              >
+                <Ionicons name="add-circle-outline" size={26} color={C.gold} />
+                <Text style={{ fontSize: 11, fontWeight: '800', color: C.gold, marginTop: 4 }}>
+                  Add Photo
+                </Text>
+                <Text style={{ fontSize: 9.5, color: C.muted }}>
+                  {6 - imageUris.length} left
+                </Text>
+              </Pressable>
+            )}
           </View>
         </View>
       ) : (
-        <View style={{ marginBottom: 14 }}>
-          <Button title="Select photo from library" secondary onPress={pickImage} />
-        </View>
+        <Pressable
+          accessibilityRole="button"
+          onPress={pickImages}
+          style={{
+            marginBottom: 16,
+            padding: 22,
+            borderRadius: 14,
+            borderWidth: 1.5,
+            borderColor: C.gold,
+            borderStyle: 'dashed',
+            alignItems: 'center',
+            justifyContent: 'center',
+            backgroundColor: isDark ? 'rgba(246, 200, 76, 0.05)' : 'rgba(246, 200, 76, 0.10)',
+          }}
+        >
+          <Ionicons name="camera-outline" size={32} color={C.gold} />
+          <Text style={{ fontSize: 14, fontWeight: '800', color: C.gold, marginTop: 6 }}>
+            Select Photos (up to 6)
+          </Text>
+          <Text style={{ fontSize: 12, color: C.muted, marginTop: 2 }}>
+            Tap to open gallery and pick photos
+          </Text>
+        </Pressable>
       )}
       <Button
         title={busy ? 'Submitting…' : edit ? 'Save changes' : 'Submit listing for review'}
