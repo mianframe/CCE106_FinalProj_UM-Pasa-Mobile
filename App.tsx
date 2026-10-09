@@ -27,27 +27,39 @@ const palettes = {
 const Stack = createNativeStackNavigator<any>(); const Tabs = createBottomTabNavigator<any>();
 const SHOW_DELETE_ACCOUNT = false;
 
-function getRentalDueInfo(dueDateStr?: string | null, status?: string) {
+function getRentalDueInfo(dueDateStr?: string | null, status?: string, meetupTimeStr?: string | null, durationDays?: number | null) {
   if (!dueDateStr || status === 'completed' || status === 'rejected') return null;
   const due = new Date(dueDateStr);
   const now = new Date();
   due.setHours(23, 59, 59, 999);
   const diffMs = due.getTime() - now.getTime();
   const diffDays = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
+
+  const meetupDate = meetupTimeStr ? new Date(meetupTimeStr) : null;
+  const meetupInFuture = meetupDate && meetupDate.getTime() > now.getTime();
+
   if (diffDays < 0) {
     const overdueDays = Math.abs(diffDays);
     return {
       isOverdue: true,
       isDueSoon: false,
-      label: `OVERDUE: ${overdueDays} day${overdueDays === 1 ? '' : 's'} late (Due ${formatPhilippineDate(dueDateStr)})`,
+      label: `OVERDUE: ${overdueDays} day${overdueDays === 1 ? '' : 's'} late (Return was due ${formatPhilippineDate(dueDateStr)})`,
       color: '#DC2626',
       bgColor: 'rgba(220, 38, 38, 0.14)',
+    };
+  } else if (meetupInFuture && durationDays) {
+    return {
+      isOverdue: false,
+      isDueSoon: false,
+      label: `Rental: ${durationDays} day(s) starts on handover (${formatPhilippineDate(meetupTimeStr)}) · Return due ${formatPhilippineDate(dueDateStr)}`,
+      color: '#2563EB',
+      bgColor: 'rgba(37, 99, 235, 0.10)',
     };
   } else if (diffDays <= 2) {
     return {
       isOverdue: false,
       isDueSoon: true,
-      label: diffDays === 0 ? `DUE TODAY (Due ${formatPhilippineDate(dueDateStr)})` : `Due in ${diffDays} day${diffDays === 1 ? '' : 's'} (Due ${formatPhilippineDate(dueDateStr)})`,
+      label: diffDays === 0 ? `DUE TODAY (Return by ${formatPhilippineDate(dueDateStr)})` : `Due in ${diffDays} day${diffDays === 1 ? '' : 's'} (Due ${formatPhilippineDate(dueDateStr)})`,
       color: '#D97706',
       bgColor: 'rgba(217, 119, 6, 0.14)',
     };
@@ -55,7 +67,7 @@ function getRentalDueInfo(dueDateStr?: string | null, status?: string) {
   return {
     isOverdue: false,
     isDueSoon: false,
-    label: `Rental return due: ${formatPhilippineDate(dueDateStr)} (${diffDays} days left)`,
+    label: `Active rental: ${diffDays} day${diffDays === 1 ? '' : 's'} remaining (Return on ${formatPhilippineDate(dueDateStr)})`,
     color: '#2563EB',
     bgColor: 'rgba(37, 99, 235, 0.10)',
   };
@@ -970,7 +982,7 @@ function ListingScreen({ route, navigation }: any) {
                   </Text>
                 </View>
                 <Text style={{ fontSize: 12, color: isDark ? '#FDE68A' : '#78350F', marginTop: 4 }}>
-                  {`₱${item.price}/day × ${parsedDays} day${parsedDays === 1 ? '' : 's'}`}
+                  {`₱${item.price}/day × ${parsedDays} day${parsedDays === 1 ? '' : 's'} · Rental period begins on meetup handoff.`}
                 </Text>
               </View>
             ) : days.trim() && !isRentValid ? (
@@ -2180,7 +2192,7 @@ function TransactionsScreen({ navigation }: any) {
               ) : null}
 
               {(() => {
-                const dueInfo = getRentalDueInfo(t.rental_due_date, t.status);
+                const dueInfo = getRentalDueInfo(t.rental_due_date, t.status, t.meetup_time, t.rental_duration_days);
                 if (!dueInfo) return null;
                 return (
                   <View style={{
@@ -2410,7 +2422,7 @@ function TransactionScreen({ route, navigation }: any) {
     }
   };
 
-  const rentalDueInfo = getRentalDueInfo(t.rental_due_date, t.status);
+  const rentalDueInfo = getRentalDueInfo(t.rental_due_date, t.status, t.meetup_time, t.rental_duration_days);
 
   return (
     <Page bottomSafe>
@@ -2433,7 +2445,16 @@ function TransactionScreen({ route, navigation }: any) {
         <Text style={s.body}>Seller: {t.seller?.name}</Text>
         <Text style={s.body}>Payment: {t.payment_method?.replaceAll('_', ' ')}{t.other_payment_method ? ` · ${t.other_payment_method}` : ''}</Text>
         {t.rental_duration_days ? (
-          <Text style={s.body}>Rental duration: {t.rental_duration_days} day(s) · Due {formatPhilippineDate(t.rental_due_date, 'to be confirmed')}</Text>
+          <View style={{ marginTop: 4 }}>
+            <Text style={s.body}>
+              Rental duration: {t.rental_duration_days} day(s)
+              {t.meetup_time ? ` (starts at handover meetup: ${formatPhilippineDate(t.meetup_time)})` : ''}
+            </Text>
+            <Text style={[s.body, { marginTop: 2 }]}>
+              Return due date: {formatPhilippineDate(t.rental_due_date, 'Scheduled upon meetup approval')}
+              {t.rental_due_date && t.meetup_time ? ` (${t.rental_duration_days} days after meetup)` : ''}
+            </Text>
+          </View>
         ) : null}
         {rentalDueInfo ? (
           <View style={{
@@ -7068,7 +7089,7 @@ function TransactionSummary({t}: {t:Transaction}) {
       <Text style={s.adminDetail}>Rental duration: {t.rental_duration_days?`${t.rental_duration_days} days`:'Not applicable'}</Text>
       <Text style={s.adminDetail}>Rental due: {formatPhilippineDate(t.rental_due_date, 'Not set')}</Text>
       {(() => {
-        const dueInfo = getRentalDueInfo(t.rental_due_date, t.status);
+        const dueInfo = getRentalDueInfo(t.rental_due_date, t.status, t.meetup_time, t.rental_duration_days);
         if (!dueInfo) return null;
         return (
           <View style={{
