@@ -2001,7 +2001,7 @@ function TransactionScreen({ route, navigation }: any) {
   useEffect(() => {
     load();
     const ch = supabase
-      .channel(`tx:${route.params.id}`)
+      .channel(`tx:${route.params.id}:${Date.now()}_${Math.random().toString(36).slice(2, 6)}`)
       .on(
         'postgres_changes',
         {
@@ -4083,7 +4083,7 @@ function ConversationScreen({ route, navigation }: any) {
   useEffect(() => {
     load();
     const channel = supabase
-      .channel(`conversation:${route.params.id}`)
+      .channel(`conversation:${route.params.id}:${Date.now()}_${Math.random().toString(36).slice(2, 6)}`)
       .on(
         'postgres_changes',
         {
@@ -7109,7 +7109,7 @@ function AppContent() {
   useEffect(() => {
     if (!user?.id) return;
     const channel = supabase
-      .channel(`user-realtime-notifications:${user.id}`)
+      .channel(`user-realtime-notifications:${user.id}:${Date.now()}_${Math.random().toString(36).slice(2, 6)}`)
       .on(
         'postgres_changes',
         {
@@ -7123,11 +7123,11 @@ function AppContent() {
             // Check if user is currently inside the conversation
             if (navigationRef.isReady()) {
               const currentRoute = navigationRef.getCurrentRoute();
-              if (
+              const isChatting =
                 currentRoute?.name === 'Conversation' &&
-                payload.new?.related_type === 'conversation' &&
-                (currentRoute?.params as any)?.id === payload.new?.related_id
-              ) {
+                (payload.new?.related_type === 'conversation' || payload.new?.type === 'message' || payload.new?.type === 'meetup') &&
+                String((currentRoute?.params as any)?.id || '') === String(payload.new?.related_id || '');
+              if (isChatting) {
                 // User is already reading/chatting in this conversation, suppress banner
                 return;
               }
