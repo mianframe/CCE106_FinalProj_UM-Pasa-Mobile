@@ -1703,8 +1703,8 @@ function TransactionScreen({ route, navigation }: any) {
     try {
       const data = await transactions.get(route.params.id);
       setT(data);
-      if (data.meetup_location) setMeetup((prev: string) => prev || data.meetup_location || '');
-      if (data.meetup_time) setMeetupDate((prev: Date | null) => prev || (data.meetup_time ? new Date(data.meetup_time) : null));
+      if (data.meetup_location) setMeetup(data.meetup_location);
+      if (data.meetup_time) setMeetupDate(new Date(data.meetup_time));
       if (data.payment_proof) {
         getPaymentProofSignedUrl(data.payment_proof).then(setProofUrl).catch(() => setProofUrl(null));
       } else {
@@ -1737,7 +1737,38 @@ function TransactionScreen({ route, navigation }: any) {
     }
   }, [route.params.id]);
 
-  useEffect(() => { load(); }, [load]);
+  useEffect(() => {
+    load();
+    const ch = supabase
+      .channel(`tx:${route.params.id}`)
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'transactions',
+          filter: `id=eq.${route.params.id}`,
+        },
+        () => {
+          load();
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'messages',
+        },
+        () => {
+          load();
+        }
+      )
+      .subscribe();
+    return () => {
+      supabase.removeChannel(ch);
+    };
+  }, [load, route.params.id]);
 
   if (!t) return <Page><Status state={err || 'Loading transaction…'} retry={load} /></Page>;
   const isSeller = user?.id === t.seller_id;
@@ -1794,7 +1825,54 @@ function TransactionScreen({ route, navigation }: any) {
     }
   };
 
-  return <Page bottomSafe><Heading title={t.item?.title || 'Transaction'} subtitle={`Transaction #${t.id}`} /><Card><View style={{marginBottom: 6}}><StatusPill status={t.status} /></View>{t.rental_duration_days ? <View style={{ marginVertical: 4 }}><Text style={s.price}>Total: ₱{(Number(t.item?.price) || 0) * t.rental_duration_days}</Text><Text style={{ fontSize: 12, color: isDark ? '#FDE68A' : '#78350F', fontWeight: '700', marginTop: 2 }}>₱{t.item?.price}/day × {t.rental_duration_days} day(s) rental</Text></View> : <Text style={s.price}>{money(t.item?.price)}</Text>}<Text style={s.body}>Buyer: {t.buyer?.name}</Text><Text style={s.body}>Seller: {t.seller?.name}</Text><Text style={s.body}>Payment: {t.payment_method?.replaceAll('_',' ')}{t.other_payment_method?` · ${t.other_payment_method}`:''}</Text>{t.rental_duration_days?<Text style={s.body}>Rental duration: {t.rental_duration_days} day(s) · Due {formatPhilippineDate(t.rental_due_date, 'to be confirmed')}</Text>:null}{t.meetup_location ? <Text style={s.body}>Meetup: {t.meetup_location} · {formatPhilippineDateTime(t.meetup_time)}</Text> : null}{pendingProposal ? <View style={{ marginTop: 8, padding: 10, borderRadius: 8, backgroundColor: isDark ? 'rgba(246,200,76,0.12)' : '#FFF9E6', borderWidth: 1, borderColor: isDark ? 'rgba(246,200,76,0.25)' : '#FFE082' }}><View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 2 }}><Ionicons name="time-outline" size={15} color={C.gold} /><Text style={{ fontSize: 12, fontWeight: '800', color: isDark ? C.gold : '#B78103' }}>Pending meetup proposal</Text></View><Text style={{ fontSize: 13, color: C.white, fontWeight: '600' }}>{pendingProposal.meetup_location} · {formatPhilippineDateTime(pendingProposal.meetup_time)}</Text><Text style={{ fontSize: 12, color: C.cream, marginTop: 2 }}>{pendingProposal.sender_id === user?.id ? `Waiting for ${user?.id === t.buyer_id ? t.seller?.name : t.buyer?.name} to accept` : `Proposed by ${pendingProposal.sender_id === t.buyer_id ? t.buyer?.name : t.seller?.name} (review in chat to accept)`}</Text></View> : null}<Text style={s.muted}>Payment proof: {t.payment_proof?`Uploaded ${formatPhilippineDateTime(t.payment_proof_uploaded_at, '')}`:'Not uploaded'}</Text>{proofUrl && <View style={{ marginTop: 10 }}><Text style={s.label}>Payment receipt photo</Text><Image source={{ uri: proofUrl }} style={{ width: '100%', height: 220, borderRadius: 10, marginTop: 6 }} resizeMode="contain" /></View>}</Card>{isBuyer && ['pending','approved'].includes(t.status) && <View style={{ marginVertical: 6 }}><Button title={uploadingProof ? 'Uploading proof…' : t.payment_proof ? 'Replace payment receipt' : 'Upload payment receipt'} secondary disabled={uploadingProof} onPress={pickProof} /></View>}{isSeller && t.status === 'pending' && <><Field label="Meetup location" value={meetup} onChangeText={setMeetup} placeholder="e.g. Main Library (Mabini) or Visayan IT Labs Lobby"/><MeetupTimePicker label="Meetup date & time" value={meetupDate} onChange={setMeetupDate}/><Button title={approving ? 'Approving request…' : 'Approve request'} disabled={approving || !meetup.trim() || !meetupDate} onPress={approve} /><Button title="Reject request" danger onPress={() => run('Reject request', () => transactions.reject(t.id))} /></>}{isSeller && t.status === 'approved' && <Button title="Mark as completed" onPress={() => run('Complete exchange', async () => { await transactions.complete(t.id); if (t.item_id) { try { await marketplace.markSold(t.item_id); } catch (_) { try { await marketplace.remove(t.item_id); } catch (_) {} } } })} />}{t.status === 'completed' && !t.ratings?.some((r: any) => r.reviewer_id === user?.id) && <><Text style={s.muted}>Both the buyer and seller can leave a review after completion.</Text><RatingForm id={t.id} onDone={load} /></>}{t.item && <Button title="Message participant" secondary onPress={async()=>{try{const recipient_id=user?.id===t.buyer_id?t.seller_id:t.buyer_id;const m=await messaging.send({recipient_id,item_id:t.item_id,body:`Hi, I want to coordinate about ${t.item?.title}.`});navigation.navigate('Conversation',{id:m.conversation_id});}catch(e){Alert.alert('Unable to message participant',errorMessage(e))}}}/>}</Page>;
+  return <Page bottomSafe><Heading title={t.item?.title || 'Transaction'} subtitle={`Transaction #${t.id}`} /><Card><View style={{marginBottom: 6}}><StatusPill status={t.status} /></View>{t.rental_duration_days ? <View style={{ marginVertical: 4 }}><Text style={s.price}>Total: ₱{(Number(t.item?.price) || 0) * t.rental_duration_days}</Text><Text style={{ fontSize: 12, color: isDark ? '#FDE68A' : '#78350F', fontWeight: '700', marginTop: 2 }}>₱{t.item?.price}/day × {t.rental_duration_days} day(s) rental</Text></View> : <Text style={s.price}>{money(t.item?.price)}</Text>}<Text style={s.body}>Buyer: {t.buyer?.name}</Text><Text style={s.body}>Seller: {t.seller?.name}</Text><Text style={s.body}>Payment: {t.payment_method?.replaceAll('_',' ')}{t.other_payment_method?` · ${t.other_payment_method}`:''}</Text>{t.rental_duration_days?<Text style={s.body}>Rental duration: {t.rental_duration_days} day(s) · Due {formatPhilippineDate(t.rental_due_date, 'to be confirmed')}</Text>:null}{t.meetup_location ? <Text style={s.body}>Meetup: {t.meetup_location} · {formatPhilippineDateTime(t.meetup_time)}</Text> : null}{pendingProposal ? (
+  <View style={{ marginTop: 8, padding: 10, borderRadius: 8, backgroundColor: isDark ? 'rgba(246,200,76,0.12)' : '#FFF9E6', borderWidth: 1, borderColor: isDark ? 'rgba(246,200,76,0.25)' : '#FFE082' }}>
+    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 2 }}>
+      <Ionicons name="time-outline" size={15} color={C.gold} />
+      <Text style={{ fontSize: 12, fontWeight: '800', color: isDark ? C.gold : '#B78103' }}>Pending meetup proposal</Text>
+    </View>
+    <Text style={{ fontSize: 13, color: C.white, fontWeight: '600' }}>
+      {pendingProposal.meetup_location} · {formatPhilippineDateTime(pendingProposal.meetup_time)}
+    </Text>
+    <Text style={{ fontSize: 12, color: C.cream, marginTop: 2, marginBottom: pendingProposal.sender_id !== user?.id ? 8 : 0 }}>
+      {pendingProposal.sender_id === user?.id
+        ? `Waiting for ${user?.id === t.buyer_id ? t.seller?.name : t.buyer?.name} to accept`
+        : `Proposed by ${pendingProposal.sender_id === t.buyer_id ? t.buyer?.name : t.seller?.name}`}
+    </Text>
+    {pendingProposal.sender_id !== user?.id ? (
+      <View style={{ flexDirection: 'row', gap: 8 }}>
+        <Pressable
+          accessibilityRole="button"
+          onPress={async () => {
+            try {
+              await messaging.respond(pendingProposal.id, true);
+              await load();
+            } catch (e) {
+              Alert.alert('Unable to accept', errorMessage(e));
+            }
+          }}
+          style={{ flex: 1, backgroundColor: C.red, paddingVertical: 8, borderRadius: 8, alignItems: 'center' }}
+        >
+          <Text style={{ color: '#FFFFFF', fontWeight: '800', fontSize: 12 }}>Accept proposal</Text>
+        </Pressable>
+        <Pressable
+          accessibilityRole="button"
+          onPress={async () => {
+            try {
+              await messaging.respond(pendingProposal.id, false);
+              await load();
+            } catch (e) {
+              Alert.alert('Unable to decline', errorMessage(e));
+            }
+          }}
+          style={{ flex: 1, borderWidth: 1, borderColor: C.border, paddingVertical: 8, borderRadius: 8, alignItems: 'center' }}
+        >
+          <Text style={{ color: C.white, fontWeight: '700', fontSize: 12 }}>Decline</Text>
+        </Pressable>
+      </View>
+    ) : null}
+  </View>
+) : null}<Text style={s.muted}>Payment proof: {t.payment_proof?`Uploaded ${formatPhilippineDateTime(t.payment_proof_uploaded_at, '')}`:'Not uploaded'}</Text>{proofUrl && <View style={{ marginTop: 10 }}><Text style={s.label}>Payment receipt photo</Text><Image source={{ uri: proofUrl }} style={{ width: '100%', height: 220, borderRadius: 10, marginTop: 6 }} resizeMode="contain" /></View>}</Card>{isBuyer && ['pending','approved'].includes(t.status) && <View style={{ marginVertical: 6 }}><Button title={uploadingProof ? 'Uploading proof…' : t.payment_proof ? 'Replace payment receipt' : 'Upload payment receipt'} secondary disabled={uploadingProof} onPress={pickProof} /></View>}{isSeller && t.status === 'pending' && <><Field label="Meetup location" value={meetup} onChangeText={setMeetup} placeholder="e.g. Main Library (Mabini) or Visayan IT Labs Lobby"/><MeetupTimePicker label="Meetup date & time" value={meetupDate} onChange={setMeetupDate}/><Button title={approving ? 'Approving request…' : 'Approve request'} disabled={approving || !meetup.trim() || !meetupDate} onPress={approve} /><Button title="Reject request" danger onPress={() => run('Reject request', () => transactions.reject(t.id))} /></>}{isSeller && t.status === 'approved' && <Button title="Mark as completed" onPress={() => run('Complete exchange', async () => { await transactions.complete(t.id); if (t.item_id) { try { await marketplace.markSold(t.item_id); } catch (_) { try { await marketplace.remove(t.item_id); } catch (_) {} } } })} />}{t.status === 'completed' && !t.ratings?.some((r: any) => r.reviewer_id === user?.id) && <><Text style={s.muted}>Both the buyer and seller can leave a review after completion.</Text><RatingForm id={t.id} onDone={load} /></>}{t.item && <Button title="Message participant" secondary onPress={async()=>{try{const recipient_id=user?.id===t.buyer_id?t.seller_id:t.buyer_id;const m=await messaging.send({recipient_id,item_id:t.item_id,body:`Hi, I want to coordinate about ${t.item?.title}.`});navigation.navigate('Conversation',{id:m.conversation_id});}catch(e){Alert.alert('Unable to message participant',errorMessage(e))}}}/>}</Page>;
 }
 function RatingForm({ id, onDone }: any) {
   const [rating, setRating] = useState(5);
@@ -3522,6 +3600,7 @@ function ConversationScreen({ route, navigation }: any) {
   const isDark = C.bg === themeTokens.dark.colors.bg;
   const [c, setC] = useState<Conversation>();
   const [partnerRating, setPartnerRating] = useState<{ average: number | null; count: number } | null>(null);
+  const [linkedTx, setLinkedTx] = useState<{ id: string; meetup_location: string | null; meetup_time: string | null; status: string } | null>(null);
   const [body, setBody] = useState('');
   const [location, setLocation] = useState('');
   const [meetupDate, setMeetupDate] = useState<Date | null>(null);
@@ -3556,6 +3635,20 @@ function ConversationScreen({ route, navigation }: any) {
       setRefreshing(true);
       const data = await messaging.get(route.params.id);
       setC(data);
+      if (data?.item_id) {
+        const { data: txData } = await supabase
+          .from('transactions')
+          .select('id, meetup_location, meetup_time, status')
+          .eq('item_id', data.item_id)
+          .or(`and(buyer_id.eq.${data.starter_id},seller_id.eq.${data.recipient_id}),and(buyer_id.eq.${data.recipient_id},seller_id.eq.${data.starter_id})`)
+          .in('status', ['pending', 'approved', 'completed'])
+          .order('created_at', { ascending: false })
+          .limit(1)
+          .maybeSingle();
+        setLinkedTx(txData || null);
+      } else {
+        setLinkedTx(null);
+      }
       messaging.markRead(route.params.id).catch(() => undefined);
     } catch(e) {
       Alert.alert('Unable to load conversation', errorMessage(e));
@@ -3575,6 +3668,17 @@ function ConversationScreen({ route, navigation }: any) {
           schema: 'public',
           table: 'messages',
           filter: `conversation_id=eq.${route.params.id}`,
+        },
+        () => {
+          load();
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'transactions',
         },
         () => {
           load();
@@ -3820,12 +3924,14 @@ function ConversationScreen({ route, navigation }: any) {
             )}
           </View>
 
-          {/* Slim meetup summary row underneath - only shown for accepted/confirmed meetups */}
+          {/* Slim meetup summary row underneath - unified from shared transaction schedule */}
           {(() => {
             const accepted = [...(c?.messages || [])].reverse().find(
               (m: any) => m.type === 'meetup_proposal' && (m.proposal_status === 'accepted' || (m.meta as any)?.status === 'accepted')
             );
-            if (!accepted?.meetup_location || !accepted?.meetup_time) return null;
+            const meetupLoc = linkedTx?.meetup_location || accepted?.meetup_location;
+            const meetupTime = linkedTx?.meetup_time || accepted?.meetup_time;
+            if (!meetupLoc || !meetupTime) return null;
             return (
               <View style={{
                 flexDirection: 'row',
@@ -3839,7 +3945,7 @@ function ConversationScreen({ route, navigation }: any) {
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, flex: 1, marginRight: 8 }}>
                   <Ionicons name="location" size={14} color={C.red} />
                   <Text numberOfLines={1} style={{ fontSize: 11.5, color: C.cream, fontWeight: '600', flex: 1 }}>
-                    {accepted.meetup_location} · {formatPhilippineDateTime(accepted.meetup_time)}
+                    {meetupLoc} · {formatPhilippineDateTime(meetupTime)}
                   </Text>
                 </View>
                 <Pressable
