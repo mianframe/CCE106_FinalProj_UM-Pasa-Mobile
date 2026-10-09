@@ -10,7 +10,21 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "ph.edu.umindanao.umpasa",
-      "buildNumber": "1"
+      "buildNumber": "1",
+      "infoPlist": {
+        "NSLocalNetworkUsageDescription": "Allow UM-Pasa to connect to Metro bundler on your local network.",
+        "UIApplicationSceneManifest": {
+          "UIApplicationSupportsMultipleScenes": false,
+          "UISceneConfigurations": {
+            "UIWindowSceneSessionRoleApplication": [
+              {
+                "UISceneConfigurationName": "Default Configuration",
+                "UISceneDelegateClassName": "$(PRODUCT_MODULE_NAME).SceneDelegate"
+              }
+            ]
+          }
+        }
+      }
     },
     "android": {
       "package": "ph.edu.umindanao.umpasa",
