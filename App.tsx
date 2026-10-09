@@ -1,9 +1,9 @@
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import { NavigationContainer, useFocusEffect } from '@react-navigation/native';
+import { NavigationContainer, useFocusEffect, createNavigationContainerRef } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { useHeaderHeight } from '@react-navigation/elements';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, Alert, Appearance, Image, Keyboard, KeyboardAvoidingView, Linking, Modal, Platform, Pressable, RefreshControl, ScrollView, StatusBar, StyleSheet, Text, TextInput, View, useWindowDimensions } from 'react-native';
+import { ActivityIndicator, Alert, Animated, Appearance, Image, Keyboard, KeyboardAvoidingView, Linking, Modal, Platform, Pressable, RefreshControl, ScrollView, StatusBar, StyleSheet, Text, TextInput, View, useWindowDimensions } from 'react-native';
 import { SafeAreaProvider, SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
@@ -6295,8 +6295,41 @@ function AppStack({ authenticated, isAdmin }: { authenticated: boolean; isAdmin:
   </Stack.Navigator>;
 }
 
+const navigationRef = createNavigationContainerRef<any>();
+
 function AppContent() {
   const { user, authUser, profile, loading, profileError, refreshProfile, logout } = useAuth();
+  const { mode } = useTheme();
+  const insets = useSafeAreaInsets();
+  const isDark = mode === 'dark';
+  const [toast, setToast] = useState<any | null>(null);
+  const toastAnim = useRef(new Animated.Value(-150)).current;
+  const toastTimer = useRef<any>(null);
+
+  const hideToast = useCallback(() => {
+    Animated.timing(toastAnim, {
+      toValue: -150,
+      duration: 250,
+      useNativeDriver: true,
+    }).start(() => {
+      setToast(null);
+    });
+  }, [toastAnim]);
+
+  const showToast = useCallback((notif: any) => {
+    if (toastTimer.current) clearTimeout(toastTimer.current);
+    setToast(notif);
+    Animated.spring(toastAnim, {
+      toValue: 0,
+      useNativeDriver: true,
+      tension: 70,
+      friction: 11,
+    }).start();
+
+    toastTimer.current = setTimeout(() => {
+      hideToast();
+    }, 4000);
+  }, [hideToast, toastAnim]);
 
   useEffect(() => {
     if (!user?.id) return;
@@ -6312,16 +6345,48 @@ function AppContent() {
         },
         (payload: any) => {
           if (payload.new?.message) {
-            Alert.alert('🔔 UM-Pasa Alert', payload.new.message);
+            // Check if user is currently inside the conversation
+            if (navigationRef.isReady()) {
+              const currentRoute = navigationRef.getCurrentRoute();
+              if (
+                currentRoute?.name === 'Conversation' &&
+                payload.new?.related_type === 'conversation' &&
+                (currentRoute?.params as any)?.id === payload.new?.related_id
+              ) {
+                // User is already reading/chatting in this conversation, suppress banner
+                return;
+              }
+            }
+            showToast(payload.new);
           }
         }
       )
       .subscribe();
 
     return () => {
+      if (toastTimer.current) clearTimeout(toastTimer.current);
       supabase.removeChannel(channel);
     };
-  }, [user?.id]);
+  }, [user?.id, showToast]);
+
+  const handleToastPress = () => {
+    if (!toast) return;
+    const target = toast;
+    hideToast();
+    if (!navigationRef.isReady()) return;
+    if (target.related_type === 'transaction' && target.related_id) {
+      navigationRef.navigate('Transaction', { id: target.related_id });
+    } else if (target.related_type === 'conversation' && target.related_id) {
+      navigationRef.navigate('Conversation', { id: target.related_id });
+    } else if (target.related_type === 'item' && target.related_id) {
+      navigationRef.navigate(
+        user?.role === 'admin' && target.type === 'listing_review' ? 'AdminItems' : 'Listing',
+        user?.role === 'admin' && target.type === 'listing_review' ? { itemId: target.related_id } : { id: target.related_id }
+      );
+    } else {
+      navigationRef.navigate('Notifications');
+    }
+  };
 
   if (loading) return <SafeAreaView style={s.loading}><ActivityIndicator color={C.gold}/><Text style={s.muted}>Restoring your UM-Pasa session…</Text></SafeAreaView>;
   if (authUser && !profile) return <SafeAreaView style={s.loading}>
@@ -6329,9 +6394,75 @@ function AppContent() {
     <Button title="Retry profile" onPress={() => refreshProfile().catch(() => undefined)}/>
     <Button title="Sign out" secondary onPress={() => logout().catch(() => undefined)}/>
   </SafeAreaView>;
-  return <NavigationContainer key={user ? 'signed-in' : 'guest'}>
-    <AppStack authenticated={!!user} isAdmin={user?.role === 'admin'}/>
-  </NavigationContainer>;
+
+  return (
+    <View style={{ flex: 1, position: 'relative' }}>
+      {toast && (
+        <Animated.View
+          style={{
+            position: 'absolute',
+            top: insets.top > 0 ? insets.top + 6 : 14,
+            left: 14,
+            right: 14,
+            transform: [{ translateY: toastAnim }],
+            zIndex: 99999,
+            elevation: 99999,
+          }}
+        >
+          <Pressable
+            accessibilityRole="button"
+            onPress={handleToastPress}
+            style={{
+              backgroundColor: isDark ? '#1C1917' : '#FFFFFF',
+              borderRadius: 16,
+              paddingHorizontal: 14,
+              paddingVertical: 12,
+              flexDirection: 'row',
+              alignItems: 'center',
+              borderWidth: 1.5,
+              borderColor: isDark ? 'rgba(186, 27, 27, 0.45)' : '#F0DFD5',
+              shadowColor: '#000',
+              shadowOffset: { width: 0, height: 6 },
+              shadowOpacity: isDark ? 0.45 : 0.15,
+              shadowRadius: 10,
+              elevation: 10,
+            }}
+          >
+            <View style={{
+              width: 38,
+              height: 38,
+              borderRadius: 19,
+              backgroundColor: isDark ? '#3D1212' : '#FFEBE6',
+              alignItems: 'center',
+              justifyContent: 'center',
+              marginRight: 11,
+              borderWidth: 1,
+              borderColor: isDark ? '#BA1B1B' : '#E62424',
+            }}>
+              <Ionicons name="notifications" size={18} color={isDark ? '#FF6B6B' : '#BA1B1B'} />
+            </View>
+            <View style={{ flex: 1, marginRight: 8 }}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                <Text style={{ fontSize: 11, fontWeight: '800', color: isDark ? '#FF8C82' : '#BA1B1B', textTransform: 'uppercase', letterSpacing: 0.5 }}>
+                  UM-Pasa Alert
+                </Text>
+                <Text style={{ fontSize: 10.5, color: isDark ? '#A89C97' : '#8A7A75' }}>· tap to view</Text>
+              </View>
+              <Text numberOfLines={2} style={{ fontSize: 13, fontWeight: '700', color: isDark ? '#FFFFFF' : '#181314', marginTop: 2, lineHeight: 17 }}>
+                {toast?.message}
+              </Text>
+            </View>
+            <Pressable hitSlop={10} onPress={hideToast} style={{ padding: 4 }}>
+              <Ionicons name="close" size={18} color={isDark ? '#A89C97' : '#8A7A75'} />
+            </Pressable>
+          </Pressable>
+        </Animated.View>
+      )}
+      <NavigationContainer ref={navigationRef} key={user ? 'signed-in' : 'guest'}>
+        <AppStack authenticated={!!user} isAdmin={user?.role === 'admin'}/>
+      </NavigationContainer>
+    </View>
+  );
 }
 
 function ThemedApp() {
