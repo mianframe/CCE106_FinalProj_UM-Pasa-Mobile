@@ -6173,9 +6173,11 @@ function AdminReportScreen() {
 
 function TabsRoot() {
   const { user } = useAuth();
+  const { mode } = useTheme();
+  const currentColors = palettes[mode];
   const insets = useSafeAreaInsets();
   const isAdmin = user?.role === 'admin';
-  const isDark = C.bg === themeTokens.dark.colors.bg;
+  const isDark = mode === 'dark';
   const isAndroid = Platform.OS === 'android';
   const bottomPadding = isAndroid ? Math.max(insets.bottom, 12) : (insets.bottom > 0 ? insets.bottom : 8);
   const tabHeight = (isAndroid ? 66 : 56) + bottomPadding;
@@ -6200,8 +6202,8 @@ function TabsRoot() {
       screenOptions={({ route }) => ({
         headerShown: false,
         tabBarStyle: {
-          backgroundColor: isDark ? C.panel : '#FFFFFF',
-          borderTopColor: isDark ? C.border : '#E8DFD8',
+          backgroundColor: isDark ? currentColors.panel : '#FFFFFF',
+          borderTopColor: isDark ? currentColors.border : '#E8DFD8',
           borderTopWidth: 1,
           height: tabHeight,
           paddingBottom: bottomPadding,
@@ -6218,8 +6220,8 @@ function TabsRoot() {
           justifyContent: 'center',
           alignItems: 'center',
         },
-        tabBarActiveTintColor: isDark ? '#FF6B6B' : C.red,
-        tabBarInactiveTintColor: C.muted,
+        tabBarActiveTintColor: isDark ? '#FF6B6B' : currentColors.red,
+        tabBarInactiveTintColor: currentColors.muted,
         tabBarLabelStyle: {
           fontWeight: '700',
           fontSize: 11,
@@ -6241,7 +6243,7 @@ function TabsRoot() {
                   width: 4,
                   height: 4,
                   borderRadius: 2,
-                  backgroundColor: isDark ? '#FF6B6B' : C.red,
+                  backgroundColor: isDark ? '#FF6B6B' : currentColors.red,
                   marginTop: 2,
                 }}
               />
@@ -6260,7 +6262,9 @@ function TabsRoot() {
   );
 }
 function AppStack({ authenticated, isAdmin }: { authenticated: boolean; isAdmin: boolean }) {
-  return <Stack.Navigator screenOptions={{headerStyle:{backgroundColor:C.panel},headerTintColor:C.white,headerTitleStyle:{fontWeight:'800',fontSize:15},headerShadowVisible:false,contentStyle:{backgroundColor:C.bg}}}>
+  const { mode } = useTheme();
+  const currentColors = palettes[mode];
+  return <Stack.Navigator screenOptions={{headerStyle:{backgroundColor:currentColors.panel},headerTintColor:currentColors.white,headerTitleStyle:{fontWeight:'800',fontSize:15},headerShadowVisible:false,contentStyle:{backgroundColor:currentColors.bg}}}>
     {authenticated
       ? <Stack.Screen name="Main" component={TabsRoot} options={{headerShown:false}} />
       : <>
