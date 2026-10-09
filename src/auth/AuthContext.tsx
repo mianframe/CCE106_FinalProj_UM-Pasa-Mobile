@@ -200,7 +200,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const resetPassword = useCallback(async (email: string) => {
     if (!supabaseConfigured) throw new Error('Supabase is not configured.');
     const normalizedEmail = email.trim().toLowerCase();
-    const { error } = await supabase.auth.resetPasswordForEmail(normalizedEmail);
+    const { error } = await supabase.auth.resetPasswordForEmail(normalizedEmail, {
+      redirectTo: 'umpasa://reset-password',
+    });
     if (error) throw new Error(authErrorMessage(error.message));
   }, []);
 

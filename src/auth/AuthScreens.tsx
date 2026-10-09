@@ -254,8 +254,12 @@ export function LoginScreen({ navigation }: any) {
           <SubmitButton title={forgotBusy ? 'Sending link…' : 'Send password reset link'} busy={forgotBusy} onPress={sendReset} />
         </View>
       )}
-      <Pressable onPress={() => navigation.navigate('Register')}>
-        <Text style={s.link}>New to UM-Pasa? Create a student account</Text>
+      <Pressable
+        accessibilityRole="button"
+        onPress={() => navigation.navigate('Register')}
+        style={s.outlineButton}
+      >
+        <Text style={s.outlineButtonText}>New to UM-Pasa? Create an account</Text>
       </Pressable>
       <Text style={s.note}>Use your University of Mindanao student email.</Text>
     </AuthLayout>
@@ -338,8 +342,12 @@ export function RegisterScreen({ navigation }: any) {
       {error ? <Text accessibilityRole="alert" style={s.error}>{error}</Text> : null}
       {success ? <Text accessibilityRole="alert" style={s.success}>{success}</Text> : null}
       <SubmitButton title="Create student account" busy={busy} onPress={submit} />
-      <Pressable onPress={() => navigation.navigate('Login')}>
-        <Text style={s.link}>Already registered? Sign in</Text>
+      <Pressable
+        accessibilityRole="button"
+        onPress={() => navigation.navigate('Login')}
+        style={s.outlineButton}
+      >
+        <Text style={s.outlineButtonText}>Already registered? Sign in</Text>
       </Pressable>
       <Text style={s.note}>New accounts are created with the Student role. Admin access is assigned separately.</Text>
     </AuthLayout>
@@ -413,6 +421,24 @@ function createStyles(mode: ThemeMode) {
     },
     button: { paddingHorizontal: 16, paddingVertical: 14, alignItems: 'center', justifyContent: 'center', minHeight: 48 },
     buttonText: { color: '#ffffff', fontSize: 13, fontWeight: '800', letterSpacing: 0.1 },
+    outlineButton: {
+      borderRadius: 14,
+      borderWidth: 1.5,
+      borderColor: isDark ? 'rgba(246,200,76,0.5)' : '#BA1B1B',
+      backgroundColor: isDark ? 'rgba(246,200,76,0.06)' : 'transparent',
+      paddingVertical: 13,
+      paddingHorizontal: 16,
+      alignItems: 'center',
+      justifyContent: 'center',
+      marginTop: 14,
+      marginBottom: 6,
+    },
+    outlineButtonText: {
+      color: isDark ? C.gold : '#BA1B1B',
+      fontSize: 13,
+      fontWeight: '800',
+      letterSpacing: 0.1,
+    },
     link: { textAlign: 'center', color: C.gold, fontWeight: '800', marginTop: 18, padding: 8 },
     forgotLink: { textAlign: 'center', color: C.cream, fontWeight: '700', fontSize: 13, marginTop: 12, padding: 6 },
     forgotBox: {

@@ -27,6 +27,40 @@ const palettes = {
 const Stack = createNativeStackNavigator<any>(); const Tabs = createBottomTabNavigator<any>();
 const SHOW_DELETE_ACCOUNT = false;
 
+function getRentalDueInfo(dueDateStr?: string | null, status?: string) {
+  if (!dueDateStr || status === 'completed' || status === 'rejected') return null;
+  const due = new Date(dueDateStr);
+  const now = new Date();
+  due.setHours(23, 59, 59, 999);
+  const diffMs = due.getTime() - now.getTime();
+  const diffDays = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
+  if (diffDays < 0) {
+    const overdueDays = Math.abs(diffDays);
+    return {
+      isOverdue: true,
+      isDueSoon: false,
+      label: `OVERDUE: ${overdueDays} day${overdueDays === 1 ? '' : 's'} late (Due ${formatPhilippineDate(dueDateStr)})`,
+      color: '#DC2626',
+      bgColor: 'rgba(220, 38, 38, 0.14)',
+    };
+  } else if (diffDays <= 2) {
+    return {
+      isOverdue: false,
+      isDueSoon: true,
+      label: diffDays === 0 ? `DUE TODAY (Due ${formatPhilippineDate(dueDateStr)})` : `Due in ${diffDays} day${diffDays === 1 ? '' : 's'} (Due ${formatPhilippineDate(dueDateStr)})`,
+      color: '#D97706',
+      bgColor: 'rgba(217, 119, 6, 0.14)',
+    };
+  }
+  return {
+    isOverdue: false,
+    isDueSoon: false,
+    label: `Rental return due: ${formatPhilippineDate(dueDateStr)} (${diffDays} days left)`,
+    color: '#2563EB',
+    bgColor: 'rgba(37, 99, 235, 0.10)',
+  };
+}
+
 function Button({ title, onPress, secondary = false, danger = false, disabled = false }: any) {
   return <Pressable accessibilityRole="button" disabled={disabled} onPress={onPress} style={[s.buttonShell, secondary && s.buttonSecondary, danger && s.buttonDanger, disabled && { opacity: .55 }]}><LinearGradient colors={secondary ? (C.bg === themeTokens.dark.colors.bg ? ['rgba(255,255,255,.12)','rgba(255,255,255,.035)'] : ['#FFF4EC','#FFEFE5']) : danger ? ['#a61111','#650606'] : ['#BA1B1B','#990000','#770000']} start={{x:0,y:0}} end={{x:1,y:1}} style={s.button}><Text style={[s.buttonText, secondary && { color: C.gold }]}>{title}</Text></LinearGradient></Pressable>;
 }
@@ -1788,6 +1822,30 @@ function TransactionsScreen({ navigation }: any) {
                 </View>
               ) : null}
 
+              {(() => {
+                const dueInfo = getRentalDueInfo(t.rental_due_date, t.status);
+                if (!dueInfo) return null;
+                return (
+                  <View style={{
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    gap: 6,
+                    marginTop: 8,
+                    paddingHorizontal: 8,
+                    paddingVertical: 5,
+                    borderRadius: 6,
+                    backgroundColor: dueInfo.bgColor,
+                    borderWidth: 0.5,
+                    borderColor: dueInfo.color,
+                  }}>
+                    <Ionicons name={dueInfo.isOverdue ? 'alert-circle' : 'time-outline'} size={13} color={dueInfo.color} />
+                    <Text numberOfLines={1} style={{ fontSize: 11, fontWeight: '700', color: dueInfo.color }}>
+                      {dueInfo.label}
+                    </Text>
+                  </View>
+                );
+              })()}
+
               {t.item_id ? (
                 <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-end', marginTop: 10, paddingTop: 8, borderTopWidth: 1, borderTopColor: isDark ? 'rgba(255,255,255,0.06)' : '#F3F4F6' }}>
                   <Pressable
@@ -1969,54 +2027,208 @@ function TransactionScreen({ route, navigation }: any) {
     }
   };
 
-  return <Page bottomSafe><Heading title={t.item?.title || 'Transaction'} subtitle={`Transaction #${t.id}`} /><Card><View style={{marginBottom: 6}}><StatusPill status={t.status} /></View>{t.rental_duration_days ? <View style={{ marginVertical: 4 }}><Text style={s.price}>Total: ₱{(Number(t.item?.price) || 0) * t.rental_duration_days}</Text><Text style={{ fontSize: 12, color: isDark ? '#FDE68A' : '#78350F', fontWeight: '700', marginTop: 2 }}>₱{t.item?.price}/day × {t.rental_duration_days} day(s) rental</Text></View> : <Text style={s.price}>{money(t.item?.price)}</Text>}<Text style={s.body}>Buyer: {t.buyer?.name}</Text><Text style={s.body}>Seller: {t.seller?.name}</Text><Text style={s.body}>Payment: {t.payment_method?.replaceAll('_',' ')}{t.other_payment_method?` · ${t.other_payment_method}`:''}</Text>{t.rental_duration_days?<Text style={s.body}>Rental duration: {t.rental_duration_days} day(s) · Due {formatPhilippineDate(t.rental_due_date, 'to be confirmed')}</Text>:null}{t.meetup_location ? <Text style={s.body}>Meetup: {t.meetup_location} · {formatPhilippineDateTime(t.meetup_time)}</Text> : null}{pendingProposal ? (
-  <View style={{ marginTop: 8, padding: 10, borderRadius: 8, backgroundColor: isDark ? 'rgba(246,200,76,0.12)' : '#FFF9E6', borderWidth: 1, borderColor: isDark ? 'rgba(246,200,76,0.25)' : '#FFE082' }}>
-    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 2 }}>
-      <Ionicons name="time-outline" size={15} color={C.gold} />
-      <Text style={{ fontSize: 12, fontWeight: '800', color: isDark ? C.gold : '#B78103' }}>Pending meetup proposal</Text>
-    </View>
-    <Text style={{ fontSize: 13, color: C.white, fontWeight: '600' }}>
-      {pendingProposal.meetup_location} · {formatPhilippineDateTime(pendingProposal.meetup_time)}
-    </Text>
-    <Text style={{ fontSize: 12, color: C.cream, marginTop: 2, marginBottom: pendingProposal.sender_id !== user?.id ? 8 : 0 }}>
-      {pendingProposal.sender_id === user?.id
-        ? `Waiting for ${user?.id === t.buyer_id ? t.seller?.name : t.buyer?.name} to accept`
-        : `Proposed by ${pendingProposal.sender_id === t.buyer_id ? t.buyer?.name : t.seller?.name}`}
-    </Text>
-    {pendingProposal.sender_id !== user?.id ? (
-      <View style={{ flexDirection: 'row', gap: 8 }}>
-        <Pressable
-          accessibilityRole="button"
+  const completeExchange = async () => {
+    const isDigital = ['gcash', 'maya', 'bank_transfer'].includes(t.payment_method);
+    const doComplete = async () => {
+      run('Complete exchange', async () => {
+        await transactions.complete(t.id);
+        if (t.item_id) {
+          try { await marketplace.markSold(t.item_id); } catch (_) {
+            try { await marketplace.remove(t.item_id); } catch (_) {}
+          }
+        }
+      });
+    };
+    if (isDigital && !t.payment_proof) {
+      Alert.alert(
+        'Verify Payment Proof',
+        'No digital payment receipt photo has been uploaded for this exchange. Have you verified the payment in your GCash / Maya / bank account?',
+        [
+          { text: 'Wait for proof', style: 'cancel' },
+          { text: 'Yes, payment verified', onPress: doComplete }
+        ]
+      );
+    } else {
+      doComplete();
+    }
+  };
+
+  const rentalDueInfo = getRentalDueInfo(t.rental_due_date, t.status);
+
+  return (
+    <Page bottomSafe>
+      <Heading title={t.item?.title || 'Transaction'} subtitle={`Transaction #${t.id}`} />
+      <Card>
+        <View style={{ marginBottom: 6 }}>
+          <StatusPill status={t.status} />
+        </View>
+        {t.rental_duration_days ? (
+          <View style={{ marginVertical: 4 }}>
+            <Text style={s.price}>Total: ₱{(Number(t.item?.price) || 0) * t.rental_duration_days}</Text>
+            <Text style={{ fontSize: 12, color: isDark ? '#FDE68A' : '#78350F', fontWeight: '700', marginTop: 2 }}>
+              ₱{t.item?.price}/day × {t.rental_duration_days} day(s) rental
+            </Text>
+          </View>
+        ) : (
+          <Text style={s.price}>{money(t.item?.price)}</Text>
+        )}
+        <Text style={s.body}>Buyer: {t.buyer?.name}</Text>
+        <Text style={s.body}>Seller: {t.seller?.name}</Text>
+        <Text style={s.body}>Payment: {t.payment_method?.replaceAll('_', ' ')}{t.other_payment_method ? ` · ${t.other_payment_method}` : ''}</Text>
+        {t.rental_duration_days ? (
+          <Text style={s.body}>Rental duration: {t.rental_duration_days} day(s) · Due {formatPhilippineDate(t.rental_due_date, 'to be confirmed')}</Text>
+        ) : null}
+        {rentalDueInfo ? (
+          <View style={{
+            marginTop: 8,
+            marginBottom: 6,
+            padding: 10,
+            borderRadius: 8,
+            backgroundColor: rentalDueInfo.bgColor,
+            borderWidth: 1,
+            borderColor: rentalDueInfo.color,
+            flexDirection: 'row',
+            alignItems: 'center',
+            gap: 8,
+          }}>
+            <Ionicons name={rentalDueInfo.isOverdue ? 'alert-circle' : 'time'} size={18} color={rentalDueInfo.color} />
+            <View style={{ flex: 1 }}>
+              <Text style={{ fontSize: 11, fontWeight: '800', color: rentalDueInfo.color }}>
+                {rentalDueInfo.isOverdue ? 'RENTAL USAGE OVERDUE' : rentalDueInfo.isDueSoon ? 'RENTAL DUE SOON' : 'RENTAL SCHEDULE'}
+              </Text>
+              <Text style={{ fontSize: 12.5, fontWeight: '700', color: C.white, marginTop: 1 }}>
+                {rentalDueInfo.label}
+              </Text>
+            </View>
+          </View>
+        ) : null}
+        {t.meetup_location ? (
+          <Text style={s.body}>Meetup: {t.meetup_location} · {formatPhilippineDateTime(t.meetup_time)}</Text>
+        ) : null}
+        {pendingProposal ? (
+          <View style={{ marginTop: 8, padding: 10, borderRadius: 8, backgroundColor: isDark ? 'rgba(246,200,76,0.12)' : '#FFF9E6', borderWidth: 1, borderColor: isDark ? 'rgba(246,200,76,0.25)' : '#FFE082' }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 2 }}>
+              <Ionicons name="time-outline" size={15} color={C.gold} />
+              <Text style={{ fontSize: 12, fontWeight: '800', color: isDark ? C.gold : '#B78103' }}>Pending meetup proposal</Text>
+            </View>
+            <Text style={{ fontSize: 13, color: C.white, fontWeight: '600' }}>
+              {pendingProposal.meetup_location} · {formatPhilippineDateTime(pendingProposal.meetup_time)}
+            </Text>
+            <Text style={{ fontSize: 12, color: C.cream, marginTop: 2, marginBottom: pendingProposal.sender_id !== user?.id ? 8 : 0 }}>
+              {pendingProposal.sender_id === user?.id
+                ? `Waiting for ${user?.id === t.buyer_id ? t.seller?.name : t.buyer?.name} to accept`
+                : `Proposed by ${pendingProposal.sender_id === t.buyer_id ? t.buyer?.name : t.seller?.name}`}
+            </Text>
+            {pendingProposal.sender_id !== user?.id ? (
+              <View style={{ flexDirection: 'row', gap: 8 }}>
+                <Pressable
+                  accessibilityRole="button"
+                  onPress={async () => {
+                    try {
+                      await messaging.respond(pendingProposal.id, true);
+                      await load();
+                    } catch (e) {
+                      Alert.alert('Unable to accept', errorMessage(e));
+                    }
+                  }}
+                  style={{ flex: 1, backgroundColor: C.red, paddingVertical: 8, borderRadius: 8, alignItems: 'center' }}
+                >
+                  <Text style={{ color: '#FFFFFF', fontWeight: '800', fontSize: 12 }}>Accept proposal</Text>
+                </Pressable>
+                <Pressable
+                  accessibilityRole="button"
+                  onPress={async () => {
+                    try {
+                      await messaging.respond(pendingProposal.id, false);
+                      await load();
+                    } catch (e) {
+                      Alert.alert('Unable to decline', errorMessage(e));
+                    }
+                  }}
+                  style={{ flex: 1, borderWidth: 1, borderColor: C.border, paddingVertical: 8, borderRadius: 8, alignItems: 'center' }}
+                >
+                  <Text style={{ color: C.white, fontWeight: '700', fontSize: 12 }}>Decline</Text>
+                </Pressable>
+              </View>
+            ) : null}
+          </View>
+        ) : null}
+        <Text style={s.muted}>Payment proof: {t.payment_proof ? `Uploaded ${formatPhilippineDateTime(t.payment_proof_uploaded_at, '')}` : 'Not uploaded'}</Text>
+        {proofUrl && (
+          <View style={{ marginTop: 10 }}>
+            <Text style={s.label}>Payment receipt photo</Text>
+            <Image source={{ uri: proofUrl }} style={{ width: '100%', height: 220, borderRadius: 10, marginTop: 6 }} resizeMode="contain" />
+          </View>
+        )}
+      </Card>
+      {isBuyer && ['pending','approved'].includes(t.status) && (
+        <View style={{ marginVertical: 6 }}>
+          <Button
+            title={uploadingProof ? 'Uploading proof…' : t.payment_proof ? 'Replace payment receipt' : 'Upload payment receipt'}
+            secondary
+            disabled={uploadingProof}
+            onPress={pickProof}
+          />
+        </View>
+      )}
+      {isSeller && t.status === 'pending' && (
+        <>
+          <Field label="Meetup location" value={meetup} onChangeText={setMeetup} placeholder="e.g. Main Library (Mabini) or Visayan IT Labs Lobby" />
+          <MeetupTimePicker label="Meetup date & time" value={meetupDate} onChange={setMeetupDate} />
+          <Button title={approving ? 'Approving request…' : 'Approve request'} disabled={approving || !meetup.trim() || !meetupDate} onPress={approve} />
+          <Button title="Reject request" danger onPress={() => run('Reject request', () => transactions.reject(t.id))} />
+        </>
+      )}
+      {isBuyer && t.status === 'pending' && (
+        <View style={{ marginVertical: 6 }}>
+          <Button
+            title="Cancel my request"
+            danger
+            secondary
+            onPress={() => run('Cancel request', () => transactions.reject(t.id))}
+          />
+        </View>
+      )}
+      {isSeller && t.status === 'approved' && (
+        <Button title="Mark as completed" onPress={completeExchange} />
+      )}
+      {(isBuyer || isSeller) && t.status === 'approved' && (
+        <View style={{ marginVertical: 6 }}>
+          <Button
+            title="Cancel exchange / No-show"
+            danger
+            secondary
+            onPress={() => run('Cancel exchange', () => transactions.reject(t.id))}
+          />
+        </View>
+      )}
+      {t.status === 'completed' && !t.ratings?.some((r: any) => r.reviewer_id === user?.id) && (
+        <>
+          <Text style={s.muted}>Both the buyer and seller can leave a review after completion.</Text>
+          <RatingForm id={t.id} onDone={load} />
+        </>
+      )}
+      {t.item && (
+        <Button
+          title="Message participant"
+          secondary
           onPress={async () => {
             try {
-              await messaging.respond(pendingProposal.id, true);
-              await load();
-            } catch (e) {
-              Alert.alert('Unable to accept', errorMessage(e));
+              const recipient_id = user?.id === t.buyer_id ? t.seller_id : t.buyer_id;
+              const m = await messaging.send({
+                recipient_id,
+                item_id: t.item_id,
+                body: `Hi, I want to coordinate about ${t.item?.title}.`
+              });
+              navigation.navigate('Conversation', { id: m.conversation_id });
+            } catch(e) {
+              Alert.alert('Unable to message participant', errorMessage(e));
             }
           }}
-          style={{ flex: 1, backgroundColor: C.red, paddingVertical: 8, borderRadius: 8, alignItems: 'center' }}
-        >
-          <Text style={{ color: '#FFFFFF', fontWeight: '800', fontSize: 12 }}>Accept proposal</Text>
-        </Pressable>
-        <Pressable
-          accessibilityRole="button"
-          onPress={async () => {
-            try {
-              await messaging.respond(pendingProposal.id, false);
-              await load();
-            } catch (e) {
-              Alert.alert('Unable to decline', errorMessage(e));
-            }
-          }}
-          style={{ flex: 1, borderWidth: 1, borderColor: C.border, paddingVertical: 8, borderRadius: 8, alignItems: 'center' }}
-        >
-          <Text style={{ color: C.white, fontWeight: '700', fontSize: 12 }}>Decline</Text>
-        </Pressable>
-      </View>
-    ) : null}
-  </View>
-) : null}<Text style={s.muted}>Payment proof: {t.payment_proof?`Uploaded ${formatPhilippineDateTime(t.payment_proof_uploaded_at, '')}`:'Not uploaded'}</Text>{proofUrl && <View style={{ marginTop: 10 }}><Text style={s.label}>Payment receipt photo</Text><Image source={{ uri: proofUrl }} style={{ width: '100%', height: 220, borderRadius: 10, marginTop: 6 }} resizeMode="contain" /></View>}</Card>{isBuyer && ['pending','approved'].includes(t.status) && <View style={{ marginVertical: 6 }}><Button title={uploadingProof ? 'Uploading proof…' : t.payment_proof ? 'Replace payment receipt' : 'Upload payment receipt'} secondary disabled={uploadingProof} onPress={pickProof} /></View>}{isSeller && t.status === 'pending' && <><Field label="Meetup location" value={meetup} onChangeText={setMeetup} placeholder="e.g. Main Library (Mabini) or Visayan IT Labs Lobby"/><MeetupTimePicker label="Meetup date & time" value={meetupDate} onChange={setMeetupDate}/><Button title={approving ? 'Approving request…' : 'Approve request'} disabled={approving || !meetup.trim() || !meetupDate} onPress={approve} /><Button title="Reject request" danger onPress={() => run('Reject request', () => transactions.reject(t.id))} /></>}{isSeller && t.status === 'approved' && <Button title="Mark as completed" onPress={() => run('Complete exchange', async () => { await transactions.complete(t.id); if (t.item_id) { try { await marketplace.markSold(t.item_id); } catch (_) { try { await marketplace.remove(t.item_id); } catch (_) {} } } })} />}{t.status === 'completed' && !t.ratings?.some((r: any) => r.reviewer_id === user?.id) && <><Text style={s.muted}>Both the buyer and seller can leave a review after completion.</Text><RatingForm id={t.id} onDone={load} /></>}{t.item && <Button title="Message participant" secondary onPress={async()=>{try{const recipient_id=user?.id===t.buyer_id?t.seller_id:t.buyer_id;const m=await messaging.send({recipient_id,item_id:t.item_id,body:`Hi, I want to coordinate about ${t.item?.title}.`});navigation.navigate('Conversation',{id:m.conversation_id});}catch(e){Alert.alert('Unable to message participant',errorMessage(e))}}}/>}</Page>;
+        />
+      )}
+    </Page>
+  );
 }
 function RatingForm({ id, onDone }: any) {
   const [rating, setRating] = useState(5);
@@ -6496,6 +6708,30 @@ function TransactionSummary({t}: {t:Transaction}) {
       <Text style={s.adminDetail}>Payment Method: {t.payment_method?.replaceAll('_',' ')||'—'}{t.other_payment_method?` (${t.other_payment_method})`:''}</Text>
       <Text style={s.adminDetail}>Rental duration: {t.rental_duration_days?`${t.rental_duration_days} days`:'Not applicable'}</Text>
       <Text style={s.adminDetail}>Rental due: {formatPhilippineDate(t.rental_due_date, 'Not set')}</Text>
+      {(() => {
+        const dueInfo = getRentalDueInfo(t.rental_due_date, t.status);
+        if (!dueInfo) return null;
+        return (
+          <View style={{
+            marginTop: 4,
+            marginBottom: 4,
+            paddingHorizontal: 8,
+            paddingVertical: 4,
+            borderRadius: 6,
+            backgroundColor: dueInfo.bgColor,
+            borderWidth: 1,
+            borderColor: dueInfo.color,
+            flexDirection: 'row',
+            alignItems: 'center',
+            gap: 6,
+          }}>
+            <Ionicons name={dueInfo.isOverdue ? 'alert-circle' : 'time'} size={13} color={dueInfo.color} />
+            <Text style={{ fontSize: 11, fontWeight: '800', color: dueInfo.color }}>
+              {dueInfo.label}
+            </Text>
+          </View>
+        );
+      })()}
       <Text style={s.adminDetail}>Meetup location: {t.meetup_location||'Not scheduled'}</Text>
       <Text style={s.adminDetail}>Meetup time: {formatPhilippineDateTime(t.meetup_time, 'Not scheduled')}</Text>
       <Text style={s.adminDetail}>Payment proof: {t.payment_proof_uploaded_at?`Uploaded ${formatPhilippineDateTime(t.payment_proof_uploaded_at)}`:t.payment_proof?'Uploaded':'Not uploaded'}</Text>
