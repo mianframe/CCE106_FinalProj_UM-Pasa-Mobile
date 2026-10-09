@@ -4581,20 +4581,20 @@ function ConversationScreen({ route, navigation }: any) {
                 </View>
                 <View style={{ position: 'absolute', bottom: 0, right: 0, width: 11, height: 11, borderRadius: 5.5, backgroundColor: '#2E7D32', borderWidth: 2, borderColor: isDark ? '#202024' : '#FFFFFF' }} />
               </View>
-              <View style={{ flex: 1 }}>
+              <View style={{ flex: 1, marginRight: 4 }}>
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
-                  <Text numberOfLines={1} style={{ fontSize: 14.5, fontWeight: '800', color: C.white, maxWidth: 140 }}>
+                  <Text numberOfLines={1} style={{ fontSize: 14.5, fontWeight: '800', color: C.white, flexShrink: 1 }}>
                     {person?.name || 'Conversation'}
                   </Text>
                   <Ionicons name="checkmark-circle" size={14} color={C.red} />
                 </View>
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 1 }}>
-                  <Text numberOfLines={1} style={{ fontSize: 11.5, color: C.muted }}>
-                    {person?.role === 'admin' ? 'Campus administrator' : 'UM Tagum student'}
+                  <Text numberOfLines={1} style={{ fontSize: 11.5, color: C.muted, flexShrink: 1 }}>
+                    {person?.role === 'admin' ? 'Campus admin' : 'UM student'}
                   </Text>
                   <Text style={{ fontSize: 11, color: C.gold, fontWeight: '700' }}>
                     {partnerRating && partnerRating.count > 0 && partnerRating.average !== null
-                      ? `★ ${partnerRating.average.toFixed(1)} (${partnerRating.count})`
+                      ? `★ ${partnerRating.average.toFixed(1)}`
                       : '★ New'}
                   </Text>
                   <Text style={{ fontSize: 11, color: C.gold, fontWeight: '700' }}>· Reviews ›</Text>
@@ -4611,14 +4611,15 @@ function ConversationScreen({ route, navigation }: any) {
                 style={{
                   flexDirection: 'row',
                   alignItems: 'center',
-                  gap: 8,
+                  gap: 7,
                   backgroundColor: C.panel2,
                   paddingHorizontal: 8,
                   paddingVertical: 5,
                   borderRadius: 10,
                   borderWidth: 1,
                   borderColor: C.border,
-                  maxWidth: 145,
+                  maxWidth: 135,
+                  flexShrink: 1,
                 }}
               >
                 {c.item.image ? (
@@ -4781,15 +4782,16 @@ function ConversationScreen({ route, navigation }: any) {
                     }}
                   >
                     {/* Header: Icon + Title + Status Badge */}
-                    <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
-                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                        <Ionicons name="git-network-outline" size={18} color={C.red} />
-                        <Text style={{ fontSize: 15, fontWeight: '800', color: C.white }}>Meetup Proposal</Text>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8, marginBottom: 12 }}>
+                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 7, flexShrink: 0 }}>
+                        <Ionicons name="git-network-outline" size={17} color={C.red} />
+                        <Text style={{ fontSize: 14.5, fontWeight: '800', color: C.white }}>Meetup Proposal</Text>
                       </View>
                       <View style={{
                         paddingHorizontal: 8,
                         paddingVertical: 3,
                         borderRadius: 12,
+                        flexShrink: 1,
                         backgroundColor: m.proposal_status === 'accepted'
                           ? (isDark ? 'rgba(46,125,50,0.2)' : '#E8F5E9')
                           : m.proposal_status === 'declined'
@@ -4798,14 +4800,14 @@ function ConversationScreen({ route, navigation }: any) {
                         borderWidth: 1,
                         borderColor: m.proposal_status === 'accepted' ? '#4CAF50' : m.proposal_status === 'declined' ? C.red : C.gold,
                       }}>
-                        <Text style={{
-                          fontSize: 11,
+                        <Text numberOfLines={1} style={{
+                          fontSize: 10.5,
                           fontWeight: '800',
                           color: m.proposal_status === 'accepted' ? '#2E7D32' : m.proposal_status === 'declined' ? C.red : C.gold,
                           textTransform: 'capitalize',
                         }}>
                           {m.proposal_status === 'pending'
-                            ? (!mine ? 'Awaiting your response' : `Waiting for ${person?.name || 'partner'} to accept`)
+                            ? (!mine ? 'Action needed' : 'Pending partner')
                             : m.proposal_status}
                         </Text>
                       </View>
@@ -7422,7 +7424,7 @@ function AppContent() {
 
     toastTimer.current = setTimeout(() => {
       hideToast();
-    }, 4000);
+    }, 3000);
   }, [hideToast, toastAnim]);
 
   useEffect(() => {
@@ -7495,9 +7497,10 @@ function AppContent() {
     <View style={{ flex: 1, position: 'relative' }}>
       {toast && (
         <Animated.View
+          pointerEvents="box-none"
           style={{
             position: 'absolute',
-            top: insets.top > 0 ? insets.top + 6 : 14,
+            top: insets.top > 0 ? insets.top + 4 : 10,
             left: 14,
             right: 14,
             transform: [{ translateY: toastAnim }],
@@ -7510,46 +7513,40 @@ function AppContent() {
             onPress={handleToastPress}
             style={{
               backgroundColor: isDark ? '#1C1917' : '#FFFFFF',
-              borderRadius: 16,
-              paddingHorizontal: 14,
-              paddingVertical: 12,
+              borderRadius: 22,
+              paddingHorizontal: 12,
+              paddingVertical: 7,
               flexDirection: 'row',
               alignItems: 'center',
               borderWidth: 1.5,
               borderColor: isDark ? 'rgba(186, 27, 27, 0.45)' : '#F0DFD5',
               shadowColor: '#000',
-              shadowOffset: { width: 0, height: 6 },
-              shadowOpacity: isDark ? 0.45 : 0.15,
-              shadowRadius: 10,
-              elevation: 10,
+              shadowOffset: { width: 0, height: 4 },
+              shadowOpacity: isDark ? 0.35 : 0.12,
+              shadowRadius: 8,
+              elevation: 8,
             }}
           >
             <View style={{
-              width: 38,
-              height: 38,
-              borderRadius: 19,
+              width: 28,
+              height: 28,
+              borderRadius: 14,
               backgroundColor: isDark ? '#3D1212' : '#FFEBE6',
               alignItems: 'center',
               justifyContent: 'center',
-              marginRight: 11,
+              marginRight: 9,
               borderWidth: 1,
               borderColor: isDark ? '#BA1B1B' : '#E62424',
             }}>
-              <Ionicons name="notifications" size={18} color={isDark ? '#FF6B6B' : '#BA1B1B'} />
+              <Ionicons name="notifications" size={14} color={isDark ? '#FF6B6B' : '#BA1B1B'} />
             </View>
-            <View style={{ flex: 1, marginRight: 8 }}>
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                <Text style={{ fontSize: 11, fontWeight: '800', color: isDark ? '#FF8C82' : '#BA1B1B', textTransform: 'uppercase', letterSpacing: 0.5 }}>
-                  UM-Pasa Alert
-                </Text>
-                <Text style={{ fontSize: 10.5, color: isDark ? '#A89C97' : '#8A7A75' }}>· tap to view</Text>
-              </View>
-              <Text numberOfLines={2} style={{ fontSize: 13, fontWeight: '700', color: isDark ? '#FFFFFF' : '#181314', marginTop: 2, lineHeight: 17 }}>
+            <View style={{ flex: 1, marginRight: 6 }}>
+              <Text numberOfLines={1} style={{ fontSize: 12.5, fontWeight: '700', color: isDark ? '#FFFFFF' : '#181314' }}>
                 {toast?.message}
               </Text>
             </View>
             <Pressable hitSlop={10} onPress={hideToast} style={{ padding: 4 }}>
-              <Ionicons name="close" size={18} color={isDark ? '#A89C97' : '#8A7A75'} />
+              <Ionicons name="close" size={16} color={isDark ? '#A89C97' : '#8A7A75'} />
             </Pressable>
           </Pressable>
         </Animated.View>
