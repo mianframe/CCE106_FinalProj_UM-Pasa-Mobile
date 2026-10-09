@@ -82,10 +82,17 @@ function getCategoryIcon(cat: string): keyof typeof Ionicons.glyphMap {
 }
 function Card({ children, style }: any) { return <LinearGradient colors={C.bg===themeTokens.dark.colors.bg?['rgba(255,255,255,.085)','rgba(255,255,255,.025)']:['#ffffff','#fbfcfd']} start={{x:0,y:0}} end={{x:1,y:1}} style={[s.card, style]}>{children}</LinearGradient>; }
 function MiniBars({ title, data=[] }: { title: string; data: { label: string; total: number }[] }) { const max=Math.max(1,...data.map(x=>x.total)); return <Card><Text style={s.section}>{title}</Text>{data.length?data.map(row=><View key={row.label} style={{marginVertical:6}}><View style={s.rowBetween}><Text style={s.muted}>{row.label}</Text><Text style={s.muted}>{row.total}</Text></View><View style={s.barTrack}><View style={[s.barFill,{width:`${Math.max(3,row.total/max*100)}%`}]}/></View></View>):<Text style={s.muted}>No activity yet.</Text>}</Card>; }
-function Page({ children, refreshing, onRefresh, footer, topSafe = false, floatingAction, bottomSafe = false }: any) {
+function Page({ children, refreshing, onRefresh, footer, topSafe = true, floatingAction, bottomSafe = false }: any) {
   const insets = useSafeAreaInsets();
+  let headerHeight = 0;
+  try {
+    headerHeight = useHeaderHeight() || 0;
+  } catch {
+    headerHeight = 0;
+  }
+  const needsTopInset = topSafe && headerHeight === 0;
   return (
-    <SafeAreaView edges={topSafe ? ['top', 'left', 'right'] : ['left', 'right']} style={s.safe}>
+    <SafeAreaView edges={needsTopInset ? ['top', 'left', 'right'] : ['left', 'right']} style={s.safe}>
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         <ScrollView
           keyboardShouldPersistTaps="handled"
@@ -246,7 +253,7 @@ function BrowseScreen({ navigation }: any) {
   const toggle = (key: string, value: any) => setFilter(key, filters[key] === value ? undefined : value);
   const bannerWidth = width - 68;
   const isDark = C.bg === themeTokens.dark.colors.bg;
-  return <Page refreshing={loading} onRefresh={load} footer={{navigation}} topSafe={!!user}>
+  return <Page refreshing={loading} onRefresh={load} footer={{navigation}} topSafe={true}>
     <View style={s.marketHero}>
       <LinearGradient colors={['#4A1210', '#2B1214', '#151419']} start={{x:0,y:0}} end={{x:1,y:1}} style={s.marketHeroGradient}>
         <View style={s.brandRow}>
@@ -2753,7 +2760,7 @@ function MessagesScreen({ navigation }: any) {
               UM-Pasa
             </Text>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-              <Text style={{ fontSize: 18, fontWeight: '900', color: C.white, letterSpacing: -0.3 }}>
+              <Text style={{ fontSize: 20, fontWeight: '900', color: C.white, letterSpacing: -0.3 }}>
                 Inbox
               </Text>
               {unreadTotal > 0 && (
@@ -6257,7 +6264,7 @@ function AppStack({ authenticated, isAdmin }: { authenticated: boolean; isAdmin:
     {authenticated
       ? <Stack.Screen name="Main" component={TabsRoot} options={{headerShown:false}} />
       : <>
-          <Stack.Screen name="Browse" component={BrowseScreen} options={{title:'UM-Pasa Marketplace'}} />
+          <Stack.Screen name="Browse" component={BrowseScreen} options={{headerShown:false}} />
           <Stack.Screen name="Login" component={LoginScreen} options={{title:'Sign in'}} />
           <Stack.Screen name="Register" component={RegisterScreen} options={{title:'Create account'}} />
         </>}
