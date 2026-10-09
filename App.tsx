@@ -727,7 +727,7 @@ function ListingScreen({ route, navigation }: any) {
         )}
         {item.archived_at ? <Text style={[s.muted, { marginTop: 8 }]}>Archived listing · transaction history is retained</Text> : null}
       </Card>
-      {!item.archived_at && item.status === 'available' && item.listing_type === 'rent' && (() => {
+      {!item.archived_at && item.status === 'available' && item.listing_type === 'rent' && user?.role !== 'admin' && (() => {
         const parsedDays = Number(days);
         const isWholePositive = Number.isInteger(parsedDays) && parsedDays >= 1;
         const minDays = item.minimum_rental_days || 1;
@@ -773,7 +773,7 @@ function ListingScreen({ route, navigation }: any) {
           </>
         );
       })()}
-      {!item.archived_at && user?.id !== item.user_id && (() => {
+      {!item.archived_at && user?.id !== item.user_id && user?.role !== 'admin' && (() => {
         const parsedDays = Number(days);
         const isWholePositive = Number.isInteger(parsedDays) && parsedDays >= 1;
         const minDays = item.minimum_rental_days || 1;
@@ -814,7 +814,7 @@ function ListingScreen({ route, navigation }: any) {
           )
         );
       })()}
-      {user?.id !== item.user_id && (
+      {user?.id !== item.user_id && user?.role !== 'admin' && (
         <Button
           title="Message seller"
           secondary
@@ -834,6 +834,94 @@ function ListingScreen({ route, navigation }: any) {
             setShowInquiryModal(true);
           }}
         />
+      )}
+      {user?.role === 'admin' && (
+        <View style={{
+          backgroundColor: isDark ? C.panel : '#FFFFFF',
+          borderRadius: 16,
+          padding: 16,
+          borderWidth: 1,
+          borderColor: C.border,
+          marginTop: 10,
+          marginBottom: 10,
+        }}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
+            <Text style={{ fontSize: 14, fontWeight: '800', color: C.white }}>Admin Moderation Controls</Text>
+            <StatusPill status={item.moderation_status} />
+          </View>
+          {item.rejection_reason ? (
+            <Text style={{ fontSize: 12, color: C.red, marginBottom: 10, fontWeight: '600' }}>
+              Rejection reason: {item.rejection_reason}
+            </Text>
+          ) : null}
+          <View style={{ gap: 8 }}>
+            {item.moderation_status !== 'approved' && (
+              <Button
+                title={busy ? 'Updating…' : '✓ Approve listing'}
+                disabled={busy}
+                onPress={async () => {
+                  try {
+                    setBusy(true);
+                    await admin.moderate(item.id, 'approve');
+                    await load();
+                    Alert.alert('Listing approved', 'This listing is now active on the campus marketplace.');
+                  } catch (e) {
+                    Alert.alert('Moderation failed', errorMessage(e));
+                  } finally {
+                    setBusy(false);
+                  }
+                }}
+              />
+            )}
+            {item.moderation_status !== 'rejected' && (
+              <Button
+                title="✕ Reject listing"
+                danger
+                disabled={busy}
+                onPress={() => {
+                  Alert.alert(
+                    'Reject Listing',
+                    'Choose a rejection reason to notify the student:',
+                    [
+                      { text: 'Cancel', style: 'cancel' },
+                      {
+                        text: 'Missing photos / details',
+                        onPress: async () => {
+                          try {
+                            setBusy(true);
+                            await admin.moderate(item.id, 'reject', 'Missing clear item photos or course details.');
+                            await load();
+                            Alert.alert('Listing rejected', 'The student was notified of the rejection reason.');
+                          } catch (e) {
+                            Alert.alert('Moderation failed', errorMessage(e));
+                          } finally {
+                            setBusy(false);
+                          }
+                        }
+                      },
+                      {
+                        text: 'Policy violation',
+                        style: 'destructive',
+                        onPress: async () => {
+                          try {
+                            setBusy(true);
+                            await admin.moderate(item.id, 'reject', 'Item does not meet university marketplace policy guidelines.');
+                            await load();
+                            Alert.alert('Listing rejected', 'The student was notified of the rejection reason.');
+                          } catch (e) {
+                            Alert.alert('Moderation failed', errorMessage(e));
+                          } finally {
+                            setBusy(false);
+                          }
+                        }
+                      }
+                    ]
+                  );
+                }}
+              />
+            )}
+          </View>
+        </View>
       )}
       {!item.archived_at && user && (user.id === item.user_id || user.role === 'admin') && (
         <Button title="Edit listing" secondary onPress={() => navigation.navigate('ListingForm', { item })} />
@@ -6315,6 +6403,29 @@ function AdminUsersScreen() {
 }
 
 function TransactionSummary({t}: {t:Transaction}) {
+  const [proofUrl, setProofUrl] = useState<string | null>(null);
+  const [loadingProof, setLoadingProof] = useState(false);
+
+  useEffect(() => {
+    let active = true;
+    if (t.payment_proof) {
+      setLoadingProof(true);
+      getPaymentProofSignedUrl(t.payment_proof)
+        .then(url => {
+          if (active) setProofUrl(url);
+        })
+        .catch(() => {
+          if (active) setProofUrl(null);
+        })
+        .finally(() => {
+          if (active) setLoadingProof(false);
+        });
+    } else {
+      setProofUrl(null);
+    }
+    return () => { active = false; };
+  }, [t.payment_proof]);
+
   return (
     <View style={s.adminDetails}>
       <Text style={s.adminDetail}>Buyer: {t.buyer?.name||'—'}</Text>
@@ -6325,8 +6436,26 @@ function TransactionSummary({t}: {t:Transaction}) {
       <Text style={s.adminDetail}>Rental due: {formatPhilippineDate(t.rental_due_date, 'Not set')}</Text>
       <Text style={s.adminDetail}>Meetup location: {t.meetup_location||'Not scheduled'}</Text>
       <Text style={s.adminDetail}>Meetup time: {formatPhilippineDateTime(t.meetup_time, 'Not scheduled')}</Text>
-      <Text style={s.adminDetail}>Payment proof: {t.payment_proof_uploaded_at?`Uploaded ${formatPhilippineDateTime(t.payment_proof_uploaded_at)}`:'Not uploaded'}</Text>
+      <Text style={s.adminDetail}>Payment proof: {t.payment_proof_uploaded_at?`Uploaded ${formatPhilippineDateTime(t.payment_proof_uploaded_at)}`:t.payment_proof?'Uploaded':'Not uploaded'}</Text>
       <Text style={s.adminDetail}>Created: {formatPhilippineDateTime(t.created_at, '—')}</Text>
+      {t.payment_proof ? (
+        <View style={{ marginTop: 8, paddingTop: 8, borderTopWidth: 1, borderTopColor: C.border }}>
+          <Text style={[s.adminDetail, { fontWeight: '700', marginBottom: 6 }]}>Payment receipt proof:</Text>
+          {loadingProof ? (
+            <ActivityIndicator size="small" color={C.gold} style={{ marginVertical: 8 }} />
+          ) : proofUrl ? (
+            <Image
+              source={{ uri: proofUrl }}
+              style={{ width: '100%', height: 200, borderRadius: 8, backgroundColor: 'rgba(0,0,0,0.05)' }}
+              resizeMode="contain"
+            />
+          ) : (
+            <Text style={[s.adminDetail, { fontStyle: 'italic', color: C.muted }]}>
+              Unable to load receipt preview.
+            </Text>
+          )}
+        </View>
+      ) : null}
     </View>
   );
 }
@@ -6367,7 +6496,7 @@ function AdminTransactionsScreen() {
   );
 }
 
-function AdminReportScreen() {
+function AdminReportScreen({ navigation }: any) {
   const [items,setItems]=useState<Item[]>([]);const [txs,setTxs]=useState<Transaction[]>([]);const [err,setErr]=useState('');const [busy,setBusy]=useState(true);const [status,setStatus]=useState('');const [type,setType]=useState('');const [category,setCategory]=useState('');const [sort,setSort]=useState('newest');const [expandedTxId,setExpandedTxId]=useState<string|null>(null);
   const load=useCallback(async()=>{setBusy(true);try{const [i,t]=await Promise.all([admin.items(),admin.transactions()]);setItems(i);setTxs(t);setErr('')}catch(e){setErr(errorMessage(e))}finally{setBusy(false)}},[]);useEffect(()=>{load()},[load]);
   const reportItems=[...items.filter(i=>!type||i.listing_type===type).filter(i=>!category||i.category===category).filter(i=>!status||(status==='completed'?i.status==='sold':status==='pending'?i.status==='pending':true))].sort((a,b)=>sort==='oldest'?String(a.created_at||'').localeCompare(String(b.created_at||'')):sort==='title'?a.title.localeCompare(b.title):sort==='status'?a.status.localeCompare(b.status):String(b.created_at||'').localeCompare(String(a.created_at||'')));
@@ -6430,9 +6559,14 @@ function AdminReportScreen() {
         <Heading title="Campus listings"/>
         {reportItems.length?reportItems.map(i=>(
           <Card key={i.id}>
-            <Text style={s.cardTitle}>{i.title}</Text>
-            <Text style={s.muted}>{i.user?.name} · {i.category} · {i.listing_type === 'rent' ? 'For rent' : 'For sale'} · {formatStatusLabel(i.status)} · Moderation: {formatStatusLabel(i.moderation_status)}{i.created_at ? ` · ${formatPhilippineDate(i.created_at)}` : ''}</Text>
-            <Text style={s.price}>{money(i.price)}{i.listing_type === 'rent' ? ' / day' : ''}</Text>
+            <Pressable accessibilityRole="button" onPress={() => navigation.navigate('Listing', { id: i.id })}>
+              <View style={s.rowBetween}>
+                <Text style={[s.cardTitle, { flex: 1 }]}>{i.title}</Text>
+                <Ionicons name="chevron-forward" size={16} color={C.muted} />
+              </View>
+              <Text style={s.muted}>{i.user?.name} · {i.category} · {i.listing_type === 'rent' ? 'For rent' : 'For sale'} · {formatStatusLabel(i.status)} · Moderation: {formatStatusLabel(i.moderation_status)}{i.created_at ? ` · ${formatPhilippineDate(i.created_at)}` : ''}</Text>
+              <Text style={s.price}>{money(i.price)}{i.listing_type === 'rent' ? ' / day' : ''}</Text>
+            </Pressable>
           </Card>
         )):<Status state="No listings match these report filters." icon="pricetag-outline"/>}
         <Heading title="Campus transactions"/>

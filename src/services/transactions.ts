@@ -122,12 +122,16 @@ export const transactions = {
 
 export const adminTransactions = {
   async list(): Promise<Transaction[]> {
+    const { data, error } = await supabase.rpc('admin_list_transactions' as any);
+    if (!error && data) {
+      return enrich(data as unknown as TransactionRow[]);
+    }
     const rows: TransactionRow[] = [];
     const pageSize = 100;
     for (let offset = 0; ; offset += pageSize) {
-      const { data, error } = await supabase.from('transactions').select('*').order('created_at', { ascending: false }).range(offset, offset + pageSize - 1);
-      if (error) throw new Error(error.message);
-      const page = (data ?? []) as TransactionRow[];
+      const { data: pageData, error: pageError } = await supabase.from('transactions').select('*').order('created_at', { ascending: false }).range(offset, offset + pageSize - 1);
+      if (pageError) throw new Error(pageError.message);
+      const page = (pageData ?? []) as TransactionRow[];
       rows.push(...page);
       if (page.length < pageSize) break;
     }

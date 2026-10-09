@@ -155,13 +155,17 @@ export const marketplace = {
 
 export const adminItems = {
   async list(): Promise<Item[]> {
+    const { data, error } = await supabase.rpc('admin_list_items' as any);
+    if (!error && data) {
+      return mapItems(data as unknown as ItemRow[]);
+    }
     const rows: ItemRow[] = [];
     const pageSize = 100;
     for (let offset = 0; ; offset += pageSize) {
-      const { data, error } = await supabase.from('items').select('*').is('archived_at', null)
+      const { data: pageData, error: pageError } = await supabase.from('items').select('*').is('archived_at', null)
         .order('created_at', { ascending: false }).range(offset, offset + pageSize - 1);
-      if (error) throw new Error(error.message);
-      const page = (data ?? []) as ItemRow[];
+      if (pageError) throw new Error(pageError.message);
+      const page = (pageData ?? []) as ItemRow[];
       rows.push(...page);
       if (page.length < pageSize) break;
     }
