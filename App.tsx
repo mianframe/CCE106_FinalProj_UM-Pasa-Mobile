@@ -429,6 +429,9 @@ function ListingScreen({ route, navigation }: any) {
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [selectedPayment, setSelectedPayment] = useState('cash_on_pickup');
   const [otherPayment, setOtherPayment] = useState('');
+  const [showInquiryModal, setShowInquiryModal] = useState(false);
+  const [inquiryText, setInquiryText] = useState('');
+  const [inquiryBusy, setInquiryBusy] = useState(false);
 
   const load = useCallback(async () => {
     setErr('');
@@ -815,7 +818,7 @@ function ListingScreen({ route, navigation }: any) {
         <Button
           title="Message seller"
           secondary
-          onPress={async () => {
+          onPress={() => {
             if (!user) {
               Alert.alert('Sign in required', 'Sign in to message the seller.', [
                 { text: 'Cancel', style: 'cancel' },
@@ -823,18 +826,12 @@ function ListingScreen({ route, navigation }: any) {
               ]);
               return;
             }
-            try {
-              const m = await messaging.send({
-                recipient_id: item.user_id,
-                item_id: item.id,
-                body: item.status === 'pending'
-                  ? `Hi, I noticed ${item.title} is currently reserved. Please let me know if it becomes available again!`
-                  : `Hi, I'm interested in ${item.title}.`
-              });
-              navigation.navigate('Conversation', { id: m.conversation_id });
-            } catch (e) {
-              Alert.alert('Unable to message seller', errorMessage(e));
-            }
+            setInquiryText(
+              item.status === 'pending'
+                ? `Hi, I noticed ${item.title} is currently reserved. Please let me know if it becomes available again!`
+                : `Hi, is ${item.title} still available?`
+            );
+            setShowInquiryModal(true);
           }}
         />
       )}
@@ -1007,6 +1004,108 @@ function ListingScreen({ route, navigation }: any) {
             </View>
           </Pressable>
         </Pressable>
+      </Modal>
+      <Modal visible={showInquiryModal} transparent animationType="slide" onRequestClose={() => !inquiryBusy && setShowInquiryModal(false)}>
+        <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ flex: 1 }}>
+          <Pressable
+            style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.65)', justifyContent: 'flex-end', padding: 16 }}
+            onPress={() => !inquiryBusy && setShowInquiryModal(false)}
+          >
+            <Pressable
+              style={{ backgroundColor: C.panel, borderRadius: 20, padding: 18, borderWidth: 1, borderColor: C.border }}
+              onPress={(e) => e.stopPropagation()}
+            >
+              <View style={[s.rowBetween, { marginBottom: 8 }]}>
+                <View style={{ flex: 1 }}>
+                  <Text style={s.cardTitle}>Inquire about item</Text>
+                  <Text numberOfLines={1} style={s.muted}>{item?.title} · ₱{item?.price}</Text>
+                </View>
+                <Pressable accessibilityRole="button" onPress={() => !inquiryBusy && setShowInquiryModal(false)}>
+                  <Ionicons name="close-circle-outline" size={24} color={C.muted} />
+                </Pressable>
+              </View>
+
+              <Text style={{ fontSize: 12, fontWeight: '700', color: C.muted, marginTop: 6, marginBottom: 2 }}>
+                Quick message templates:
+              </Text>
+              <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginBottom: 12 }}>
+                {['Is this still available?', 'Can we meet today?', 'Is the price negotiable?'].map((chip) => (
+                  <Pressable
+                    key={chip}
+                    onPress={() => setInquiryText(chip)}
+                    style={{
+                      backgroundColor: inquiryText === chip ? (isDark ? 'rgba(246, 200, 76, 0.25)' : '#FEF3C7') : C.panel2,
+                      borderWidth: 1,
+                      borderColor: inquiryText === chip ? C.gold : C.border,
+                      borderRadius: 14,
+                      paddingHorizontal: 10,
+                      paddingVertical: 5,
+                    }}
+                  >
+                    <Text style={{ fontSize: 12, fontWeight: '600', color: inquiryText === chip ? (isDark ? C.gold : '#92400E') : C.white }}>
+                      {chip}
+                    </Text>
+                  </Pressable>
+                ))}
+              </View>
+
+              <TextInput
+                value={inquiryText}
+                onChangeText={setInquiryText}
+                multiline
+                numberOfLines={3}
+                placeholder="Type your message to the seller…"
+                placeholderTextColor={C.muted}
+                style={{
+                  backgroundColor: C.input,
+                  borderWidth: 1,
+                  borderColor: C.border,
+                  borderRadius: 12,
+                  padding: 12,
+                  color: C.white,
+                  fontSize: 14,
+                  minHeight: 80,
+                  textAlignVertical: 'top',
+                  marginBottom: 14,
+                }}
+              />
+
+              <View style={{ flexDirection: 'row', gap: 10 }}>
+                <View style={{ flex: 1 }}>
+                  <Button
+                    title="Cancel"
+                    secondary
+                    onPress={() => !inquiryBusy && setShowInquiryModal(false)}
+                    disabled={inquiryBusy}
+                  />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Button
+                    title={inquiryBusy ? 'Sending…' : 'Send message'}
+                    disabled={!inquiryText.trim() || inquiryBusy}
+                    onPress={async () => {
+                      if (!item) return;
+                      setInquiryBusy(true);
+                      try {
+                        const m = await messaging.send({
+                          recipient_id: item.user_id,
+                          item_id: item.id,
+                          body: inquiryText.trim(),
+                        });
+                        setShowInquiryModal(false);
+                        navigation.navigate('Conversation', { id: m.conversation_id });
+                      } catch (e) {
+                        Alert.alert('Unable to message seller', errorMessage(e));
+                      } finally {
+                        setInquiryBusy(false);
+                      }
+                    }}
+                  />
+                </View>
+              </View>
+            </Pressable>
+          </Pressable>
+        </KeyboardAvoidingView>
       </Modal>
     </Page>
   );
