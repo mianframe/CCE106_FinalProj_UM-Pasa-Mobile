@@ -724,69 +724,93 @@ function ListingScreen({ route, navigation }: any) {
         )}
         {item.archived_at ? <Text style={[s.muted, { marginTop: 8 }]}>Archived listing · transaction history is retained</Text> : null}
       </Card>
-      {!item.archived_at && item.status === 'available' && item.listing_type === 'rent' && (
-        <>
-          <Field
-            label={`Rental duration in days (${item.minimum_rental_days || 1}–${item.maximum_rental_days || 365})`}
-            value={days}
-            onChangeText={setDays}
-            keyboardType="number-pad"
-            placeholder="e.g. 3"
-          />
-          {days.trim() && !isNaN(Number(days)) && Number(days) > 0 ? (
-            <View style={{
-              backgroundColor: isDark ? 'rgba(246, 200, 76, 0.12)' : '#FEF3C7',
-              borderWidth: 1,
-              borderColor: isDark ? '#B45309' : '#FDE68A',
-              borderRadius: 14,
-              padding: 14,
-              marginBottom: 12,
-            }}>
-              <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-                <Text style={{ fontSize: 13, fontWeight: '700', color: isDark ? '#FCD34D' : '#92400E' }}>
-                  Estimated rental cost
-                </Text>
-                <Text style={{ fontSize: 18, fontWeight: '900', color: isDark ? '#FCD34D' : '#92400E' }}>
-                  ₱{Number(item.price) * Number(days)}
+      {!item.archived_at && item.status === 'available' && item.listing_type === 'rent' && (() => {
+        const parsedDays = Number(days);
+        const isWholePositive = Number.isInteger(parsedDays) && parsedDays >= 1;
+        const minDays = item.minimum_rental_days || 1;
+        const maxDays = item.maximum_rental_days || 365;
+        const isRentValid = isWholePositive && parsedDays >= minDays && parsedDays <= maxDays;
+        return (
+          <>
+            <Field
+              label={`Rental duration in days (${minDays}–${maxDays})`}
+              value={days}
+              onChangeText={(val: string) => setDays(val.replace(/[^0-9]/g, ''))}
+              keyboardType="number-pad"
+              placeholder={`e.g. ${minDays}`}
+            />
+            {days.trim() && isRentValid ? (
+              <View style={{
+                backgroundColor: isDark ? 'rgba(246, 200, 76, 0.12)' : '#FEF3C7',
+                borderWidth: 1,
+                borderColor: isDark ? '#B45309' : '#FDE68A',
+                borderRadius: 14,
+                padding: 14,
+                marginBottom: 12,
+              }}>
+                <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <Text style={{ fontSize: 13, fontWeight: '700', color: isDark ? '#FCD34D' : '#92400E' }}>
+                    Estimated rental cost
+                  </Text>
+                  <Text style={{ fontSize: 18, fontWeight: '900', color: isDark ? '#FCD34D' : '#92400E' }}>
+                    ₱{Number(item.price) * parsedDays}
+                  </Text>
+                </View>
+                <Text style={{ fontSize: 12, color: isDark ? '#FDE68A' : '#78350F', marginTop: 4 }}>
+                  {`₱${item.price}/day × ${parsedDays} day${parsedDays === 1 ? '' : 's'}`}
                 </Text>
               </View>
-              <Text style={{ fontSize: 12, color: isDark ? '#FDE68A' : '#78350F', marginTop: 4 }}>
-                {`₱${item.price}/day × ${days} day${Number(days) === 1 ? '' : 's'}`}
+            ) : days.trim() && !isRentValid ? (
+              <Text style={{ fontSize: 12, color: C.red, marginBottom: 8, fontWeight: '700' }}>
+                {parsedDays < minDays
+                  ? `Minimum rental duration is ${minDays} day${minDays === 1 ? '' : 's'}.`
+                  : `Maximum rental duration is ${maxDays} days.`}
               </Text>
-            </View>
-          ) : null}
-        </>
-      )}
-      {!item.archived_at && user?.id !== item.user_id && (
-        myActiveTx ? (
-          <Button
-            title="View your active request"
-            onPress={() => navigation.navigate('Transaction', { id: myActiveTx.id })}
-          />
-        ) : item.status === 'pending' ? (
-          <Button
-            title="Reserved (Exchange in progress)"
-            disabled
-          />
-        ) : item.status === 'sold' ? (
-          <Button
-            title="Item sold"
-            disabled
-          />
-        ) : (
-          <Button
-            title={
-              busy
-                ? 'Sending request…'
-                : item.listing_type === 'rent'
-                ? `Rent for ${days ? days : 1} day${Number(days) === 1 ? '' : 's'} (${money(Number(item.price) * Math.max(1, Number(days) || 1))})`
-                : `Purchase item (${money(item.price)})`
-            }
-            disabled={busy}
-            onPress={request}
-          />
-        )
-      )}
+            ) : null}
+          </>
+        );
+      })()}
+      {!item.archived_at && user?.id !== item.user_id && (() => {
+        const parsedDays = Number(days);
+        const isWholePositive = Number.isInteger(parsedDays) && parsedDays >= 1;
+        const minDays = item.minimum_rental_days || 1;
+        const maxDays = item.maximum_rental_days || 365;
+        const isRentValid = item.listing_type === 'rent'
+          ? isWholePositive && parsedDays >= minDays && parsedDays <= maxDays
+          : true;
+        return (
+          myActiveTx ? (
+            <Button
+              title="View your active request"
+              onPress={() => navigation.navigate('Transaction', { id: myActiveTx.id })}
+            />
+          ) : item.status === 'pending' ? (
+            <Button
+              title="Reserved (Exchange in progress)"
+              disabled
+            />
+          ) : item.status === 'sold' ? (
+            <Button
+              title="Item sold"
+              disabled
+            />
+          ) : (
+            <Button
+              title={
+                busy
+                  ? 'Sending request…'
+                  : item.listing_type === 'rent'
+                  ? (!days.trim() || !isRentValid
+                      ? 'Enter rental duration (days)'
+                      : `Rent for ${parsedDays} day${parsedDays === 1 ? '' : 's'} (${money(Number(item.price) * parsedDays)})`)
+                  : `Purchase item (${money(item.price)})`
+              }
+              disabled={busy || (item.listing_type === 'rent' && !isRentValid)}
+              onPress={request}
+            />
+          )
+        );
+      })()}
       {user?.id !== item.user_id && (
         <Button
           title="Message seller"
