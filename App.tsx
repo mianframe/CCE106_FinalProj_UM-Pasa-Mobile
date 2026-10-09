@@ -429,7 +429,9 @@ async function openNotification(n:Notice,navigation:any,isAdmin:boolean) {
     Alert.alert('Unable to update notification', errorMessage(e));
     return;
   }
-  if (n.related_type === 'transaction' && n.related_id) {
+  if (n.type === 'rating' || (n.related_type as string) === 'rating' || n.message?.toLowerCase().includes('rating')) {
+    navigation.navigate('ProfileReviews', { id: n.related_id || undefined });
+  } else if (n.related_type === 'transaction' && n.related_id) {
     navigation.navigate('Transaction', { id: n.related_id });
   } else if (n.related_type === 'conversation' && n.related_id) {
     navigation.navigate('Conversation', { id: n.related_id });
@@ -2831,7 +2833,9 @@ function NotificationsScreen({ navigation }: any) {
       Alert.alert('Unable to update notification', errorMessage(e));
       return;
     }
-    if (n.related_type === 'transaction' && n.related_id) {
+    if (n.type === 'rating' || (n.related_type as string) === 'rating' || n.message?.toLowerCase().includes('rating')) {
+      navigation.navigate('ProfileReviews', { id: user?.id });
+    } else if (n.related_type === 'transaction' && n.related_id) {
       navigation.navigate('Transaction', { id: n.related_id });
     } else if (n.related_type === 'conversation' && n.related_id) {
       navigation.navigate('Conversation', { id: n.related_id });
@@ -7047,6 +7051,7 @@ function AppStack({ authenticated, isAdmin }: { authenticated: boolean; isAdmin:
     <Stack.Screen name="Help" component={HelpScreen} options={{title:'Help & How It Works'}}/>
     <Stack.Screen name="Support" component={SupportScreen} options={{title:'Support'}}/>
     <Stack.Screen name="Listing" component={ListingScreen} options={{title:'Listing details'}}/>
+    <Stack.Screen name="ProfileReviews" component={ProfileReviewsScreen} options={{title:'Reviews'}}/>
     {authenticated&&<>
       <Stack.Screen name="ListingForm" component={ListingFormScreen} options={{title:'Manage listing'}}/>
       <Stack.Screen name="MyListings" component={MyListingsScreen} options={{title:'My listings'}}/>
@@ -7054,7 +7059,6 @@ function AppStack({ authenticated, isAdmin }: { authenticated: boolean; isAdmin:
       <Stack.Screen name="Transactions" component={isAdmin ? AdminTransactionsScreen : TransactionsScreen} options={{title: isAdmin ? 'All transactions' : 'Transactions'}}/>
       <Stack.Screen name="Notifications" component={NotificationsScreen} options={{headerShown:false}}/>
       <Stack.Screen name="Conversation" component={ConversationScreen} options={{title:'Messages'}}/>
-      <Stack.Screen name="ProfileReviews" component={ProfileReviewsScreen} options={{title:'Reviews'}}/>
       <Stack.Screen name="Reports" component={ReportsScreen} options={{title:'My report'}}/>
       {isAdmin&&<>
         <Stack.Screen name="AdminItems" component={AdminItemsScreen} options={{title:'Listing review'}}/>
@@ -7145,7 +7149,9 @@ function AppContent() {
     const target = toast;
     hideToast();
     if (!navigationRef.isReady()) return;
-    if (target.related_type === 'transaction' && target.related_id) {
+    if (target.type === 'rating' || target.related_type === 'rating' || target.message?.toLowerCase().includes('rating')) {
+      navigationRef.navigate('ProfileReviews', { id: user?.id });
+    } else if (target.related_type === 'transaction' && target.related_id) {
       navigationRef.navigate('Transaction', { id: target.related_id });
     } else if (target.related_type === 'conversation' && target.related_id) {
       navigationRef.navigate('Conversation', { id: target.related_id });
