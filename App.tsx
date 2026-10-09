@@ -7162,8 +7162,8 @@ function AppContent() {
   if (loading) return <SafeAreaView style={s.loading}><ActivityIndicator color={C.gold}/><Text style={s.muted}>Restoring your UM-Pasa session…</Text></SafeAreaView>;
   if (authUser && !profile) return <SafeAreaView style={s.loading}>
     <Heading title="Profile unavailable" subtitle={profileError || 'Your account exists, but its UM-Pasa profile could not be loaded.'}/>
-    <Button title="Retry profile" onPress={() => refreshProfile().catch(() => undefined)}/>
-    <Button title="Sign out" secondary onPress={() => logout().catch(() => undefined)}/>
+    <Button title="Retry profile" onPress={() => refreshProfile().catch((e) => Alert.alert('Retry failed', errorMessage(e)))}/>
+    <Button title="Sign out" secondary onPress={() => logout().catch((e) => Alert.alert('Sign out error', errorMessage(e)))}/>
   </SafeAreaView>;
 
   return (
