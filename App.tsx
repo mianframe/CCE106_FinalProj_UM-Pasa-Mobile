@@ -898,27 +898,31 @@ function ListingScreen({ route, navigation }: any) {
         <Text style={s.price}>{money(item.price)}{item.listing_type === 'rent' ? ' / day' : ''}</Text>
         <Text style={s.body}>{item.description}</Text>
         <View style={{ height: 1, backgroundColor: C.border, marginVertical: 10 }} />
-        <View style={{ gap: 6 }}>
-          <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
-            <Text style={s.muted}>Condition</Text>
-            <Text style={[s.body, { marginVertical: 0, fontWeight: '700' }]}>{item.condition?.replace('_', ' ')}</Text>
+        <View style={{ gap: 8 }}>
+          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12 }}>
+            <Text style={[s.muted, { flexShrink: 0 }]}>Condition</Text>
+            <Text style={[s.body, { marginVertical: 0, fontWeight: '700', textAlign: 'right', flex: 1, textTransform: 'capitalize' }]}>
+              {item.condition?.replace('_', ' ')}
+            </Text>
           </View>
-          <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
-            <Text style={s.muted}>Department</Text>
-            <Text style={[s.body, { marginVertical: 0, fontWeight: '700', textAlign: 'right', flex: 1, marginLeft: 16 }]} numberOfLines={1}>
+          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12 }}>
+            <Text style={[s.muted, { flexShrink: 0 }]}>Department</Text>
+            <Text style={[s.body, { marginVertical: 0, fontWeight: '700', textAlign: 'right', flex: 1 }]}>
               {item.department}{item.program ? ` · ${item.program}` : ''}
             </Text>
           </View>
-          <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
-            <Text style={s.muted}>Payment accepted</Text>
-            <Text style={[s.body, { marginVertical: 0, fontWeight: '700' }]}>
+          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12 }}>
+            <Text style={[s.muted, { flexShrink: 0 }]}>Payment accepted</Text>
+            <Text style={[s.body, { marginVertical: 0, fontWeight: '700', textAlign: 'right', flex: 1, textTransform: 'capitalize' }]}>
               {acceptedMethods.map((v: string) => v.replaceAll('_', ' ')).join(', ')}
             </Text>
           </View>
           {item.created_at ? (
-            <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
-              <Text style={s.muted}>Posted on</Text>
-              <Text style={[s.body, { marginVertical: 0, fontWeight: '700' }]}>{formatPhilippineDate(item.created_at)}</Text>
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12 }}>
+              <Text style={[s.muted, { flexShrink: 0 }]}>Posted on</Text>
+              <Text style={[s.body, { marginVertical: 0, fontWeight: '700', textAlign: 'right', flex: 1 }]}>
+                {formatPhilippineDate(item.created_at)}
+              </Text>
             </View>
           ) : null}
         </View>
@@ -973,11 +977,11 @@ function ListingScreen({ route, navigation }: any) {
                 padding: 14,
                 marginBottom: 12,
               }}>
-                <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <Text style={{ fontSize: 13, fontWeight: '700', color: isDark ? '#FCD34D' : '#92400E' }}>
+                <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: 8 }}>
+                  <Text style={{ fontSize: 13, fontWeight: '700', color: isDark ? '#FCD34D' : '#92400E', flex: 1 }}>
                     Estimated rental cost
                   </Text>
-                  <Text style={{ fontSize: 18, fontWeight: '900', color: isDark ? '#FCD34D' : '#92400E' }}>
+                  <Text style={{ fontSize: 18, fontWeight: '900', color: isDark ? '#FCD34D' : '#92400E', flexShrink: 0 }}>
                     ₱{Number(item.price) * parsedDays}
                   </Text>
                 </View>
@@ -1016,7 +1020,7 @@ function ListingScreen({ route, navigation }: any) {
             />
           ) : item.status === 'sold' ? (
             <Button
-              title="Item sold"
+              title={item.listing_type === 'rent' ? "Listing unavailable / rented" : "Item sold"}
               disabled
             />
           ) : (
@@ -1036,7 +1040,7 @@ function ListingScreen({ route, navigation }: any) {
           )
         );
       })()}
-      {user?.id !== item.user_id && user?.role !== 'admin' && (
+      {user?.id !== item.user_id && user?.role !== 'admin' && item.status !== 'sold' && (
         <Button
           title="Message seller"
           secondary
@@ -1239,11 +1243,11 @@ function ListingScreen({ route, navigation }: any) {
                 borderWidth: 1,
                 borderColor: isDark ? '#B45309' : '#FDE68A',
               }}>
-                <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <Text style={{ fontSize: 13, fontWeight: '800', color: isDark ? '#FCD34D' : '#92400E' }}>
+                <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: 8 }}>
+                  <Text style={{ fontSize: 13, fontWeight: '800', color: isDark ? '#FCD34D' : '#92400E', flex: 1 }}>
                     Total Rental Fee:
                   </Text>
-                  <Text style={{ fontSize: 16, fontWeight: '900', color: isDark ? '#FCD34D' : '#92400E' }}>
+                  <Text style={{ fontSize: 16, fontWeight: '900', color: isDark ? '#FCD34D' : '#92400E', flexShrink: 0 }}>
                     ₱{Number(item.price) * (Number(days) || 1)}
                   </Text>
                 </View>
@@ -3191,24 +3195,42 @@ function NotificationsScreen({ navigation }: any) {
 
   const getNoticeVisuals = (n: Notice) => {
     const t = n.type;
+    const msg = n.message || '';
+
+    // Extract authentic peso amount mentioned in the message (if any)
+    const priceMatch = msg.match(/₱\s*[\d,]+(?:\.\d{2})?/);
+    const authenticPrice = priceMatch ? priceMatch[0] : '';
+
+    // Extract authentic location from meetup message if present
+    let authenticLocation = '';
+    const locMatch = msg.match(/(?:at|meetup(?:\s+location)?:\s*)\s*([A-Za-z0-9\s&'.-]+?)(?:\s+(?:on|at|·|\(|\n|$))/i);
+    if (locMatch && locMatch[1]?.trim()) {
+      const candidate = locMatch[1].trim();
+      if (candidate.length >= 3 && candidate.length <= 35 && !candidate.toLowerCase().includes('http')) {
+        authenticLocation = candidate;
+      }
+    }
+
     if (t === 'request') {
+      const isRent = msg.toLowerCase().includes('rent');
       return {
         badgeBg: isDark ? 'rgba(79, 70, 229, 0.22)' : '#EEF2FF',
-        badgeIcon: 'book-outline',
+        badgeIcon: isRent ? 'time-outline' : 'cart-outline',
         iconColor: '#6366F1',
-        title: 'Buy request',
-        pillLabel: 'Pickup: Main Gate',
-        pillExtra: '₱350.00',
+        title: isRent ? 'Rental request' : 'Exchange request',
+        pillLabel: isRent ? 'Rental inquiry' : 'Campus exchange',
+        pillExtra: authenticPrice,
       };
     }
     if (t === 'meetup') {
+      const isAccepted = msg.toLowerCase().includes('accepted');
       return {
         badgeBg: isDark ? 'rgba(124, 58, 237, 0.22)' : '#F5F3FF',
         badgeIcon: 'calendar-outline',
         iconColor: '#8B5CF6',
-        title: 'Meetup scheduled',
-        pillLabel: 'Library Ground Flr',
-        pillExtra: 'Tomorrow, 1:30 PM',
+        title: isAccepted ? 'Meetup accepted' : 'Meetup proposal',
+        pillLabel: authenticLocation ? `📍 ${authenticLocation}` : 'Campus meetup',
+        pillExtra: '',
       };
     }
     if (t === 'approval' || t === 'listing_approved') {
@@ -3216,8 +3238,18 @@ function NotificationsScreen({ navigation }: any) {
         badgeBg: isDark ? 'rgba(16, 185, 129, 0.22)' : '#ECFDF5',
         badgeIcon: 'shield-checkmark-outline',
         iconColor: '#10B981',
-        title: 'Campus verified',
-        pillLabel: 'Live in UM Tagum Feed',
+        title: 'Listing approved',
+        pillLabel: 'Live on Campus Feed',
+        pillExtra: '',
+      };
+    }
+    if (t === 'listing_rejected') {
+      return {
+        badgeBg: isDark ? 'rgba(239, 68, 68, 0.22)' : '#FEF2F2',
+        badgeIcon: 'alert-circle-outline',
+        iconColor: '#EF4444',
+        title: 'Listing update',
+        pillLabel: 'Needs revision',
         pillExtra: '',
       };
     }
@@ -3226,18 +3258,39 @@ function NotificationsScreen({ navigation }: any) {
         badgeBg: isDark ? 'rgba(20, 184, 166, 0.22)' : '#F0FDFA',
         badgeIcon: 'receipt-outline',
         iconColor: '#14B8A6',
-        title: 'Payment confirmation',
-        pillLabel: 'Verify receipt photo',
-        pillExtra: '',
+        title: 'Payment receipt',
+        pillLabel: 'Receipt uploaded',
+        pillExtra: authenticPrice,
+      };
+    }
+    if (t === 'completion') {
+      return {
+        badgeBg: isDark ? 'rgba(34, 197, 94, 0.22)' : '#F0FDF4',
+        badgeIcon: 'checkmark-circle-outline',
+        iconColor: '#16A34A',
+        title: 'Exchange completed',
+        pillLabel: 'Completed',
+        pillExtra: authenticPrice,
       };
     }
     if (t === 'rating') {
+      const starMatch = msg.match(/([1-5](?:\.[0-9])?)\s*star/i);
       return {
         badgeBg: isDark ? 'rgba(245, 158, 11, 0.22)' : '#FEF3C7',
         badgeIcon: 'star',
         iconColor: '#D97706',
-        title: '5.0-star feedback',
-        pillLabel: 'Verified Review',
+        title: starMatch ? `${starMatch[1]}★ Rating received` : 'Rating received',
+        pillLabel: 'Verified Student Review',
+        pillExtra: '',
+      };
+    }
+    if (t === 'message') {
+      return {
+        badgeBg: isDark ? 'rgba(59, 130, 246, 0.22)' : '#EFF6FF',
+        badgeIcon: 'chatbubble-ellipses-outline',
+        iconColor: '#3B82F6',
+        title: 'Direct message',
+        pillLabel: 'Campus chat',
         pillExtra: '',
       };
     }
@@ -3245,8 +3298,8 @@ function NotificationsScreen({ navigation }: any) {
       badgeBg: isDark ? 'rgba(100, 116, 139, 0.22)' : '#F1F5F9',
       badgeIcon: 'information-circle-outline',
       iconColor: '#64748B',
-      title: 'Action needed',
-      pillLabel: 'Campus Notice',
+      title: 'Campus update',
+      pillLabel: 'Notice',
       pillExtra: '',
     };
   };
@@ -3322,10 +3375,10 @@ function NotificationsScreen({ navigation }: any) {
 
         <View style={{ flex: 1 }}>
           <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 2 }}>
-            <Text style={{ fontSize: 13, fontWeight: '800', color: isDark ? '#F87171' : '#B91C1C' }}>
+            <Text numberOfLines={1} style={{ fontSize: 13, fontWeight: '800', color: isDark ? '#F87171' : '#B91C1C', flex: 1, marginRight: 8 }}>
               {visuals.title}
             </Text>
-            <Text style={{ fontSize: 11, color: isDark ? '#9CA3AF' : '#6B7280' }}>
+            <Text style={{ fontSize: 11, color: isDark ? '#9CA3AF' : '#6B7280', flexShrink: 0 }}>
               {relTime}
             </Text>
           </View>
