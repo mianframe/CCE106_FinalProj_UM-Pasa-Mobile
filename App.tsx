@@ -9,7 +9,9 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import { supabase } from './src/supabase';
-import { account, admin, AdminUser, Conversation, errorMessage, getPaymentProofSignedUrl, Item, marketplace, messaging, Notice, Transaction, transactions, uploadItemImage, uploadPaymentProof, User } from './src/api';
+import { account, admin, AdminUser, Conversation, errorMessage, getPaymentProofSignedUrl, Item as BaseItem, marketplace as apiMarketplace, messaging, Notice, Transaction, transactions, uploadItemImage, uploadPaymentProof, User } from './src/api';
+export type Item = BaseItem & { images?: string[] };
+const marketplace = apiMarketplace as typeof apiMarketplace & { markSold: (id: string) => Promise<void> };
 import { AuthProvider, useAuth } from './src/auth/AuthContext';
 import { LoginScreen, RegisterScreen } from './src/auth/AuthScreens';
 import { ThemeProvider, useTheme, type ThemeMode } from './src/theme/ThemeContext';
@@ -773,9 +775,10 @@ function ListingScreen({ route, navigation }: any) {
         </View>
       )}
       {(() => {
-        const displayImages = (item.images && item.images.length > 0)
-          ? item.images
-          : (item.image ? [item.image] : []);
+        const itemAny = item as any;
+        const displayImages = (itemAny?.images && itemAny.images.length > 0)
+          ? (itemAny.images as string[])
+          : (item?.image ? [item.image] : []);
         const validUris = displayImages.map(imageUrl).filter(Boolean);
         if (validUris.length > 0) {
           return (
@@ -1352,7 +1355,8 @@ function ListingFormScreen({ route, navigation }: any) {
   const [busy, setBusy] = useState(false);
   const [categoriesExpanded, setCategoriesExpanded] = useState(false);
   const [imageUris, setImageUris] = useState<string[]>(() => {
-    if (edit?.images && edit.images.length > 0) return edit.images;
+    const editAny = edit as any;
+    if (editAny?.images && editAny.images.length > 0) return editAny.images;
     if (edit?.image) return [edit.image];
     return [];
   });
@@ -6972,9 +6976,10 @@ function AdminItemsScreen({route}:any) {
     <Pressable accessibilityRole="button" onPress={()=>setExpandedId(expandedId===i.id?null:i.id)}><View style={s.rowBetween}><View style={{flex:1}}><Text style={s.cardTitle}>{i.title}</Text><Text style={s.muted}>{i.user?.name||'UM student'} · {i.category} · {money(i.price)}</Text></View><View style={{alignItems:'flex-end'}}><Text style={[s.badge,{color:C.gold}]}>Pending</Text><Ionicons name={expandedId===i.id?'chevron-up':'chevron-down'} size={18} color={C.muted}/></View></View></Pressable>
     {expandedId===i.id&&<>
     {(() => {
-      const allImgs = (i.images && i.images.length > 0)
-        ? i.images
-        : (i.image ? [i.image] : []);
+      const iAny = i as any;
+      const allImgs = (iAny?.images && iAny.images.length > 0)
+        ? (iAny.images as string[])
+        : (i?.image ? [i.image] : []);
       const valid = allImgs.map(imageUrl).filter(Boolean);
       if (valid.length === 0) return null;
       return (

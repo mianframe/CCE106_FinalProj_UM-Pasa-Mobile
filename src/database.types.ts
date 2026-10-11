@@ -36,6 +36,7 @@ export type ItemRow = {
   condition: 'new' | 'like_new' | 'good' | 'fair' | 'poor';
   price: number | string | null;
   image_path: string | null;
+  images?: string[];
   status: 'available' | 'pending' | 'sold';
   moderation_status: 'pending' | 'approved' | 'rejected';
   rejection_reason: string | null;
