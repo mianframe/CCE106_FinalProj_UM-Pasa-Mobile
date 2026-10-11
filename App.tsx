@@ -950,8 +950,8 @@ function ListingScreen({ route, navigation }: any) {
             }
             setInquiryText(
               item.status === 'pending'
-                ? `Hi, I noticed ${item.title} is currently reserved. Please let me know if it becomes available again!`
-                : `Hi, is ${item.title} still available?`
+                ? `Hi! I want to coordinate about ${item.title}. Please let me know if it becomes available again!`
+                : `Hi! I want to coordinate about ${item.title}.`
             );
             setShowInquiryModal(true);
           }}
@@ -1239,7 +1239,13 @@ function ListingScreen({ route, navigation }: any) {
                 Quick message templates:
               </Text>
               <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginBottom: 12 }}>
-                {['Is this still available?', 'Can we meet today?', 'Is the price negotiable?'].map((chip) => (
+                {[
+                  'Hi! I want to coordinate about this item.',
+                  'Can we arrange a campus meetup today?',
+                  'Is this still available to coordinate?',
+                  'Where can we meet on campus?',
+                  'Is the price negotiable?',
+                ].map((chip) => (
                   <Pressable
                     key={chip}
                     onPress={() => setInquiryText(chip)}
@@ -2344,14 +2350,36 @@ function TransactionScreen({ route, navigation }: any) {
       });
       if (!result.canceled && result.assets && result.assets.length > 0) {
         const asset = result.assets[0];
-        if (asset.fileSize && asset.fileSize > 5 * 1024 * 1024) {
-          Alert.alert('File too large', 'Please select a receipt photo smaller than 5MB.');
+        if (asset.fileSize && asset.fileSize > 15 * 1024 * 1024) {
+          Alert.alert('File too large', 'Please select a receipt photo smaller than 15MB.');
           return;
         }
         setUploadingProof(true);
         await uploadPaymentProof(t.id, asset.uri);
+
+        // Ping the seller in the conversation thread
+        try {
+          await messaging.send({
+            recipient_id: t.seller_id,
+            item_id: t.item_id,
+            body: `📸 [Payment Receipt Uploaded] I have uploaded the payment receipt for our exchange of "${t.item?.title || 'item'}". Please review it in your transaction details!`,
+          });
+        } catch (_) {}
+
+        // Send an in-app notification to the seller
+        try {
+          await supabase.from('notifications').insert({
+            user_id: t.seller_id,
+            type: 'payment_proof',
+            related_type: 'transaction',
+            related_id: t.id,
+            message: `Buyer uploaded a payment receipt for ${t.item?.title || 'your listing'}. Tap to verify and complete the exchange.`,
+            is_read: false,
+          });
+        } catch (_) {}
+
         await load();
-        Alert.alert('Payment proof uploaded', 'The seller has been notified to verify your payment receipt.');
+        Alert.alert('Payment proof uploaded', 'The seller has been notified via message and notification to verify your payment receipt.');
       }
     } catch (err) {
       Alert.alert('Unable to upload proof', errorMessage(err));
@@ -2552,20 +2580,44 @@ function TransactionScreen({ route, navigation }: any) {
       )}
       {t.item && (
         <Button
-          title="Message participant"
+          title="Send message (Coordinate)"
           secondary
-          onPress={async () => {
-            try {
-              const recipient_id = user?.id === t.buyer_id ? t.seller_id : t.buyer_id;
-              const m = await messaging.send({
-                recipient_id,
-                item_id: t.item_id,
-                body: `Hi, I want to coordinate about ${t.item?.title}.`
-              });
-              navigation.navigate('Conversation', { id: m.conversation_id });
-            } catch(e) {
-              Alert.alert('Unable to message participant', errorMessage(e));
-            }
+          onPress={() => {
+            const recipient_id = user?.id === t.buyer_id ? t.seller_id : t.buyer_id;
+            const otherRole = user?.id === t.buyer_id ? 'seller' : 'buyer';
+            const itemTitle = t.item?.title || 'our transaction';
+
+            const sendQuickCoord = async (text: string) => {
+              try {
+                const m = await messaging.send({
+                  recipient_id,
+                  item_id: t.item_id,
+                  body: text,
+                });
+                navigation.navigate('Conversation', { id: m.conversation_id });
+              } catch (e) {
+                Alert.alert('Unable to send message', errorMessage(e));
+              }
+            };
+
+            Alert.alert(
+              `Coordinate with ${otherRole}`,
+              'Select a message to send:',
+              [
+                {
+                  text: '🤝 Send: "I want to coordinate"',
+                  onPress: () => sendQuickCoord(`Hi, I want to coordinate about ${itemTitle}.`),
+                },
+                {
+                  text: '📍 Propose Meetup Spot',
+                  onPress: () => sendQuickCoord(`Hi! Can we coordinate a meetup location on campus for ${itemTitle}?`),
+                },
+                {
+                  text: 'Cancel',
+                  style: 'cancel',
+                },
+              ]
+            );
           }}
         />
       )}
@@ -3213,7 +3265,7 @@ function NotificationsScreen({ navigation }: any) {
         pillExtra: '',
       };
     }
-    if (t === 'payment_proof') {
+    if (t === 'payment_proof' || t === 'payment_proof_uploaded') {
       return {
         badgeBg: isDark ? 'rgba(20, 184, 166, 0.22)' : '#F0FDFA',
         badgeIcon: 'receipt-outline',
@@ -4331,6 +4383,11 @@ const ADMIN_TEMPLATES = [
 
 const STUDENT_TEMPLATES = [
   {
+    label: '🤝 Coordinate Meetup',
+    title: 'Coordinate Meetup',
+    text: 'Hi! I want to coordinate about our transaction and meetup schedule on campus.',
+  },
+  {
     label: '💬 Check Availability',
     title: 'Item Availability',
     text: 'Hi! Is this still available for meetup on campus?',
@@ -4339,6 +4396,11 @@ const STUDENT_TEMPLATES = [
     label: '🕒 Propose Meetup',
     title: 'Meetup Invitation',
     text: 'Are you available to meet up at the Main Campus Library or Canteen today?',
+  },
+  {
+    label: '💳 Payment Uploaded',
+    title: 'Payment Receipt Verification',
+    text: 'I have uploaded the payment receipt for our exchange. Please verify in your account!',
   },
   {
     label: '🤝 Handover Complete',
