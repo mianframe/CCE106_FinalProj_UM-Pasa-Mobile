@@ -17,6 +17,14 @@ import { profiles } from './src/services/profiles';
 import { themeTokens, type ThemeColors, type ThemeTokens } from './src/theme/tokens';
 import { formatPhilippineDateTime, formatPhilippineDate, formatPhilippineTime, formatRelativeTime } from './src/utils/datetime';
 import { MeetupTimePicker } from './src/components/common/MeetupTimePicker';
+import {
+  StackToastProvider,
+  useStackToast,
+  GalleryStackCarousel,
+  ChatGPTAttachmentMenu,
+  LinearPillStrip,
+  RadialMenu,
+} from './src/components/motion';
 
 let T: ThemeTokens = themeTokens.light;
 let C: ThemeColors = T.colors;
@@ -305,33 +313,55 @@ function BrowseScreen({ navigation }: any) {
       onRefresh={load}
       footer={{navigation}}
       topSafe={true}
-      floatingAction={!user ? (
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel="Toggle light or dark theme"
-          onPress={() => setMode(mode === 'dark' ? 'light' : 'dark')}
-          style={{
-            position: 'absolute',
-            bottom: 24,
-            right: 20,
-            width: 48,
-            height: 48,
-            borderRadius: 24,
-            backgroundColor: isDark ? '#2D1616' : '#FFFFFF',
-            alignItems: 'center',
-            justifyContent: 'center',
-            borderWidth: 1.5,
-            borderColor: C.gold,
-            shadowColor: '#000',
-            shadowOffset: { width: 0, height: 3 },
-            shadowOpacity: 0.25,
-            shadowRadius: 6,
-            elevation: 6,
-          }}
-        >
-          <Ionicons name={mode === 'dark' ? 'sunny' : 'moon'} size={22} color={C.gold} />
-        </Pressable>
-      ) : undefined}
+      floatingAction={
+        <RadialMenu
+          bottomOffset={user ? 80 : 26}
+          rightOffset={18}
+          actions={[
+            {
+              id: 'theme',
+              label: mode === 'dark' ? 'Light mode' : 'Dark mode',
+              icon: mode === 'dark' ? 'sunny' : 'moon',
+              color: '#F59E0B',
+              bgColor: isDark ? '#3D1212' : '#FFFBEB',
+              onPress: () => setMode(mode === 'dark' ? 'light' : 'dark'),
+            },
+            {
+              id: 'post',
+              label: 'Post listing',
+              icon: 'add-circle-outline',
+              color: '#EF4444',
+              bgColor: isDark ? '#381313' : '#FEF2F2',
+              onPress: () => {
+                if (!user) {
+                  Alert.alert('Sign in required', 'Please sign in to post a campus listing.', [
+                    { text: 'Cancel', style: 'cancel' },
+                    { text: 'Sign in', onPress: () => navigation.navigate('Login') },
+                  ]);
+                } else {
+                  navigation.navigate('ListingForm');
+                }
+              },
+            },
+            {
+              id: 'guide',
+              label: 'Campus guide',
+              icon: 'shield-checkmark-outline',
+              color: '#10B981',
+              bgColor: isDark ? '#064E3B' : '#ECFDF5',
+              onPress: () => navigation.navigate('Help'),
+            },
+            {
+              id: 'support',
+              label: 'Support & safety',
+              icon: 'help-circle-outline',
+              color: '#3B82F6',
+              bgColor: isDark ? '#1E293B' : '#EFF6FF',
+              onPress: () => navigation.navigate('Support'),
+            },
+          ]}
+        />
+      }
     >
     <View style={s.marketHero}>
       <LinearGradient colors={['#4A1210', '#2B1214', '#151419']} start={{x:0,y:0}} end={{x:1,y:1}} style={s.marketHeroGradient}>
@@ -413,14 +443,28 @@ function BrowseScreen({ navigation }: any) {
 
     <View style={s.sectionTop}><View><Text style={s.sectionKicker}>Campus feed</Text><Text style={s.sectionTitle}>Available resources</Text></View><Text style={s.resultCount}>{items.length} found</Text></View>
     <Text style={s.filterLabel}>Listing type</Text>
-    <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.chipStrip}>
-      {[['All types', undefined, 'layers-outline'], ['For sale', 'sell', 'pricetag-outline'], ['For rent', 'rent', 'repeat-outline']].map(([label, value, icon]: any) => <Choice key={label} label={label} icon={icon} selected={filters.listing_type === value} onPress={() => setFilter('listing_type', value)}/>)}
-    </ScrollView>
+    <LinearPillStrip
+      options={[
+        { label: 'All types', value: undefined, icon: 'layers-outline' },
+        { label: 'For sale', value: 'sell', icon: 'pricetag-outline' },
+        { label: 'For rent', value: 'rent', icon: 'repeat-outline' },
+      ]}
+      selectedValue={filters.listing_type}
+      onSelect={(val) => setFilter('listing_type', val)}
+    />
     <Text style={s.filterLabel}>Popular categories</Text>
-    <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.chipStrip}>
-      <Choice key="All" label="All" icon="grid-outline" selected={!filters.category} onPress={() => setFilter('category', undefined)} />
-      {categories.map((value) => <Choice key={value} label={value} icon={getCategoryIcon(value)} selected={filters.category === value} onPress={() => setFilter('category', filters.category === value ? undefined : value)}/>)}
-    </ScrollView>
+    <LinearPillStrip
+      options={[
+        { label: 'All', value: undefined, icon: 'grid-outline' },
+        ...categories.map((cat) => ({
+          label: cat,
+          value: cat,
+          icon: getCategoryIcon(cat),
+        })),
+      ]}
+      selectedValue={filters.category}
+      onSelect={(val) => setFilter('category', filters.category === val ? undefined : val)}
+    />
     <View style={s.sortRow}><Text style={s.filterLabel}>Sort by</Text><ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.sortChoices}>{[['Newest','newest','time-outline'],['Oldest','oldest','calendar-outline'],['Price ↑','price_low','trending-up-outline'],['Price ↓','price_high','trending-down-outline']].map(([label,value,icon]:any)=><Choice key={label} label={label} icon={icon} selected={filters.sort===value} onPress={()=>setFilter('sort',value)}/>)}</ScrollView></View>
 
     <Pressable style={s.filterToggle} onPress={() => setShowFilters(!showFilters)}><View><Text style={s.filterToggleTitle}>More filters {selectedCount ? '· ' + selectedCount + ' selected' : ''}</Text><Text style={s.filterToggleHint}>Condition, program and course</Text></View><Text style={s.filterChevron}>{showFilters ? '−' : '+'}</Text></Pressable>
@@ -793,103 +837,10 @@ function ListingScreen({ route, navigation }: any) {
         }
         if (displayImages.length > 1) {
           return (
-            <View style={{ marginBottom: 14 }}>
-              <View style={{ position: 'relative', borderRadius: 15, overflow: 'hidden' }}>
-                <ScrollView
-                  ref={carouselRef}
-                  horizontal
-                  pagingEnabled
-                  showsHorizontalScrollIndicator={false}
-                  onMomentumScrollEnd={(e) => {
-                    const newIdx = Math.round(e.nativeEvent.contentOffset.x / (width - 28));
-                    setActiveImageIdx(newIdx);
-                  }}
-                  style={{ width: width - 28, height: 240 }}
-                >
-                  {displayImages.map((imgUri, idx) => (
-                    <View key={idx} style={{ width: width - 28, height: 240 }}>
-                      <Image
-                        source={{ uri: imageUrl(imgUri) }}
-                        style={{ width: '100%', height: '100%' }}
-                        resizeMode="cover"
-                      />
-                    </View>
-                  ))}
-                </ScrollView>
-
-                {/* Floating Image Counter Badge */}
-                <View style={{
-                  position: 'absolute',
-                  top: 10,
-                  right: 10,
-                  backgroundColor: 'rgba(0,0,0,0.72)',
-                  paddingHorizontal: 9,
-                  paddingVertical: 4,
-                  borderRadius: 12,
-                  borderWidth: 1,
-                  borderColor: 'rgba(255,255,255,0.18)',
-                  flexDirection: 'row',
-                  alignItems: 'center',
-                  gap: 4,
-                }}>
-                  <Ionicons name="images" size={13} color={C.gold} />
-                  <Text style={{ color: '#FFFFFF', fontSize: 11.5, fontWeight: '800' }}>
-                    {activeImageIdx + 1} / {displayImages.length}
-                  </Text>
-                </View>
-              </View>
-
-              {/* Dots Indicator */}
-              <View style={{
-                flexDirection: 'row',
-                justifyContent: 'center',
-                alignItems: 'center',
-                gap: 6,
-                marginTop: 8,
-              }}>
-                {displayImages.map((_, idx) => (
-                  <View
-                    key={idx}
-                    style={{
-                      width: activeImageIdx === idx ? 18 : 6,
-                      height: 6,
-                      borderRadius: 3,
-                      backgroundColor: activeImageIdx === idx ? C.gold : (isDark ? 'rgba(255,255,255,0.25)' : 'rgba(0,0,0,0.2)'),
-                    }}
-                  />
-                ))}
-              </View>
-
-              {/* Thumbnail Strip */}
-              <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginTop: 8 }}>
-                <View style={{ flexDirection: 'row', gap: 8 }}>
-                  {displayImages.map((imgUri, idx) => (
-                    <Pressable
-                      key={idx}
-                      onPress={() => {
-                        setActiveImageIdx(idx);
-                        carouselRef.current?.scrollTo({ x: idx * (width - 28), animated: true });
-                      }}
-                      style={{
-                        width: 50,
-                        height: 50,
-                        borderRadius: 8,
-                        overflow: 'hidden',
-                        borderWidth: 2,
-                        borderColor: activeImageIdx === idx ? C.gold : 'transparent',
-                        opacity: activeImageIdx === idx ? 1 : 0.6,
-                      }}
-                    >
-                      <Image
-                        source={{ uri: imageUrl(imgUri) }}
-                        style={{ width: '100%', height: '100%' }}
-                        resizeMode="cover"
-                      />
-                    </Pressable>
-                  ))}
-                </View>
-              </ScrollView>
-            </View>
+            <GalleryStackCarousel
+              images={displayImages.map(imageUrl).filter(Boolean)}
+              height={260}
+            />
           );
         }
         return null;
@@ -4402,6 +4353,7 @@ function ConversationScreen({ route, navigation }: any) {
   const [sending, setSending] = useState(false);
   const [proposing, setProposing] = useState(false);
   const [showPropose, setShowPropose] = useState(false);
+  const [showAttachmentMenu, setShowAttachmentMenu] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [keyboardVisible, setKeyboardVisible] = useState(false);
   const scrollRef = useRef<ScrollView>(null);
@@ -5238,7 +5190,8 @@ function ConversationScreen({ route, navigation }: any) {
           <View style={{ flexDirection: 'row', alignItems: 'flex-end', gap: 8 }}>
             <Pressable
               accessibilityRole="button"
-              onPress={() => setShowPropose(prev => !prev)}
+              accessibilityLabel="Open action options"
+              onPress={() => setShowAttachmentMenu(true)}
               style={{
                 width: 42,
                 height: 42,
@@ -5305,6 +5258,78 @@ function ConversationScreen({ route, navigation }: any) {
             </Pressable>
           </View>
         </View>
+
+        <ChatGPTAttachmentMenu
+          visible={showAttachmentMenu}
+          onClose={() => setShowAttachmentMenu(false)}
+          anchorBottom={keyboardVisible ? 60 : Math.max(insets.bottom, 12) + 55}
+          options={[
+            {
+              id: 'location',
+              label: 'Safe Campus Spot',
+              icon: 'location-outline',
+              color: '#DC2626',
+              bgColor: isDark ? '#3D1212' : '#FEE2E2',
+              onPress: () => {
+                Alert.alert(
+                  'UM Tagum College Safe Spots',
+                  'Choose a monitored campus exchange location at UMTC:',
+                  [
+                    { text: '[Main] Library & Learning Center', onPress: () => { setLocation('Main Campus Library & Learning Center'); setShowPropose(true); } },
+                    { text: '[Main] Canteen (Mabini)', onPress: () => { setLocation('Main Campus Canteen (Mabini)'); setShowPropose(true); } },
+                    { text: '[Main] Gym & Registrar Lobby', onPress: () => { setLocation('Main Gym / Admin & Registrar Lobby'); setShowPropose(true); } },
+                    { text: '[Visayan] IT Labs Lobby', onPress: () => { setLocation('Engineering & IT Labs Bldg Lobby (Visayan)'); setShowPropose(true); } },
+                    { text: '[Visayan] Library Study Zone', onPress: () => { setLocation('Visayan Campus Library Study Zone'); setShowPropose(true); } },
+                    { text: '[Visayan] Canteen & Gazebo', onPress: () => { setLocation('Visayan Campus Canteen & Gazebo'); setShowPropose(true); } },
+                    { text: 'Cancel', style: 'cancel' },
+                  ]
+                );
+              },
+            },
+            {
+              id: 'propose',
+              label: 'Propose Meetup Time',
+              icon: 'calendar-outline',
+              color: '#D97706',
+              bgColor: isDark ? '#3B2907' : '#FEF3C7',
+              onPress: () => setShowPropose(true),
+            },
+            {
+              id: 'ask',
+              label: 'Ask Availability',
+              icon: 'chatbubble-outline',
+              color: '#2563EB',
+              bgColor: isDark ? '#1E293B' : '#EFF6FF',
+              onPress: () => {
+                setBody(
+                  c?.item?.title
+                    ? `Hi! Is the "${c.item.title}" still available for campus meetup?`
+                    : 'Hi! Is this item still available for campus meetup?'
+                );
+              },
+            },
+            {
+              id: 'cash',
+              label: 'Cash on Handover',
+              icon: 'cash-outline',
+              color: '#16A34A',
+              bgColor: isDark ? '#064E3B' : '#ECFDF5',
+              onPress: () => {
+                setBody('I will pay with exact cash upon item inspection at our campus meetup spot.');
+              },
+            },
+            {
+              id: 'safety',
+              label: 'Campus Safety Check',
+              icon: 'shield-checkmark-outline',
+              color: '#9333EA',
+              bgColor: isDark ? '#2E1065' : '#F3E8FF',
+              onPress: () => {
+                setBody('Meeting inside campus grounds (UMTC). Please inspect item before final payment.');
+              },
+            },
+          ]}
+        />
       </KeyboardAvoidingView>
     </SafeAreaView>
   );
@@ -7446,39 +7471,9 @@ function AppStack({ authenticated, isAdmin }: { authenticated: boolean; isAdmin:
 
 const navigationRef = createNavigationContainerRef<any>();
 
-function AppContent() {
-  const { user, authUser, profile, loading, profileError, refreshProfile, logout } = useAuth();
-  const { mode } = useTheme();
-  const insets = useSafeAreaInsets();
-  const isDark = mode === 'dark';
-  const [toast, setToast] = useState<any | null>(null);
-  const toastAnim = useRef(new Animated.Value(-150)).current;
-  const toastTimer = useRef<any>(null);
-
-  const hideToast = useCallback(() => {
-    Animated.timing(toastAnim, {
-      toValue: -150,
-      duration: 250,
-      useNativeDriver: true,
-    }).start(() => {
-      setToast(null);
-    });
-  }, [toastAnim]);
-
-  const showToast = useCallback((notif: any) => {
-    if (toastTimer.current) clearTimeout(toastTimer.current);
-    setToast(notif);
-    Animated.spring(toastAnim, {
-      toValue: 0,
-      useNativeDriver: true,
-      tension: 70,
-      friction: 11,
-    }).start();
-
-    toastTimer.current = setTimeout(() => {
-      hideToast();
-    }, 3000);
-  }, [hideToast, toastAnim]);
+function AppRealtimeToastBridge() {
+  const { user } = useAuth();
+  const { showToast } = useStackToast();
 
   useEffect(() => {
     if (!user?.id) return;
@@ -7506,22 +7501,37 @@ function AppContent() {
                 return;
               }
             }
-            showToast(payload.new);
+            showToast({
+              id: payload.new.id,
+              title: payload.new.type === 'message'
+                ? 'New Message'
+                : payload.new.type === 'rating'
+                ? 'Rating Received'
+                : payload.new.type === 'payment'
+                ? 'Payment Update'
+                : 'Campus Notification',
+              message: payload.new.message,
+              type: payload.new.type,
+              related_type: payload.new.related_type,
+              related_id: payload.new.related_id,
+            });
           }
         }
       )
       .subscribe();
 
     return () => {
-      if (toastTimer.current) clearTimeout(toastTimer.current);
       supabase.removeChannel(channel);
     };
   }, [user?.id, showToast]);
 
-  const handleToastPress = () => {
-    if (!toast) return;
-    const target = toast;
-    hideToast();
+  return null;
+}
+
+function AppContent() {
+  const { user, authUser, profile, loading, profileError, refreshProfile, logout } = useAuth();
+
+  const handleToastPress = (target: any) => {
     if (!navigationRef.isReady()) return;
     if (target.type === 'rating' || target.related_type === 'rating' || target.message?.toLowerCase().includes('rating')) {
       navigationRef.navigate('ProfileReviews', { id: user?.id });
@@ -7547,67 +7557,12 @@ function AppContent() {
   </SafeAreaView>;
 
   return (
-    <View style={{ flex: 1, position: 'relative' }}>
-      {toast && (
-        <Animated.View
-          pointerEvents="box-none"
-          style={{
-            position: 'absolute',
-            top: insets.top > 0 ? insets.top + 4 : 10,
-            left: 14,
-            right: 14,
-            transform: [{ translateY: toastAnim }],
-            zIndex: 99999,
-            elevation: 99999,
-          }}
-        >
-          <Pressable
-            accessibilityRole="button"
-            onPress={handleToastPress}
-            style={{
-              backgroundColor: isDark ? '#1C1917' : '#FFFFFF',
-              borderRadius: 22,
-              paddingHorizontal: 12,
-              paddingVertical: 7,
-              flexDirection: 'row',
-              alignItems: 'center',
-              borderWidth: 1.5,
-              borderColor: isDark ? 'rgba(186, 27, 27, 0.45)' : '#F0DFD5',
-              shadowColor: '#000',
-              shadowOffset: { width: 0, height: 4 },
-              shadowOpacity: isDark ? 0.35 : 0.12,
-              shadowRadius: 8,
-              elevation: 8,
-            }}
-          >
-            <View style={{
-              width: 28,
-              height: 28,
-              borderRadius: 14,
-              backgroundColor: isDark ? '#3D1212' : '#FFEBE6',
-              alignItems: 'center',
-              justifyContent: 'center',
-              marginRight: 9,
-              borderWidth: 1,
-              borderColor: isDark ? '#BA1B1B' : '#E62424',
-            }}>
-              <Ionicons name="notifications" size={14} color={isDark ? '#FF6B6B' : '#BA1B1B'} />
-            </View>
-            <View style={{ flex: 1, marginRight: 6 }}>
-              <Text numberOfLines={1} style={{ fontSize: 12.5, fontWeight: '700', color: isDark ? '#FFFFFF' : '#181314' }}>
-                {toast?.message}
-              </Text>
-            </View>
-            <Pressable hitSlop={10} onPress={hideToast} style={{ padding: 4 }}>
-              <Ionicons name="close" size={16} color={isDark ? '#A89C97' : '#8A7A75'} />
-            </Pressable>
-          </Pressable>
-        </Animated.View>
-      )}
+    <StackToastProvider onToastPress={handleToastPress}>
+      <AppRealtimeToastBridge />
       <NavigationContainer ref={navigationRef} key={user ? 'signed-in' : 'guest'}>
         <AppStack authenticated={!!user} isAdmin={user?.role === 'admin'}/>
       </NavigationContainer>
-    </View>
+    </StackToastProvider>
   );
 }
 
