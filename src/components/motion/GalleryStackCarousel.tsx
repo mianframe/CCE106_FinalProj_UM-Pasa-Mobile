@@ -2,8 +2,10 @@ import React, { useState, useRef } from 'react';
 import {
   Animated,
   Image,
+  Modal,
   Pressable,
   ScrollView,
+  StatusBar,
   StyleSheet,
   Text,
   View,
@@ -24,17 +26,20 @@ export function GalleryStackCarousel({
   height = 250,
   onImagePress,
 }: GalleryStackCarouselProps) {
-  const { width } = useWindowDimensions();
+  const { width, height: screenHeight } = useWindowDimensions();
   const { mode } = useTheme();
   const isDark = mode === 'dark';
   const C = themeTokens[mode].colors;
 
-  const cardWidth = width - 28;
+  const cardWidth = Math.max(width - 28, 200);
   const [activeIndex, setActiveIndex] = useState(0);
-  const [isStackMode, setIsStackMode] = useState(false); // starts in carousel or stack
+  const [isStackMode, setIsStackMode] = useState(false);
+  const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
+
   const scrollX = useRef(new Animated.Value(0)).current;
   const carouselRef = useRef<ScrollView>(null);
-  const stackAnim = useRef(new Animated.Value(0)).current; // 0 = carousel, 1 = fanned stack
+  const lightboxScrollRef = useRef<ScrollView>(null);
+  const stackAnim = useRef(new Animated.Value(0)).current;
 
   if (!images || images.length === 0) return null;
 
@@ -64,62 +69,87 @@ export function GalleryStackCarousel({
   );
 
   const jumpTo = (index: number) => {
+    if (index < 0 || index >= images.length) return;
     setActiveIndex(index);
     if (isStackMode) {
-      toggleMode();
+      setIsStackMode(false);
+      Animated.spring(stackAnim, {
+        toValue: 0,
+        tension: 60,
+        friction: 8,
+        useNativeDriver: true,
+      }).start();
+      setTimeout(() => {
+        try {
+          carouselRef.current?.scrollTo({ x: index * cardWidth, y: 0, animated: true });
+        } catch (_) {}
+      }, 60);
+    } else {
+      try {
+        carouselRef.current?.scrollTo({ x: index * cardWidth, y: 0, animated: true });
+      } catch (_) {}
     }
-    carouselRef.current?.scrollTo({ x: index * cardWidth, animated: true });
+  };
+
+  const handleImageClick = (index: number) => {
+    try {
+      if (onImagePress) {
+        onImagePress(index);
+      }
+    } catch (_) {}
+    setLightboxIndex(index);
   };
 
   return (
     <View style={styles.container}>
-      {/* Visual Mode Pill & Counter Bar */}
-      <View style={styles.topControlRow}>
-        <Pressable
-          accessibilityRole="button"
-          onPress={toggleMode}
-          style={[
-            styles.modePill,
-            {
-              backgroundColor: isDark ? 'rgba(30, 24, 24, 0.85)' : 'rgba(255, 255, 255, 0.92)',
-              borderColor: isDark ? 'rgba(255, 255, 255, 0.15)' : '#E5D8D0',
-            },
-          ]}
-        >
-          <Ionicons
-            name={isStackMode ? 'copy-outline' : 'albums-outline'}
-            size={13}
-            color={C.gold}
-          />
-          <Text style={[styles.modePillText, { color: isDark ? '#FFFFFF' : '#1C1917' }]}>
-            {isStackMode ? 'Fanned Deck' : 'Gallery Stream'}
-          </Text>
-        </Pressable>
+      {/* Visual Mode Pill & Counter Bar (Only if multiple photos) */}
+      {images.length > 1 && (
+        <View style={styles.topControlRow}>
+          <Pressable
+            accessibilityRole="button"
+            onPress={toggleMode}
+            style={[
+              styles.modePill,
+              {
+                backgroundColor: isDark ? 'rgba(30, 24, 24, 0.85)' : 'rgba(255, 255, 255, 0.92)',
+                borderColor: isDark ? 'rgba(255, 255, 255, 0.15)' : '#E5D8D0',
+              },
+            ]}
+          >
+            <Ionicons
+              name={isStackMode ? 'copy-outline' : 'albums-outline'}
+              size={13}
+              color={C.gold}
+            />
+            <Text style={[styles.modePillText, { color: isDark ? '#FFFFFF' : '#1C1917' }]}>
+              {isStackMode ? 'Fanned Deck' : 'Gallery Stream'}
+            </Text>
+          </Pressable>
 
-        <View
-          style={[
-            styles.counterBadge,
-            {
-              backgroundColor: isDark ? 'rgba(0, 0, 0, 0.75)' : 'rgba(28, 25, 23, 0.78)',
-              borderColor: 'rgba(255, 255, 255, 0.18)',
-            },
-          ]}
-        >
-          <Ionicons name="images" size={13} color={C.gold} />
-          <Text style={styles.counterText}>
-            {activeIndex + 1} / {images.length}
-          </Text>
+          <View
+            style={[
+              styles.counterBadge,
+              {
+                backgroundColor: isDark ? 'rgba(0, 0, 0, 0.75)' : 'rgba(28, 25, 23, 0.78)',
+                borderColor: 'rgba(255, 255, 255, 0.18)',
+              },
+            ]}
+          >
+            <Ionicons name="images" size={13} color={C.gold} />
+            <Text style={styles.counterText}>
+              {activeIndex + 1} / {images.length}
+            </Text>
+          </View>
         </View>
-      </View>
+      )}
 
       {/* Main Showcase View */}
       <View style={{ height, width: cardWidth, overflow: 'visible' }}>
-        {isStackMode ? (
+        {isStackMode && images.length > 1 ? (
           // FANNED STACK VIEW (rnmotion.dev style)
           <View style={[styles.stackStage, { height, width: cardWidth }]}>
             {images.slice(0, 4).map((imgUri, idx) => {
               const count = Math.min(images.length, 4);
-              // Calculate fan rotation (-6 deg to +6 deg) and fan offset
               const rotateDeg = (idx - (count - 1) / 2) * 4.5;
               const translateY = idx * 6;
               const scale = 1 - (count - 1 - idx) * 0.04;
@@ -144,10 +174,7 @@ export function GalleryStackCarousel({
                 >
                   <Pressable
                     style={{ flex: 1, borderRadius: 18, overflow: 'hidden' }}
-                    onPress={() => {
-                      jumpTo(idx);
-                      if (onImagePress) onImagePress(idx);
-                    }}
+                    onPress={() => handleImageClick(idx)}
                   >
                     <Image
                       source={{ uri: imgUri }}
@@ -171,7 +198,6 @@ export function GalleryStackCarousel({
             style={{ width: cardWidth, height }}
           >
             {images.map((imgUri, idx) => {
-              // Interpolate dynamic scale and opacity as item moves into center
               const inputRange = [
                 (idx - 1) * cardWidth,
                 idx * cardWidth,
@@ -180,13 +206,13 @@ export function GalleryStackCarousel({
 
               const scale = scrollX.interpolate({
                 inputRange,
-                outputRange: [0.93, 1.0, 0.93],
+                outputRange: [0.94, 1.0, 0.94],
                 extrapolate: 'clamp',
               });
 
               const opacity = scrollX.interpolate({
                 inputRange,
-                outputRange: [0.65, 1.0, 0.65],
+                outputRange: [0.7, 1.0, 0.7],
                 extrapolate: 'clamp',
               });
 
@@ -213,7 +239,7 @@ export function GalleryStackCarousel({
                   >
                     <Pressable
                       style={{ flex: 1, borderRadius: 16, overflow: 'hidden' }}
-                      onPress={() => onImagePress && onImagePress(idx)}
+                      onPress={() => handleImageClick(idx)}
                     >
                       <Image
                         source={{ uri: imgUri }}
@@ -229,31 +255,33 @@ export function GalleryStackCarousel({
         )}
       </View>
 
-      {/* Morphing Dots Indicator */}
-      <View style={styles.dotsRow}>
-        {images.map((_, idx) => {
-          const isActive = activeIndex === idx;
-          return (
-            <Pressable key={idx} onPress={() => jumpTo(idx)}>
-              <View
-                style={[
-                  styles.dot,
-                  {
-                    width: isActive ? 20 : 6,
-                    backgroundColor: isActive
-                      ? C.gold
-                      : isDark
-                      ? 'rgba(255, 255, 255, 0.22)'
-                      : 'rgba(0, 0, 0, 0.2)',
-                  },
-                ]}
-              />
-            </Pressable>
-          );
-        })}
-      </View>
+      {/* Morphing Dots Indicator (Only if multiple photos) */}
+      {images.length > 1 && (
+        <View style={styles.dotsRow}>
+          {images.map((_, idx) => {
+            const isActive = activeIndex === idx;
+            return (
+              <Pressable key={idx} hitSlop={6} onPress={() => jumpTo(idx)}>
+                <View
+                  style={[
+                    styles.dot,
+                    {
+                      width: isActive ? 20 : 6,
+                      backgroundColor: isActive
+                        ? C.gold
+                        : isDark
+                        ? 'rgba(255, 255, 255, 0.22)'
+                        : 'rgba(0, 0, 0, 0.2)',
+                    },
+                  ]}
+                />
+              </Pressable>
+            );
+          })}
+        </View>
+      )}
 
-      {/* Interactive Thumbnail Jump Strip */}
+      {/* Interactive Thumbnail Jump Strip (Only if multiple photos) */}
       {images.length > 1 && (
         <ScrollView
           horizontal
@@ -286,6 +314,109 @@ export function GalleryStackCarousel({
           })}
         </ScrollView>
       )}
+
+      {/* FULLSCREEN LIGHTBOX PHOTO VIEWER MODAL */}
+      <Modal
+        visible={lightboxIndex !== null}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setLightboxIndex(null)}
+      >
+        <StatusBar barStyle="light-content" backgroundColor="#000000" />
+        <View style={styles.lightboxBackdrop}>
+          {/* Lightbox Header Bar */}
+          <View style={styles.lightboxHeader}>
+            <View style={styles.lightboxCounterBadge}>
+              <Ionicons name="images-outline" size={14} color="#F6C84C" />
+              <Text style={styles.lightboxCounterText}>
+                {((lightboxIndex ?? 0) + 1)} of {images.length}
+              </Text>
+            </View>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Close photo viewer"
+              onPress={() => setLightboxIndex(null)}
+              hitSlop={12}
+              style={styles.lightboxCloseBtn}
+            >
+              <Ionicons name="close" size={22} color="#FFFFFF" />
+            </Pressable>
+          </View>
+
+          {/* Fullscreen Horizontal Swipe View */}
+          <ScrollView
+            ref={lightboxScrollRef}
+            horizontal
+            pagingEnabled
+            showsHorizontalScrollIndicator={false}
+            contentOffset={{ x: (lightboxIndex ?? 0) * width, y: 0 }}
+            onMomentumScrollEnd={(e) => {
+              const newIdx = Math.round(e.nativeEvent.contentOffset.x / width);
+              if (newIdx >= 0 && newIdx < images.length) {
+                setLightboxIndex(newIdx);
+                setActiveIndex(newIdx);
+              }
+            }}
+            style={{ width, flex: 1 }}
+          >
+            {images.map((uri, idx) => (
+              <View
+                key={idx}
+                style={{
+                  width,
+                  height: screenHeight - 160,
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  paddingHorizontal: 8,
+                }}
+              >
+                <Image
+                  source={{ uri }}
+                  style={{
+                    width: width - 16,
+                    height: screenHeight - 200,
+                  }}
+                  resizeMode="contain"
+                />
+              </View>
+            ))}
+          </ScrollView>
+
+          {/* Bottom Thumbnail Strip in Lightbox */}
+          {images.length > 1 && (
+            <View style={styles.lightboxFooter}>
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={{ gap: 8, paddingHorizontal: 16 }}
+              >
+                {images.map((uri, idx) => {
+                  const isCur = lightboxIndex === idx;
+                  return (
+                    <Pressable
+                      key={idx}
+                      onPress={() => {
+                        setLightboxIndex(idx);
+                        lightboxScrollRef.current?.scrollTo({ x: idx * width, y: 0, animated: true });
+                      }}
+                      style={[
+                        styles.lightboxThumb,
+                        {
+                          borderColor: isCur ? '#F6C84C' : 'rgba(255, 255, 255, 0.25)',
+                          borderWidth: isCur ? 2 : 1,
+                          opacity: isCur ? 1 : 0.5,
+                        },
+                      ]}
+                    >
+                      <Image source={{ uri }} style={{ width: '100%', height: '100%' }} resizeMode="cover" />
+                    </Pressable>
+                  );
+                })}
+              </ScrollView>
+            </View>
+          )}
+        </View>
+      </Modal>
     </View>
   );
 }
@@ -382,6 +513,52 @@ const styles = StyleSheet.create({
     width: 48,
     height: 48,
     borderRadius: 10,
+    overflow: 'hidden',
+  },
+  lightboxBackdrop: {
+    flex: 1,
+    backgroundColor: 'rgba(5, 5, 5, 0.96)',
+    justifyContent: 'space-between',
+    paddingTop: 44,
+    paddingBottom: 20,
+  },
+  lightboxHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 18,
+    paddingBottom: 10,
+    zIndex: 10,
+  },
+  lightboxCounterBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 14,
+    backgroundColor: 'rgba(255, 255, 255, 0.12)',
+  },
+  lightboxCounterText: {
+    color: '#FFFFFF',
+    fontSize: 13,
+    fontWeight: '700',
+  },
+  lightboxCloseBtn: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: 'rgba(255, 255, 255, 0.16)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  lightboxFooter: {
+    paddingVertical: 10,
+  },
+  lightboxThumb: {
+    width: 52,
+    height: 52,
+    borderRadius: 8,
     overflow: 'hidden',
   },
 });

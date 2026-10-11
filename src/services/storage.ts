@@ -10,9 +10,9 @@ export async function uploadItemImage(uri: string): Promise<string> {
   const response = await fetch(uri);
   const arrayBuffer = await response.arrayBuffer();
 
-  const MAX_FILE_SIZE_BYTES = 5 * 1024 * 1024;
+  const MAX_FILE_SIZE_BYTES = 15 * 1024 * 1024;
   if (arrayBuffer.byteLength > MAX_FILE_SIZE_BYTES) {
-    throw new Error('Image file is too large. Please select a photo under 5MB.');
+    throw new Error('Image file is too large. Please select a photo under 15MB.');
   }
 
   const { error } = await supabase.storage.from('items').upload(fileName, arrayBuffer, {
@@ -37,9 +37,9 @@ export async function uploadPaymentProof(transactionId: string, uri: string): Pr
   const response = await fetch(uri);
   const arrayBuffer = await response.arrayBuffer();
 
-  const MAX_FILE_SIZE_BYTES = 5 * 1024 * 1024;
+  const MAX_FILE_SIZE_BYTES = 15 * 1024 * 1024;
   if (arrayBuffer.byteLength > MAX_FILE_SIZE_BYTES) {
-    throw new Error('Payment proof file is too large. Please select an image under 5MB.');
+    throw new Error('Payment proof file is too large. Please select an image under 15MB.');
   }
 
   const { error: uploadError } = await supabase.storage.from('payment-proofs').upload(fileName, arrayBuffer, {

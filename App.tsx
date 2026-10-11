@@ -23,7 +23,7 @@ import {
   GalleryStackCarousel,
   ChatGPTAttachmentMenu,
   LinearPillStrip,
-  RadialMenu,
+  MorphingPanel,
 } from './src/components/motion';
 
 let T: ThemeTokens = themeTokens.light;
@@ -43,8 +43,7 @@ function getRentalDueInfo(dueDateStr?: string | null, status?: string, meetupTim
   const diffMs = due.getTime() - now.getTime();
   const diffDays = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
 
-  const meetupDate = meetupTimeStr ? new Date(meetupTimeStr) : null;
-  const meetupInFuture = meetupDate && meetupDate.getTime() > now.getTime();
+  const isHandoverPending = status === 'pending' || status === 'approved';
 
   if (diffDays < 0) {
     const overdueDays = Math.abs(diffDays);
@@ -55,11 +54,11 @@ function getRentalDueInfo(dueDateStr?: string | null, status?: string, meetupTim
       color: '#DC2626',
       bgColor: 'rgba(220, 38, 38, 0.14)',
     };
-  } else if (meetupInFuture && durationDays) {
+  } else if (durationDays && isHandoverPending) {
     return {
       isOverdue: false,
       isDueSoon: false,
-      label: `Rental: ${durationDays} day(s) starts on handover (${formatPhilippineDate(meetupTimeStr)}) · Return due ${formatPhilippineDate(dueDateStr)}`,
+      label: `Rental: ${durationDays} day(s) · Handover meetup: ${formatPhilippineDate(meetupTimeStr, 'TBD')} · Return due ${formatPhilippineDate(dueDateStr)}`,
       color: '#2563EB',
       bgColor: 'rgba(37, 99, 235, 0.10)',
     };
@@ -75,7 +74,7 @@ function getRentalDueInfo(dueDateStr?: string | null, status?: string, meetupTim
   return {
     isOverdue: false,
     isDueSoon: false,
-    label: `Active rental: ${diffDays} day${diffDays === 1 ? '' : 's'} remaining (Return on ${formatPhilippineDate(dueDateStr)})`,
+    label: `Active rental: ${durationDays ? `${durationDays} day duration (` : ''}${diffDays} day${diffDays === 1 ? '' : 's'} until return on ${formatPhilippineDate(dueDateStr)}${durationDays ? ')' : ''}`,
     color: '#2563EB',
     bgColor: 'rgba(37, 99, 235, 0.10)',
   };
@@ -313,55 +312,6 @@ function BrowseScreen({ navigation }: any) {
       onRefresh={load}
       footer={{navigation}}
       topSafe={true}
-      floatingAction={
-        <RadialMenu
-          bottomOffset={user ? 80 : 26}
-          rightOffset={18}
-          actions={[
-            {
-              id: 'theme',
-              label: mode === 'dark' ? 'Light mode' : 'Dark mode',
-              icon: mode === 'dark' ? 'sunny' : 'moon',
-              color: '#F59E0B',
-              bgColor: isDark ? '#3D1212' : '#FFFBEB',
-              onPress: () => setMode(mode === 'dark' ? 'light' : 'dark'),
-            },
-            {
-              id: 'post',
-              label: 'Post listing',
-              icon: 'add-circle-outline',
-              color: '#EF4444',
-              bgColor: isDark ? '#381313' : '#FEF2F2',
-              onPress: () => {
-                if (!user) {
-                  Alert.alert('Sign in required', 'Please sign in to post a campus listing.', [
-                    { text: 'Cancel', style: 'cancel' },
-                    { text: 'Sign in', onPress: () => navigation.navigate('Login') },
-                  ]);
-                } else {
-                  navigation.navigate('ListingForm');
-                }
-              },
-            },
-            {
-              id: 'guide',
-              label: 'Campus guide',
-              icon: 'shield-checkmark-outline',
-              color: '#10B981',
-              bgColor: isDark ? '#064E3B' : '#ECFDF5',
-              onPress: () => navigation.navigate('Help'),
-            },
-            {
-              id: 'support',
-              label: 'Support & safety',
-              icon: 'help-circle-outline',
-              color: '#3B82F6',
-              bgColor: isDark ? '#1E293B' : '#EFF6FF',
-              onPress: () => navigation.navigate('Support'),
-            },
-          ]}
-        />
-      }
     >
     <View style={s.marketHero}>
       <LinearGradient colors={['#4A1210', '#2B1214', '#151419']} start={{x:0,y:0}} end={{x:1,y:1}} style={s.marketHeroGradient}>
@@ -826,20 +776,12 @@ function ListingScreen({ route, navigation }: any) {
         const displayImages = (item.images && item.images.length > 0)
           ? item.images
           : (item.image ? [item.image] : []);
-        if (displayImages.length === 1) {
-          return (
-            <Image
-              source={{ uri: imageUrl(displayImages[0]) }}
-              style={s.heroImage}
-              resizeMode="cover"
-            />
-          );
-        }
-        if (displayImages.length > 1) {
+        const validUris = displayImages.map(imageUrl).filter(Boolean);
+        if (validUris.length > 0) {
           return (
             <GalleryStackCarousel
-              images={displayImages.map(imageUrl).filter(Boolean)}
-              height={260}
+              images={validUris}
+              height={270}
             />
           );
         }
@@ -1375,7 +1317,16 @@ function ListingScreen({ route, navigation }: any) {
     </Page>
   );
 }
-function imageUrl(path: string) { return /^https?:\/\//i.test(path) ? path : ''; }
+function imageUrl(path: string) {
+  if (!path) return '';
+  if (/^https?:\/\//i.test(path) || /^file:\/\//i.test(path) || /^data:image/i.test(path)) return path;
+  try {
+    const { data } = supabase.storage.from('items').getPublicUrl(path);
+    return data?.publicUrl || path;
+  } catch (_) {
+    return path;
+  }
+}
 
 const categories = ['Books','Uniforms','Gadgets','Calculators','Supplies','Lab & Science','Art Materials','Engineering Tools','Electronics','PE & Sports','Review Materials','Thesis & Research','School Bags','Dorm Essentials','Tickets & Events','Other'];
 const programs: Record<string,string[]> = {
@@ -1392,12 +1343,14 @@ const programs: Record<string,string[]> = {
   'Graduate School':['Master of Arts in Education - Teaching English','Master of Arts in Education - Teaching Filipino','Master of Arts in Education - Teaching Mathematics','Master of Arts in Education - Teaching Science','Master of Arts in Education - Teaching Physical Education','Master in Business Administration','Master in Management','Master in Public Administration']
 };
 const departments = Object.keys(programs);
+const MAX_PHOTOS = 10;
 function ListingFormScreen({ route, navigation }: any) {
   const { width } = useWindowDimensions();
   const isDark = C.bg === themeTokens.dark.colors.bg;
   const edit = route.params?.item as Item | undefined;
   const [f, setF] = useState<any>(edit ? { ...edit, ...(categories.includes(edit.category)?{}:{category:'__custom',custom_category:edit.category}) } : { listing_type: 'sell', category: 'Books', condition: 'good', department: departments[0], accepted_payment_methods: ['cash_on_pickup'] });
   const [busy, setBusy] = useState(false);
+  const [categoriesExpanded, setCategoriesExpanded] = useState(false);
   const [imageUris, setImageUris] = useState<string[]>(() => {
     if (edit?.images && edit.images.length > 0) return edit.images;
     if (edit?.image) return [edit.image];
@@ -1406,9 +1359,9 @@ function ListingFormScreen({ route, navigation }: any) {
   const set = (k: string, v: any) => setF((prev: any) => ({ ...prev, [k]: v }));
 
   const pickImages = async () => {
-    const remaining = 6 - imageUris.length;
+    const remaining = MAX_PHOTOS - imageUris.length;
     if (remaining <= 0) {
-      Alert.alert('Upload limit reached', 'Maximum of 6 photos allowed per listing.');
+      Alert.alert('Upload limit reached', `Maximum of ${MAX_PHOTOS} photos allowed per listing.`);
       return;
     }
     try {
@@ -1421,14 +1374,14 @@ function ListingFormScreen({ route, navigation }: any) {
       if (!result.canceled && result.assets && result.assets.length > 0) {
         const newUris: string[] = [];
         for (const asset of result.assets) {
-          if (asset.fileSize && asset.fileSize > 5 * 1024 * 1024) {
-            Alert.alert('Image too large', 'Please select photos smaller than 5MB.');
+          if (asset.fileSize && asset.fileSize > 15 * 1024 * 1024) {
+            Alert.alert('Image too large', 'Please select photos smaller than 15MB.');
             continue;
           }
           newUris.push(asset.uri);
         }
         if (newUris.length > 0) {
-          setImageUris(prev => [...prev, ...newUris].slice(0, 6));
+          setImageUris(prev => [...prev, ...newUris].slice(0, MAX_PHOTOS));
         }
       }
     } catch (err) {
@@ -1488,9 +1441,35 @@ function ListingFormScreen({ route, navigation }: any) {
         value={f.title || ''}
         onChangeText={(v: string) => set('title', v)}
       />
-      <Text style={s.label}>Category</Text>
-      <View style={s.rowWrap}>
-        {categories.map(v => (
+      <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 4, marginBottom: 8 }}>
+        <Text style={[s.label, { marginBottom: 0 }]}>Category</Text>
+        <Pressable
+          accessibilityRole="button"
+          onPress={() => setCategoriesExpanded(!categoriesExpanded)}
+          style={{
+            flexDirection: 'row',
+            alignItems: 'center',
+            gap: 4,
+            paddingHorizontal: 8,
+            paddingVertical: 3,
+            borderRadius: 6,
+            backgroundColor: isDark ? 'rgba(246, 200, 76, 0.12)' : '#FFF3D6',
+          }}
+        >
+          <Text style={{ fontSize: 11, fontWeight: '700', color: isDark ? C.gold : C.red }}>
+            {categoriesExpanded ? 'Show less ▴' : `Show all (${categories.length}) ▾`}
+          </Text>
+        </Pressable>
+      </View>
+      <View style={[s.rowWrap, { gap: 8, marginBottom: 12 }]}>
+        {(categoriesExpanded
+          ? categories
+          : categories.slice(0, 6).concat(
+              f.category && f.category !== '__custom' && !categories.slice(0, 6).includes(f.category)
+                ? [f.category]
+                : []
+            )
+        ).map(v => (
           <Choice
             key={v}
             label={v}
@@ -1498,11 +1477,13 @@ function ListingFormScreen({ route, navigation }: any) {
             onPress={() => { set('category', v); set('custom_category', ''); }}
           />
         ))}
-        <Choice
-          label="Other / custom"
-          selected={!!f.custom_category}
-          onPress={() => set('category', '__custom')}
-        />
+        {categoriesExpanded && (
+          <Choice
+            label="Other / custom"
+            selected={!!f.custom_category}
+            onPress={() => set('category', '__custom')}
+          />
+        )}
       </View>
       {f.category === '__custom' && (
         <Field
@@ -1511,12 +1492,33 @@ function ListingFormScreen({ route, navigation }: any) {
           onChangeText={(v: string) => set('custom_category', v)}
         />
       )}
-      <Field
-        label="Item description (condition, inclusions, semester used)"
-        value={f.description || ''}
-        onChangeText={(v: string) => set('description', v)}
-        multiline
-      />
+      {(() => {
+        const descWords = (f.description || '').trim().split(/\s+/).filter(Boolean).length;
+        const meetsRequirement = descWords >= 10;
+        return (
+          <View style={{ marginBottom: 4 }}>
+            <Field
+              label="Item description (condition, inclusions, semester used)"
+              value={f.description || ''}
+              onChangeText={(v: string) => set('description', v)}
+              placeholder="e.g. In good condition, used for 1 semester in Engineering. Complete with original packaging and student notes."
+              multiline
+            />
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: -6, marginBottom: 10, paddingHorizontal: 4 }}>
+              <Text style={{ fontSize: 11, color: C.muted }}>
+                Please write at least 10 words (condition, inclusions, semester used).
+              </Text>
+              <Text style={{
+                fontSize: 11,
+                fontWeight: '700',
+                color: meetsRequirement ? '#10B981' : (descWords > 0 ? C.gold : C.muted)
+              }}>
+                {descWords} / 10 words {meetsRequirement ? '✓' : ''}
+              </Text>
+            </View>
+          </View>
+        );
+      })()}
       <Text style={s.label}>Exchange type</Text>
       <View style={s.row}>
         <Choice
@@ -1576,8 +1578,11 @@ function ListingFormScreen({ route, navigation }: any) {
           />
         ))}
       </View>
-      <Text style={s.label}>Accepted payment options</Text>
-      <View style={s.rowWrap}>
+      <Text style={[s.label, { marginBottom: 2 }]}>Accepted payment options</Text>
+      <Text style={{ fontSize: 11.5, color: C.muted, marginBottom: 8 }}>
+        Select as many payment methods as you can offer. The buyer will choose whichever method is convenient for them during transaction checkout.
+      </Text>
+      <View style={[s.rowWrap, { gap: 8, marginBottom: 12 }]}>
         {pay.map(v => (
           <Choice
             key={v}
@@ -1624,9 +1629,9 @@ function ListingFormScreen({ route, navigation }: any) {
         onChangeText={(v: string) => set('course_code', v.toUpperCase())}
         autoCapitalize="characters"
       />
-      <Text style={s.label}>Item photos ({imageUris.length}/6)</Text>
+      <Text style={s.label}>Item photos ({imageUris.length}/{MAX_PHOTOS})</Text>
       <Text style={[s.muted, { marginBottom: 10, fontSize: 12 }]}>
-        Upload up to 6 photos. The first photo is the main cover shown on marketplace feeds.
+        Upload up to {MAX_PHOTOS} photos. The first photo is the main cover shown on marketplace feeds.
       </Text>
       {imageUris.length > 0 ? (
         <View style={{ marginBottom: 18 }}>
@@ -1745,8 +1750,8 @@ function ListingFormScreen({ route, navigation }: any) {
               );
             })}
 
-            {/* Add photo slot in grid if under 6 */}
-            {imageUris.length < 6 && (
+            {/* Add photo slot in grid if under MAX_PHOTOS */}
+            {imageUris.length < MAX_PHOTOS && (
               <Pressable
                 accessibilityRole="button"
                 onPress={pickImages}
@@ -1767,7 +1772,7 @@ function ListingFormScreen({ route, navigation }: any) {
                   Add Photo
                 </Text>
                 <Text style={{ fontSize: 9.5, color: C.muted }}>
-                  {6 - imageUris.length} left
+                  {MAX_PHOTOS - imageUris.length} left
                 </Text>
               </Pressable>
             )}
@@ -4715,35 +4720,38 @@ function ConversationScreen({ route, navigation }: any) {
             );
           })()}
 
-          {/* Collapsible Meetup Propose Form */}
-          {showPropose && (
-            <View style={{ marginTop: 8, padding: 12, backgroundColor: C.bg, borderRadius: 12, borderWidth: 1, borderColor: C.border }}>
-              <Text style={[s.section, { fontSize: 13, marginBottom: 6 }]}>Schedule campus exchange</Text>
-              <Field
-                label="Meetup campus spot"
-                value={location}
-                onChangeText={setLocation}
-                placeholder="e.g. Visayan Library Study Zone or Main Canteen"
-              />
-              <MeetupTimePicker label="Meetup date & time" value={meetupDate} onChange={setMeetupDate} />
-              <View style={{ flexDirection: 'row', gap: 8, marginTop: 4 }}>
-                <View style={{ flex: 1 }}>
-                  <Button
-                    title={proposing ? "Sending proposal…" : "Send proposal"}
-                    disabled={proposing || !location.trim() || !meetupDate}
-                    secondary
-                    onPress={propose}
-                  />
-                </View>
-                <Pressable
-                  onPress={() => setShowPropose(false)}
-                  style={{ paddingHorizontal: 14, justifyContent: 'center', borderRadius: 10, borderWidth: 1, borderColor: C.border }}
-                >
-                  <Text style={{ color: C.muted, fontWeight: '700', fontSize: 13 }}>Cancel</Text>
-                </Pressable>
+          {/* Collapsible Meetup Propose Form with Spring Morphing Card */}
+          <MorphingPanel
+            visible={showPropose}
+            onClose={() => setShowPropose(false)}
+            title="Schedule campus exchange"
+            subtitle="Pick an official UM Tagum safe zone & time"
+            icon="calendar-outline"
+          >
+            <Field
+              label="Meetup campus spot"
+              value={location}
+              onChangeText={setLocation}
+              placeholder="e.g. Visayan Library Study Zone or Main Canteen"
+            />
+            <MeetupTimePicker label="Meetup date & time" value={meetupDate} onChange={setMeetupDate} />
+            <View style={{ flexDirection: 'row', gap: 8, marginTop: 4 }}>
+              <View style={{ flex: 1 }}>
+                <Button
+                  title={proposing ? "Sending proposal…" : "Send proposal"}
+                  disabled={proposing || !location.trim() || !meetupDate}
+                  secondary
+                  onPress={propose}
+                />
               </View>
+              <Pressable
+                onPress={() => setShowPropose(false)}
+                style={{ paddingHorizontal: 14, justifyContent: 'center', borderRadius: 10, borderWidth: 1, borderColor: C.border }}
+              >
+                <Text style={{ color: C.muted, fontWeight: '700', fontSize: 13 }}>Cancel</Text>
+              </Pressable>
             </View>
-          )}
+          </MorphingPanel>
         </View>
 
         {/* Scrollable messages list */}
@@ -6963,7 +6971,18 @@ function AdminItemsScreen({route}:any) {
   return <Page onRefresh={load} refreshing={busy}><Heading title="Listing review" subtitle={`${pending.length} listing${pending.length===1?'':'s'} awaiting a decision.`}/>{err?<Status state={err} icon="alert-circle-outline" retry={load}/>:busy?<ActivityIndicator color={C.red}/>:!pending.length?<Status state="The moderation queue is all caught up! No pending listings await review." icon="checkmark-circle-outline"/>:pending.map(i=><Card key={i.id}>
     <Pressable accessibilityRole="button" onPress={()=>setExpandedId(expandedId===i.id?null:i.id)}><View style={s.rowBetween}><View style={{flex:1}}><Text style={s.cardTitle}>{i.title}</Text><Text style={s.muted}>{i.user?.name||'UM student'} · {i.category} · {money(i.price)}</Text></View><View style={{alignItems:'flex-end'}}><Text style={[s.badge,{color:C.gold}]}>Pending</Text><Ionicons name={expandedId===i.id?'chevron-up':'chevron-down'} size={18} color={C.muted}/></View></View></Pressable>
     {expandedId===i.id&&<>
-    {i.image?<Image source={{uri:imageUrl(i.image)}} style={s.adminListingImage} resizeMode="cover"/>:null}
+    {(() => {
+      const allImgs = (i.images && i.images.length > 0)
+        ? i.images
+        : (i.image ? [i.image] : []);
+      const valid = allImgs.map(imageUrl).filter(Boolean);
+      if (valid.length === 0) return null;
+      return (
+        <View style={{ marginBottom: 12 }}>
+          <GalleryStackCarousel images={valid} height={230} />
+        </View>
+      );
+    })()}
     <Text style={s.adminPrice}>{money(i.price)}{i.listing_type==='rent'?' / day':''} · {i.listing_type==='rent'?'For rent':'For sale'}</Text>
     <Text style={s.body}>{i.description}</Text>
     <View style={s.adminDetails}><Text style={s.adminDetail}>Category: {i.category}</Text><Text style={s.adminDetail}>Condition: {i.condition?.replaceAll('_',' ')}</Text><Text style={s.adminDetail}>Course: {i.course_code}</Text><Text style={s.adminDetail}>Department: {i.department}</Text>{i.program?<Text style={s.adminDetail}>Program: {i.program}</Text>:null}<Text style={s.adminDetail}>Seller: {i.user?.name||'UM student'}</Text><Text style={s.adminDetail}>Submitted: {i.created_at?formatPhilippineDate(i.created_at): 'Date unavailable'}</Text></View>
@@ -7002,55 +7021,53 @@ function AdminItemsScreen({route}:any) {
         setRejectionReason('');
       }}/>
     </View>
-    {rejectionTarget===i.id&& (
-      <View style={[s.rejectPanel, { backgroundColor: isDark ? 'rgba(230,36,36,0.1)' : '#FFF5F5', borderWidth: 1, borderColor: C.red, borderRadius: 12, padding: 12, marginTop: 8 }]}>
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 6 }}>
-          <Ionicons name="alert-circle" size={16} color={C.red} />
-          <Text style={{ fontSize: 13, fontWeight: '800', color: C.red }}>Reason for rejection (required)</Text>
-        </View>
-        <Text style={{ fontSize: 11, color: C.muted, marginBottom: 8 }}>
-          This reason will be sent to the student and displayed on their listing so they can make corrections.
-        </Text>
-        <Text style={{ fontSize: 11, fontWeight: '700', color: C.cream, marginBottom: 6 }}>Quick preset reasons:</Text>
-        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginBottom: 10 }}>
-          {[
-            'Missing clear item photos',
-            'Price exceeds student cap',
-            'Prohibited or non-academic item',
-            'Incomplete course/details',
-            'Duplicate listing',
-          ].map((preset) => (
-            <Pressable
-              key={preset}
-              onPress={() => setRejectionReason(preset)}
-              style={{
-                paddingHorizontal: 8,
-                paddingVertical: 4,
-                borderRadius: 8,
-                backgroundColor: rejectionReason === preset ? C.red : (isDark ? 'rgba(255,255,255,0.08)' : '#EAE0D8'),
-              }}
-            >
-              <Text style={{ fontSize: 11, fontWeight: '700', color: rejectionReason === preset ? '#FFFFFF' : C.white }}>
-                {preset}
-              </Text>
-            </Pressable>
-          ))}
-        </View>
-        <Field
-          label="Custom or edited reason"
-          value={rejectionReason}
-          onChangeText={setRejectionReason}
-          placeholder="e.g. Please provide a photo of the actual item showing condition."
-          multiline
-        />
-        <Button
-          title={!rejectionReason.trim() ? "Enter a reason to reject" : "Send rejection with reason"}
-          danger
-          disabled={!rejectionReason.trim()}
-          onPress={()=>moderate(i.id,'reject',rejectionReason.trim())}
-        />
+    <MorphingPanel
+      visible={rejectionTarget === i.id}
+      onClose={() => setRejectionTarget(null)}
+      title="Reason for rejection (required)"
+      subtitle="This reason will be sent to the student so they can correct it."
+      icon="alert-circle"
+      accentColor={C.red}
+    >
+      <Text style={{ fontSize: 11, fontWeight: '700', color: isDark ? C.cream : '#1C1917', marginBottom: 6 }}>Quick preset reasons:</Text>
+      <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginBottom: 10 }}>
+        {[
+          'Missing clear item photos',
+          'Price exceeds student cap',
+          'Prohibited or non-academic item',
+          'Incomplete course/details',
+          'Duplicate listing',
+        ].map((preset) => (
+          <Pressable
+            key={preset}
+            onPress={() => setRejectionReason(preset)}
+            style={{
+              paddingHorizontal: 8,
+              paddingVertical: 4,
+              borderRadius: 8,
+              backgroundColor: rejectionReason === preset ? C.red : (isDark ? 'rgba(255,255,255,0.08)' : '#EAE0D8'),
+            }}
+          >
+            <Text style={{ fontSize: 11, fontWeight: '700', color: rejectionReason === preset ? '#FFFFFF' : (isDark ? C.white : '#1C1917') }}>
+              {preset}
+            </Text>
+          </Pressable>
+        ))}
       </View>
-    )}
+      <Field
+        label="Custom or edited reason"
+        value={rejectionReason}
+        onChangeText={setRejectionReason}
+        placeholder="e.g. Please provide a photo of the actual item showing condition."
+        multiline
+      />
+      <Button
+        title={!rejectionReason.trim() ? "Enter a reason to reject" : "Send rejection with reason"}
+        danger
+        disabled={!rejectionReason.trim()}
+        onPress={()=>moderate(i.id,'reject',rejectionReason.trim())}
+      />
+    </MorphingPanel>
     </>}
   </Card>)}</Page>;
 }
